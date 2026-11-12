@@ -8,15 +8,17 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Abhängigkeiten installieren
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
-      - name: Versionen an Expo SDK anpassen
-        run: npx expo install --fix
+      - name: Expo-Pakete passend zum SDK installieren
+        run: |
+          if ! grep -q '"expo-router"' package.json; then npm run setup-deps; fi
+          npx expo install --check || npx expo install --fix
       - name: Typen prüfen
         run: npx tsc --noEmit
       - name: Tests (Spielregeln)
@@ -39,10 +41,10 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - run: npm ci

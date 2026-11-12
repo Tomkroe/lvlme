@@ -30,6 +30,27 @@ export default function Profile() {
     { text: 'Zurücksetzen', style: 'destructive', onPress: async () => { await app.resetLocal(); router.replace('/onboarding'); } },
   ]);
 
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccount = () => Alert.alert('Konto löschen?', 'Dein Konto, dein Profil, deine Einladungen und alle Freundschaften werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.', [
+    { text: 'Abbrechen', style: 'cancel' },
+    { text: 'Konto löschen', style: 'destructive', onPress: async () => {
+      setDeleting(true);
+      try {
+        await social.deleteAccount();
+        await app.signOut();
+      } catch (e) {
+        setDeleting(false);
+        Alert.alert('Konto nicht gelöscht', (e as Error).message);
+        return;
+      }
+      setDeleting(false);
+      Alert.alert('Konto gelöscht', 'Auch Fortschritt auf diesem iPhone löschen?', [
+        { text: 'Behalten', style: 'cancel' },
+        { text: 'Löschen', style: 'destructive', onPress: async () => { await app.resetLocal(); router.replace('/onboarding'); } },
+      ]);
+    } },
+  ]);
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: 16, paddingBottom: 32, gap: 14 }}>
       <Text style={[st.title, F.display]}>Profil</Text>
@@ -88,6 +109,8 @@ export default function Profile() {
           <>
             <P>Angemeldet mit Apple.</P>
             <Button title="Abmelden" kind="ghost" onPress={app.signOut} />
+            <Button title="Konto löschen" kind="danger" busy={deleting} disabled={deleting} onPress={deleteAccount}
+              accessibilityHint="Löscht dein Konto, dein Profil und alle Freundschaften endgültig" />
           </>
         )}
         {social.isConfigured() && !app.me && <AppleSignIn />}

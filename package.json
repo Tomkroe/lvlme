@@ -8,34 +8,14 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test src/**/*.test.ts",
-    "fix-deps": "expo install --fix"
+    "fix-deps": "expo install --fix",
+    "setup-deps": "expo install expo-router expo-dev-client expo-linking expo-constants expo-status-bar expo-apple-authentication expo-sharing expo-haptics expo-font react react-native react-native-svg react-native-safe-area-context react-native-screens react-native-view-shot @react-native-async-storage/async-storage react-native-url-polyfill expo-crypto -- --no-audit --no-fund && expo install typescript @types/react -- --save-dev --no-audit --no-fund"
   },
   "dependencies": {
     "expo": "~58.0.0",
-    "expo-router": "*",
-    "expo-dev-client": "*",
-    "expo-linking": "*",
-    "expo-constants": "*",
-    "expo-status-bar": "*",
-    "expo-apple-authentication": "*",
-    "expo-sharing": "*",
-    "expo-haptics": "*",
-    "expo-font": "*",
-    "react": "*",
-    "react-native": "*",
-    "react-native-svg": "*",
-    "react-native-safe-area-context": "*",
-    "react-native-screens": "*",
-    "react-native-view-shot": "*",
-    "@react-native-async-storage/async-storage": "*",
     "@supabase/supabase-js": "^2",
-    "react-native-url-polyfill": "*",
     "@kingstinct/react-native-healthkit": "^14",
-    "react-native-nitro-modules": "*",
-    "expo-crypto": "*"
+    "react-native-nitro-modules": "*"
   },
-  "devDependencies": {
-    "typescript": "*",
-    "@types/react": "*"
-  }
+  "devDependencies": {}
 }

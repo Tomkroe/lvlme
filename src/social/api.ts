@@ -93,6 +93,19 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+/**
+ * Löscht das eigene Konto endgültig: Freundschaften, Einladungen, Profil und Anmeldung.
+ * Danach wird lokal abgemeldet. Der Fortschritt auf dem Gerät bleibt unberührt.
+ */
+export async function deleteAccount(): Promise<void> {
+  if (!supabase) throw new Error('Konten sind in dieser Version noch nicht eingerichtet.');
+  if (!(await currentUserId())) throw new Error(NOT_SIGNED_IN);
+  const { error } = await supabase.rpc('delete_account');
+  if (error) throw new Error(message(error));
+  // Der Nutzer existiert serverseitig nicht mehr – Sitzung nur noch lokal verwerfen.
+  try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* egal */ }
+}
+
 export async function setDisplayName(name: string): Promise<void> {
   if (!supabase) throw new Error(NOT_CONFIGURED);
   const userId = await currentUserId();

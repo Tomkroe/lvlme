@@ -19,8 +19,10 @@ Dauer: etwa 15 Minuten. Kosten: im kostenlosen Tarif von Supabase ist das enthal
 2. Den kompletten Inhalt von `supabase/migrations/0001_init.sql` aus dem GitHub-Repository hineinkopieren.
 3. Auf **Run** klicken. Am Ende muss „Success. No rows returned“ stehen.
 4. Kontrolle: Unter **Table Editor** gibt es jetzt `profiles`, `invites` und `friendships`, jeweils mit dem Hinweis „RLS enabled“.
+5. Danach genauso eine neue Query mit dem Inhalt von `supabase/migrations/0002_delete_account.sql` ausführen. Sie legt die Funktion `delete_account` an, mit der man in der App unter **Profil → Konto → Konto löschen** sein Konto selbst löschen kann (Pflicht für den App Store).
+6. Kontrolle: Unter **Database → Functions** steht jetzt `delete_account`.
 
-Das Skript darf auch mehrfach laufen, es macht dabei nichts kaputt.
+Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue Dateien in `supabase/migrations/` immer in der Reihenfolge ihrer Nummer ausführen.
 
 ## 3. Anmeldung mit Apple aktivieren
 1. Links **Authentication** → **Sign In / Providers** (je nach Version auch **Providers**) öffnen.
@@ -59,4 +61,5 @@ Auf der Apple-Seite musst du nichts von Hand einstellen. Wenn EAS die App zum er
 ## Gut zu wissen
 - Einladungscodes haben 6 Zeichen, gelten 7 Tage und können mehrfach benutzt werden, zum Beispiel in einer Gruppe.
 - Freunde sehen nur deinen Avatar, nie deine Schritte, deinen Schlaf oder deinen Puls.
+- Nutzer können ihr Konto in der App selbst löschen (Migration 0002). Profil, Einladungen, Freundschaften und die Anmeldung verschwinden dabei sofort.
 - Löschst du ein Konto unter **Authentication → Users**, verschwinden Profil, Einladungen und Freundschaften automatisch mit.
