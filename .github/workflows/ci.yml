@@ -1,0 +1,52 @@
+name: CI
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Abhängigkeiten installieren
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+      - name: Versionen an Expo SDK anpassen
+        run: npx expo install --fix
+      - name: Typen prüfen
+        run: npx tsc --noEmit
+      - name: Tests (Spielregeln)
+        run: npm test
+      - name: Expo Doctor
+        run: npx expo-doctor || true
+      - name: Prebuild-Probe (iOS-Konfiguration erzeugen)
+        run: npx expo prebuild --platform ios --no-install --clean
+      - name: Angepasste Versionen zurückschreiben
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "lvlme-ci"
+          git config user.email "ci@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --cached --quiet || (git commit -m "CI: Abhängigkeiten an Expo SDK angepasst" && git push)
+
+  build-ios:
+    # Manuell starten, sobald EXPO_TOKEN als Secret hinterlegt ist und der erste Build einmal am PC lief
+    if: github.event_name == 'workflow_dispatch'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: iOS-Build bei EAS starten
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli build --platform ios --profile preview --non-interactive --no-wait

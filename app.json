@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "LvlMe",
+    "slug": "lvlme",
+    "scheme": "lvlme",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.tomkroe.lvlme",
+      "supportsTablet": false,
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": { "package": "com.tomkroe.lvlme" },
+    "plugins": [
+      "expo-router",
+      "expo-apple-authentication"
+    ],
+    "experiments": { "typedRoutes": false }
+  }
+}
