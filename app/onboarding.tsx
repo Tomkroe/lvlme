@@ -1,6 +1,6 @@
 /** Onboarding: Idee erklären, Apple Health verbinden, Name und optional Konto. Zuständig: app-ui. */
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getHealthProvider } from '../src/health/index.ts';
@@ -9,7 +9,7 @@ import { useApp } from '../src/state/AppState.tsx';
 import { Avatar } from '../src/avatar/Avatar.tsx';
 import { AppleSignIn } from '../src/ui/AppleSignIn.tsx';
 import { Button, Card, P } from '../src/ui/components.tsx';
-import { C, F } from '../src/ui/theme.ts';
+import { C, F, PRIVACY_URL } from '../src/ui/theme.ts';
 
 export default function Onboarding() {
   const app = useApp();
@@ -64,6 +64,11 @@ export default function Onboarding() {
           <>
             <Text style={[st.h1, F.display]}>Apple Health verbinden</Text>
             <P>LvlMe liest Schlaf, Schritte, Workouts, aktive Kalorien, Ruhepuls und Herzfrequenzvariabilität, um deine Tagesform zu berechnen. Die Daten bleiben auf deinem iPhone, LvlMe schreibt nichts in Health.</P>
+            <P>
+              Mit „Apple Health verbinden“ willigst du ein, dass LvlMe diese Daten auf deinem iPhone auswertet. Details in der{' '}
+              <Text style={st.link} accessibilityRole="link" accessibilityHint="Öffnet die Datenschutzerklärung im Browser"
+                onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>Datenschutzerklärung</Text>.
+            </P>
             <Button title="Apple Health verbinden" onPress={connectHealth} busy={busy} />
             <Button title="Später" kind="ghost" onPress={() => setStep(2)} />
           </>
@@ -78,7 +83,7 @@ export default function Onboarding() {
             {social.isConfigured() && !app.me && (
               <Card>
                 <P style={{ color: C.ink, fontWeight: '700' }}>Mit Freunden spielen (optional)</P>
-                <P>Mit einem Konto kannst du Freunde einladen. Sie sehen nur deinen Avatar, nie deine Gesundheitsdaten.</P>
+                <P>Mit einem Konto kannst du Freunde einladen. Freunde sehen Level, Stufe, Kampfkraft und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
                 <AppleSignIn />
               </Card>
             )}
@@ -95,5 +100,6 @@ const st = StyleSheet.create({
   brand: { alignSelf: 'flex-start', backgroundColor: C.outline, borderColor: C.ki, borderWidth: 2, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 2 },
   word: { color: '#fff', fontSize: 24 },
   h1: { color: C.ink, fontSize: 30, lineHeight: 34 },
+  link: { color: C.sky, fontWeight: '700', textDecorationLine: 'underline' },
   input: { minHeight: 52, borderRadius: 14, borderWidth: 1.5, borderColor: C.line, color: C.ink, paddingHorizontal: 14, fontSize: 18, fontWeight: '700', backgroundColor: C.card2 },
 });

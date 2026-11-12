@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { scoreDay, bookDay, NEW_PROGRESS, stageFor, xpNeeded, recoveryScore, strainScore, baselineFrom } from './rules.ts';
-import type { DailyMetrics } from '../types.ts';
+import { scoreDay, bookDay, NEW_PROGRESS, stageFor, xpNeeded, recoveryScore, strainScore, baselineFrom, toPublic, power, BALANCE } from './rules.ts';
+import type { DailyMetrics, Progress } from '../types.ts';
 
 const day = (o: Partial<DailyMetrics> = {}): DailyMetrics => ({ date: '2026-11-12', steps: 9000, activeEnergyKcal: 450, workoutMinutes: 40, sleepHours: 7.6, hrvMs: 62, restingHr: 54, source: 'demo', ...o });
 const base = { hrvMs: 55, restingHr: 56, sleepHours: 7.2 };
@@ -48,4 +48,102 @@ test('erste Verwandlung nach etwa zwei guten Wochen', () => {
   }
   assert.ok(days >= 5 && days <= 30, `Tage bis Stufe 1: ${days}`);
   assert.ok(xpNeeded(1) > 0);
+});
+
+// --- Datenschutz: Tagesform teilen ---
+test('toPublic ohne shareMood: keine Stimmung, Kampfkraft unabhängig von der Tagesform', () => {
+  const p = bookDay(NEW_PROGRESS, day(), scoreDay(day(), base)).progress;
+  const good = scoreDay(day(), base);
+  const bad = scoreDay(day({ sleepHours: 4, hrvMs: 30, restingHr: 66 }), base);
+  const a = toPublic('A', p, good, { shareMood: false });
+  const b = toPublic('A', p, bad, { shareMood: false });
+  const c = toPublic('A', p, null, { shareMood: false });
+  assert.equal(a.mood, null);
+  assert.equal(a.power, b.power);
+  assert.equal(a.power, c.power);
+  assert.equal(a.power, power(p, BALANCE.neutralEnergy));
+});
+test('toPublic mit shareMood: Stimmung und Tagesenergie', () => {
+  const p = NEW_PROGRESS;
+  const d = scoreDay(day(), base);
+  const a = toPublic('A', p, d, { shareMood: true });
+  assert.equal(a.mood, 'charged');
+  assert.equal(a.power, power(p, d.energy));
+  assert.equal(toPublic('A', p, null, { shareMood: true }).mood, 'awake');
+});
+
+// --- Serie: Ruhetage ---
+const activeDay = (date: string) => day({ date });
+const restDay = (date: string) => day({ date, steps: 1500, activeEnergyKcal: 80, workoutMinutes: 0 });
+const book = (p: Progress, m: DailyMetrics) => bookDay(p, m, scoreDay(m, base)).progress;
+const date = (i: number) => new Date(Date.UTC(2026, 10, 1 + i)).toISOString().slice(0, 10);
+
+test('bis zu 2 Ruhetage pro 7 Tage halten die Serie, zählen aber nicht hoch', () => {
+  let p = NEW_PROGRESS;
+  for (let i = 0; i < 3; i++) p = book(p, activeDay(date(i)));
+  assert.equal(p.streak, 3);
+  p = book(p, restDay(date(3)));
+  assert.equal(p.streak, 3);
+  p = book(p, restDay(date(4)));
+  assert.equal(p.streak, 3);
+  p = book(p, activeDay(date(5)));
+  assert.equal(p.streak, 4);
+});
+test('dritter Ruhetag im 7-Tage-Fenster beendet die Serie', () => {
+  let p = NEW_PROGRESS;
+  p = book(p, activeDay(date(0)));
+  p = book(p, restDay(date(1)));
+  p = book(p, activeDay(date(2)));
+  p = book(p, restDay(date(3)));
+  p = book(p, activeDay(date(4)));
+  assert.equal(p.streak, 3);
+  p = book(p, restDay(date(5)));
+  assert.equal(p.streak, 0);
+});
+test('Ruhetage außerhalb des Fensters zählen nicht mehr', () => {
+  let p = NEW_PROGRESS;
+  p = book(p, activeDay(date(0)));
+  p = book(p, restDay(date(1)));
+  p = book(p, restDay(date(2)));
+  for (let i = 3; i < 9; i++) p = book(p, activeDay(date(i)));
+  // date(1) und date(2) liegen bei date(9) außerhalb des 7-Tage-Fensters
+  p = book(p, restDay(date(9)));
+  assert.equal(p.streak, 7);
+});
+test('Zweimal pro Woche Ruhetag: Serie wächst über Wochen weiter', () => {
+  let p = NEW_PROGRESS;
+  for (let i = 0; i < 28; i++) p = book(p, i % 7 === 2 || i % 7 === 5 ? restDay(date(i)) : activeDay(date(i)));
+  assert.equal(p.streak, 20);
+});
+test('alter Fortschritt ohne restDays funktioniert', () => {
+  const old = { level: 3, xp: 10, stats: { str: 10, end: 10, rec: 10, dis: 10 }, streak: 5, booked: [] } as Progress;
+  const a = book(old, restDay(date(0)));
+  assert.equal(a.streak, 5);
+  assert.deepEqual(a.restDays, [date(0)]);
+  const b = book(old, activeDay(date(0)));
+  assert.equal(b.streak, 6);
+});
+test('Ruhetag wird nie mit Levelverlust oder XP-Abzug bestraft', () => {
+  const p = book(NEW_PROGRESS, activeDay(date(0)));
+  const r = book(p, restDay(date(1)));
+  assert.ok(r.level >= p.level);
+  assert.ok(r.level > p.level || r.xp >= p.xp);
+});
+
+// --- Übertraining ---
+test('Übertraining: Belastungs-XP gedeckelt, mehr Belastung lohnt sich nicht', () => {
+  const tired = { sleepHours: 4, hrvMs: 30, restingHr: 66 };
+  const hard = scoreDay(day({ ...tired, activeEnergyKcal: 1400, workoutMinutes: 120 }), base);
+  const extreme = scoreDay(day({ ...tired, activeEnergyKcal: 3000, workoutMinutes: 240 }), base);
+  assert.equal(hard.overtraining, true);
+  assert.equal(extreme.overtraining, true);
+  assert.equal(extreme.xp - hard.xp, 0, 'gleiche Schritte, mehr Belastung → nicht mehr XP');
+  const stepsXp = Math.round(9000 / 220);
+  assert.equal(hard.xp, Math.round(BALANCE.overtrainingStrainCap * BALANCE.xpPerStrain + stepsXp));
+});
+test('Übertraining bringt nicht mehr XP als ein gleich harter Tag mit guter Erholung', () => {
+  const load = { activeEnergyKcal: 1400, workoutMinutes: 120 };
+  const ot = scoreDay(day({ ...load, sleepHours: 4, hrvMs: 30, restingHr: 66 }), base);
+  const ok = scoreDay(day(load), base);
+  assert.ok(ot.xp < ok.xp, `${ot.xp} < ${ok.xp}`);
 });

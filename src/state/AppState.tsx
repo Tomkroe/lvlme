@@ -2,7 +2,9 @@
  * App-Zustand. Zuständig: app-ui.
  * - Fortschritt (Progress) und Profil lokal in AsyncStorage
  * - Health-Daten der letzten 8 Tage über getHealthProvider(); Vortage werden automatisch verbucht
- * - Öffentlicher Avatarzustand geht an das Backend, wenn konfiguriert und angemeldet
+ * - Öffentlicher Avatarzustand geht an das Backend, wenn konfiguriert und angemeldet;
+ *   die Tagesform (mood) nur, wenn shareMood an ist (Standard: aus)
+ * - Der Kämpfername aus dem Onboarding wird nach Anmeldung und bei Änderung per setDisplayName gesetzt
  * Gesundheitsrohdaten werden weder gespeichert noch gesendet noch geloggt.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -23,6 +25,8 @@ export interface LevelEvent {
 interface Profile {
   name: string;
   onboarded: boolean;
+  /** Tagesform mit Freunden teilen. Standard: aus (lässt Rückschlüsse auf Schlaf und Erholung zu). */
+  shareMood: boolean;
 }
 
 export interface AppState {
@@ -31,6 +35,7 @@ export interface AppState {
   error: string | null;
   name: string;
   onboarded: boolean;
+  shareMood: boolean;
   source: DailyMetrics['source'] | null;
   progress: Progress;
   today: DayScore | null;
@@ -44,6 +49,7 @@ export interface AppState {
   refresh: () => Promise<void>;
   setName: (name: string) => Promise<void>;
   finishOnboarding: () => Promise<void>;
+  setShareMood: (on: boolean) => Promise<void>;
   setMe: (me: Me | null) => void;
   signOut: () => Promise<void>;
   resetLocal: () => Promise<void>;
@@ -51,7 +57,7 @@ export interface AppState {
 
 const K_PROGRESS = 'lvlme.progress.v1';
 const K_PROFILE = 'lvlme.profile.v1';
-const DEFAULT_PROFILE: Profile = { name: '', onboarded: false };
+const DEFAULT_PROFILE: Profile = { name: '', onboarded: false, shareMood: false };
 
 const Ctx = createContext<AppState | null>(null);
 
@@ -77,16 +83,34 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [today, setToday] = useState<DayScore | null>(null);
   const [stepsToday, setStepsToday] = useState(0);
   const [source, setSource] = useState<DailyMetrics['source'] | null>(null);
-  const [me, setMe] = useState<Me | null>(null);
+  const [me, setMeState] = useState<Me | null>(null);
   const [events, setEvents] = useState<LevelEvent[]>([]);
   const busy = useRef(false);
   const progressRef = useRef<Progress>(NEW_PROGRESS);
   const profileRef = useRef<Profile>(DEFAULT_PROFILE);
   const meRef = useRef<Me | null>(null);
+  const todayRef = useRef<DayScore | null>(null);
 
   useEffect(() => { progressRef.current = progress; }, [progress]);
   useEffect(() => { profileRef.current = profile; }, [profile]);
   useEffect(() => { meRef.current = me; }, [me]);
+
+  /** Öffentlichen Avatar veröffentlichen. Ohne Backend oder Anmeldung: nichts tun. */
+  const publish = useCallback(async () => {
+    if (!social.isConfigured() || !meRef.current) return;
+    const prof = profileRef.current;
+    const name = prof.name || meRef.current.displayName;
+    await social.publishAvatar(toPublic(name, progressRef.current, todayRef.current, { shareMood: prof.shareMood === true }));
+  }, []);
+
+  /** Kämpfernamen an den Server geben (der Apple-Name wird dort nicht übernommen). */
+  const syncDisplayName = useCallback(async () => {
+    const name = profileRef.current.name;
+    if (!social.isConfigured() || !meRef.current || !name) return;
+    await social.setDisplayName(name);
+    meRef.current = { ...meRef.current, displayName: name };
+    setMeState(meRef.current);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (busy.current) return;
@@ -118,6 +142,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       });
 
       const score = scoreDay(todayM, baselineFrom(past));
+      todayRef.current = score;
       setToday(score);
       setStepsToday(todayM.steps);
       setSource(todayM.source);
@@ -133,17 +158,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setEvents(ev => [...ev, { ...top, kind }]);
       }
 
-      if (social.isConfigured() && meRef.current) {
-        const name = profileRef.current.name || meRef.current.displayName;
-        social.publishAvatar(toPublic(name, p, score)).catch(() => { /* offline: beim nächsten Mal */ });
-      }
+      publish().catch(() => { /* offline: beim nächsten Mal */ });
     } catch {
       setError('Deine Gesundheitsdaten konnten gerade nicht gelesen werden. Zieh zum Aktualisieren nach unten oder prüfe in den Einstellungen unter Health › Datenzugriff, ob LvlMe lesen darf.');
     } finally {
       busy.current = false;
       setLoading(false);
     }
-  }, []);
+  }, [publish]);
 
   // Start: gespeicherte Daten laden, dann Health lesen
   useEffect(() => {
@@ -159,23 +181,47 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       if (social.isConfigured()) {
         try {
           const m = await social.getMe();
-          if (alive) { setMe(m); meRef.current = m; }
+          if (alive) {
+            setMeState(m); meRef.current = m;
+            // Server-Name weicht ab (z. B. noch der Apple-Name): Kämpfernamen nachziehen
+            if (m && prof.name && m.displayName !== prof.name) syncDisplayName().catch(() => {});
+          }
         } catch { /* offline */ }
       }
       if (alive) setReady(true);
       if (prof.onboarded) await refresh();
     })();
     return () => { alive = false; };
-  }, [refresh]);
+  }, [refresh, syncDisplayName]);
+
+  /** Nach Anmeldung: Kämpfernamen setzen und Avatar veröffentlichen. */
+  const setMe = useCallback((m: Me | null) => {
+    meRef.current = m;
+    setMeState(m);
+    if (!m) return;
+    (async () => {
+      try { await syncDisplayName(); } catch { /* offline: beim nächsten Start */ }
+      try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
+    })();
+  }, [syncDisplayName, publish]);
 
   const setName = useCallback(async (name: string) => {
     const next = { ...profileRef.current, name: name.trim().slice(0, 24) };
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);
-    if (social.isConfigured() && meRef.current && next.name) {
-      social.setDisplayName(next.name).catch(() => {});
+    if (next.name) {
+      try { await syncDisplayName(); } catch { /* offline: beim nächsten Start */ }
+      publish().catch(() => {});
     }
-  }, []);
+  }, [syncDisplayName, publish]);
+
+  const setShareMood = useCallback(async (on: boolean) => {
+    const next = { ...profileRef.current, shareMood: on };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    // Sofort neu veröffentlichen, damit die Tagesform beim Abschalten auch vom Server verschwindet
+    try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
+  }, [publish]);
 
   const finishOnboarding = useCallback(async () => {
     const next = { ...profileRef.current, onboarded: true };
@@ -186,14 +232,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     try { await social.signOut(); } catch { /* egal */ }
-    setMe(null); meRef.current = null;
+    setMeState(null); meRef.current = null;
   }, []);
 
   const resetLocal = useCallback(async () => {
     try { await AsyncStorage.multiRemove([K_PROGRESS, K_PROFILE]); } catch { /* egal */ }
     setProgress(NEW_PROGRESS); progressRef.current = NEW_PROGRESS;
     setProfile(DEFAULT_PROFILE); profileRef.current = DEFAULT_PROFILE;
-    setToday(null); setEvents([]);
+    setToday(null); todayRef.current = null; setEvents([]);
   }, []);
 
   const dismissEvent = useCallback(() => setEvents(ev => ev.slice(1)), []);
@@ -202,11 +248,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     ready, loading, error,
     name: profile.name || me?.displayName || '',
     onboarded: profile.onboarded,
+    shareMood: profile.shareMood === true,
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     power: powerOf(progress, today?.energy ?? 60),
-    me, events, dismissEvent, refresh, setName, finishOnboarding, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, signOut, resetLocal]);
+    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setMe, signOut, resetLocal,
+  }), [ready, loading, error, profile, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

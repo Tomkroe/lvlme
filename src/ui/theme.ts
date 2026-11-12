@@ -37,3 +37,6 @@ export const SKY: Record<Mood, [string, string, string]> = {
 };
 
 export const fmt = (n: number) => Math.round(n).toLocaleString('de-DE');
+
+/** Datenschutzerklärung. Vorläufig der ENTWURF im Repo; vor dem Store-Release durch die geprüfte Fassung ersetzen. */
+export const PRIVACY_URL = 'https://github.com/Tomkroe/lvlme/blob/main/docs/DATENSCHUTZ.md';

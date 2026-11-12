@@ -61,8 +61,13 @@ export interface Progress {
   /** XP innerhalb des aktuellen Levels */
   xp: number;
   stats: Stats;
-  /** Tage in Folge aktiv */
+  /** Tage in Folge aktiv (Ruhetage halten die Serie, zählen aber nicht hoch) */
   streak: number;
+  /**
+   * Ruhetage (YYYY-MM-DD), die zuletzt die Serie gehalten haben. Optional, damit alter
+   * gespeicherter Fortschritt ohne dieses Feld weiter funktioniert (fehlend = keine Ruhetage).
+   */
+  restDays?: string[];
   /** bereits verbuchte Tage (YYYY-MM-DD), damit kein Tag doppelt zählt */
   booked: string[];
 }
@@ -72,7 +77,9 @@ export interface PublicAvatar {
   displayName: string;
   level: number;
   stage: number;
-  mood: Mood;
+  /** null, wenn der Nutzer seine Tagesform nicht teilt */
+  mood: Mood | null;
+  /** Kampfkraft; ohne geteilte Tagesform mit fester Energie berechnet (keine Rückschlüsse) */
   power: number;
   streak: number;
   updatedAt: string;
