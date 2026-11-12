@@ -29,9 +29,19 @@ Dauer: etwa 15 Minuten. Kosten: im kostenlosen Tarif von Supabase ist das enthal
    - Neue Profile heißen immer „Kämpfer“. Der echte Name von Apple wird nicht mehr übernommen; die App setzt den selbst gewählten Kämpfernamen.
 8. Kontrolle: Unter **Authentication → Policies** steht bei `profiles` weiterhin „profiles: eigenes oder Freunde lesen“.
 
+8. Für die **Webversion** (Prototyp ohne App Store) zusätzlich `supabase/migrations/0004_web_health.sql` ausführen. Das legt die Tabellen für Tageswerte an, die die Webversion braucht, weil ein Browser nicht direkt auf Apple Health zugreifen darf. Werte kommen dort über einen Apple-Kurzbefehl (per Geheim-Token, siehe unten) oder per Hand in die App.
+
 Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue Dateien in `supabase/migrations/` immer in der Reihenfolge ihrer Nummer ausführen.
 
-## 3. Anmeldung mit Apple aktivieren
+## 3a. Anmeldung per E-Mail (für die Webversion)
+
+Die Webversion kann sich nicht mit Apple anmelden (das geht nur aus einer echten iPhone-App). Stattdessen: E-Mail mit **Magic Link**.
+
+1. **Authentication → Providers → Email** ist in neuen Supabase-Projekten standardmäßig an. „Confirm email“ kann an bleiben.
+2. **Authentication → URL Configuration**: Bei **Site URL** die Adresse der veröffentlichten Webversion eintragen (die Artifact-URL, die du von Claude bekommst). Das ist die Adresse, zu der der Link in der Anmelde-Mail führt.
+3. Fertig – mehr ist für die Webversion nicht nötig. Beim ersten Öffnen gibt man seine E-Mail-Adresse ein, bekommt einen Link per Mail, klickt ihn an und ist angemeldet.
+
+## 3. Anmeldung mit Apple aktivieren (für die spätere echte App)
 1. Links **Authentication** → **Sign In / Providers** (je nach Version auch **Providers**) öffnen.
 2. **Apple** aufklappen und einschalten.
 3. Bei **Client IDs** die Bundle-ID der App eintragen: `com.tomkroe.lvlme`

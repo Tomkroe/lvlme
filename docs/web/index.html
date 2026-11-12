@@ -1,0 +1,1018 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>LvlMe</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: sticky top bar (Name/Level) + scrollable content + fixed bottom tab bar.
+   Eine durchgehende dunkle Nacht-Anime-Welt, bewusst nur ein Theme (wie ein Spiel, kein Dokument). */
+:root{
+  color-scheme: dark;
+  --bg:#0a0d1a; --surface:#141a30; --surface2:#1b2342; --line:#2a3360;
+  --fg:#eef1fb; --fg-muted:#9aa3c6; --accent:#5ef0ff; --accent2:#b07bff;
+  --good:#7dffc8; --warn:#ffce6b; --bad:#ff6b81;
+  --f-display:'Baloo 2',ui-rounded,'Segoe UI',sans-serif;
+  --f-body:'Nunito',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg); font-family:var(--f-body);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  display:flex; flex-direction:column; min-height:100%;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3,.disp{font-family:var(--f-display); text-wrap:balance; margin:0}
+p{margin:0}
+.hidden{display:none!important}
+button{font-family:var(--f-body); cursor:pointer}
+input,select,textarea{font-family:var(--f-body)}
+a{color:var(--accent)}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:9;
+  margin:0 -16px; padding:12px max(16px,env(safe-area-inset-left,0px)) 12px max(16px,env(safe-area-inset-right,0px));
+  background:var(--surface); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.topbar .brand{font-family:var(--f-display); font-weight:700; font-size:20px; letter-spacing:.02em; color:var(--accent)}
+.topbar .who{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--fg-muted); min-width:0}
+.topbar .who b{color:var(--fg); font-weight:700}
+.lvlpill{background:var(--surface2); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:12px; font-weight:700; color:var(--accent); white-space:nowrap}
+.iconbtn{appearance:none; border:1px solid var(--line); background:var(--surface2); color:var(--fg-muted); border-radius:10px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none}
+.iconbtn:active{transform:scale(.94)}
+
+/* ---------- Content ---------- */
+main{flex:1; width:100%; max-width:560px; margin:0 auto; padding:16px 0 96px; display:flex; flex-direction:column; gap:16px; min-width:0}
+.view{display:flex; flex-direction:column; gap:16px; min-width:0}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.card h2{font-size:15px; letter-spacing:.03em; color:var(--fg-muted); text-transform:uppercase; font-weight:700}
+.muted{color:var(--fg-muted)}
+.small{font-size:13px}
+.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+.spread{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.stack{display:flex; flex-direction:column; gap:6px}
+
+/* ---------- Buttons / inputs ---------- */
+.btn{
+  appearance:none; border:none; border-radius:12px; padding:12px 18px; font-weight:700; font-size:15px;
+  background:var(--accent); color:#071018; transition:transform .1s, filter .15s;
+}
+.btn:active{transform:scale(.97)}
+.btn.secondary{background:var(--surface2); color:var(--fg); border:1px solid var(--line)}
+.btn.ghost{background:transparent; color:var(--accent); border:1px solid var(--line)}
+.btn.danger{background:var(--bad); color:#1a0608}
+.btn:disabled{opacity:.5; cursor:default}
+.btn.block{width:100%}
+.field{display:flex; flex-direction:column; gap:5px; min-width:0}
+.field label{font-size:13px; color:var(--fg-muted); font-weight:700}
+.field input,.field select{
+  background:var(--bg); border:1px solid var(--line); border-radius:10px; color:var(--fg);
+  padding:10px 12px; font-size:15px; min-width:0;
+}
+.field input:focus,.field select:focus,button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+code,.mono{font-family:ui-monospace,'SFMono-Regular',Consolas,monospace; font-size:13px; word-break:break-all}
+.codebox{background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px}
+
+/* ---------- Avatar / Home ---------- */
+.herowrap{display:flex; flex-direction:column; align-items:center; gap:10px; padding-top:4px}
+.heroav{width:200px; max-width:68%}
+.heroav svg{width:100%; height:auto; display:block; overflow:visible}
+.moodtag{font-family:var(--f-display); font-size:18px; color:var(--accent)}
+.moodtext{text-align:center; max-width:320px; color:var(--fg-muted)}
+.xpwrap{display:flex; flex-direction:column; gap:4px}
+.xpbar{height:10px; border-radius:999px; background:var(--surface2); overflow:hidden; border:1px solid var(--line)}
+.xpbar>i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.statgrid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; text-align:center}
+.statgrid .stat b{display:block; font-family:var(--f-display); font-size:20px; color:var(--fg)}
+.statgrid .stat span{font-size:11px; color:var(--fg-muted); text-transform:uppercase; letter-spacing:.04em}
+.bob{animation:bob 2.4s ease-in-out infinite; transform-box:fill-box; transform-origin:50% 100%}
+.bob.fast{animation-duration:1.15s}
+.bob.slow{animation-duration:4s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.aura{animation:flicker .9s ease-in-out infinite; transform-box:fill-box; transform-origin:50% 100%}
+@keyframes flicker{0%,100%{transform:scale(1,1);opacity:.88}22%{transform:scale(1.02,1.07);opacity:1}48%{transform:scale(.985,1.01);opacity:.84}74%{transform:scale(1.03,1.09);opacity:.97}}
+.zzz{animation:zz 2.6s ease-in-out infinite}
+@keyframes zz{0%{opacity:0;transform:translateY(6px)}40%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+@media (prefers-reduced-motion:reduce){.bob,.aura,.zzz{animation:none!important}}
+
+/* ---------- Friends list ---------- */
+.friend{display:flex; align-items:center; gap:12px; padding:10px; border-radius:14px; background:var(--surface2)}
+.friend .mini{width:46px; flex:none}
+.friend .mini svg{width:100%; display:block}
+.friend .info{flex:1; min-width:0}
+.friend .info b{display:block; font-size:15px}
+.friend .info span{font-size:12px; color:var(--fg-muted)}
+.badge{font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--surface); border:1px solid var(--line); color:var(--fg-muted)}
+
+/* ---------- Bottom nav ---------- */
+nav.tabs{
+  position:fixed; left:0; right:0; bottom:0; z-index:9;
+  padding:8px max(16px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px));
+  background:var(--surface); border-top:1px solid var(--line);
+  display:flex; justify-content:center; gap:4px;
+}
+nav.tabs .inner{display:flex; gap:4px; width:100%; max-width:560px}
+nav.tabs button{
+  flex:1; background:none; border:none; color:var(--fg-muted); font-size:11px; font-weight:700;
+  display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 2px; border-radius:10px;
+}
+nav.tabs button .ic{font-size:19px}
+nav.tabs button[aria-current="true"]{color:var(--accent); background:var(--surface2)}
+
+/* ---------- Toast ---------- */
+#toast{
+  position:fixed; left:50%; bottom:calc(76px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%) translateY(10px);
+  background:var(--surface2); border:1px solid var(--line); color:var(--fg); padding:10px 16px; border-radius:12px;
+  font-size:14px; z-index:20; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; max-width:min(90vw,440px); text-align:center;
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+/* ---------- Setup / Auth screens (full-screen, kein Tab-Bar nötig) ---------- */
+.fullscreen{min-height:100%; width:100%; max-width:460px; margin:0 auto; display:flex; flex-direction:column; justify-content:center; gap:18px; padding:24px 0 48px; flex:1}
+.logo{font-family:var(--f-display); font-size:40px; text-align:center; color:var(--accent); letter-spacing:.02em}
+.sub{text-align:center; color:var(--fg-muted)}
+</style>
+
+<div id="toast"></div>
+<button class="iconbtn" id="fs-corner" title="Vollbild" style="position:fixed; top:calc(env(safe-area-inset-top,0px) + 58px); right:max(10px,env(safe-area-inset-right,0px)); z-index:40; background:var(--surface); box-shadow:0 2px 10px rgba(0,0,0,.4)">⛶</button>
+
+<!-- ============ SETUP (Supabase-Zugangsdaten) ============ -->
+<div id="view-setup" class="fullscreen hidden">
+  <div class="logo">LvlMe</div>
+  <p class="sub">Prototyp – bevor es losgeht, einmalig mit deinem Supabase-Projekt verbinden.</p>
+  <div class="card">
+    <div class="field">
+      <label for="su-url">Supabase Project URL</label>
+      <input id="su-url" type="text" value="https://xvinbohxqofkwlrmrwao.supabase.co" placeholder="https://xxxx.supabase.co" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="su-key">Supabase anon public key</label>
+      <input id="su-key" type="text" value="sb_publishable_ETTbcormpZjj5FACAXfV1Q_013dVmAA" placeholder="eyJ…" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="btn block" id="su-save">Verbinden</button>
+    <p class="small muted">Beide Werte findest du in deinem Supabase-Projekt unter <b>Project Settings → API</b>. Sie bleiben nur in diesem Browser gespeichert.</p>
+  </div>
+</div>
+
+<!-- ============ AUTH (E-Mail-Login) ============ -->
+<div id="view-auth" class="fullscreen hidden">
+  <div class="logo">LvlMe</div>
+  <p class="sub">Dein Avatar lebt von deiner echten Erholung und Bewegung.</p>
+  <div class="card" id="auth-form">
+    <div class="field">
+      <label for="auth-email">E-Mail-Adresse</label>
+      <input id="auth-email" type="email" placeholder="du@example.com" autocapitalize="off" autocorrect="off">
+    </div>
+    <button class="btn block" id="auth-send">Anmeldelink senden</button>
+  </div>
+  <div class="card hidden" id="auth-sent">
+    <p>📬 Link geschickt an <b id="auth-sent-email"></b>. Mail öffnen und den Link antippen – dieses Fenster meldet dich danach automatisch an.</p>
+    <button class="btn secondary block" id="auth-again">Andere E-Mail-Adresse</button>
+  </div>
+</div>
+
+<!-- ============ ONBOARDING (Kämpfername) ============ -->
+<div id="view-onboarding" class="fullscreen hidden">
+  <div class="logo">LvlMe</div>
+  <p class="sub">Wie soll dein Kämpfer heißen? Das sehen nur deine Freunde, nie deine echten Daten.</p>
+  <div class="card">
+    <div class="field">
+      <label for="ob-name">Kämpfername</label>
+      <input id="ob-name" type="text" maxlength="30" placeholder="z. B. Tom">
+    </div>
+    <button class="btn block" id="ob-save">Los geht's</button>
+  </div>
+</div>
+
+<!-- ============ APP (Top bar + Tabs) ============ -->
+<div id="view-app" class="hidden" style="display:flex;flex-direction:column;min-height:100%">
+  <div class="topbar">
+    <div class="brand">LvlMe</div>
+    <div class="who"><b id="tb-name">–</b><span class="lvlpill" id="tb-level">Lv 1</span></div>
+  </div>
+
+  <main>
+    <!-- ---- Home ---- -->
+    <section class="view" id="tab-home">
+      <div class="card herowrap">
+        <div class="heroav" id="home-avatar"></div>
+        <div class="moodtag" id="home-moodlabel">–</div>
+        <p class="moodtext" id="home-moodtext">–</p>
+      </div>
+
+      <div class="card">
+        <div class="spread"><h2>Fortschritt</h2><span class="small mono" id="home-xp">0 / 100 XP</span></div>
+        <div class="xpwrap"><div class="xpbar"><i id="home-xpbar" style="width:0%"></i></div></div>
+        <div class="statgrid">
+          <div class="stat"><b id="st-str">10</b><span>Kraft</span></div>
+          <div class="stat"><b id="st-end">10</b><span>Ausdauer</span></div>
+          <div class="stat"><b id="st-rec">10</b><span>Regeneration</span></div>
+          <div class="stat"><b id="st-dis">10</b><span>Disziplin</span></div>
+        </div>
+        <div class="spread small muted"><span>🔥 Serie: <b id="st-streak" style="color:var(--fg)">0</b> Tage</span><span id="st-stage">Grundform</span></div>
+      </div>
+
+      <div class="card">
+        <div class="spread"><h2>Heutige Werte</h2><span class="badge" id="home-datasource">–</span></div>
+        <p class="small muted" id="home-today-summary">Noch keine Werte für heute.</p>
+        <button class="btn secondary block" id="home-entry-btn">Heute eintragen</button>
+      </div>
+    </section>
+
+    <!-- ---- Freunde ---- -->
+    <section class="view hidden" id="tab-friends">
+      <div class="card">
+        <h2>Freund einladen</h2>
+        <div class="row">
+          <button class="btn secondary" id="fr-create">Code erzeugen</button>
+          <div class="codebox hidden" id="fr-code-box" style="flex:1">
+            <code id="fr-code">——————</code>
+            <button class="btn ghost" id="fr-code-copy" style="padding:6px 10px">Kopieren</button>
+          </div>
+        </div>
+        <p class="small muted">Code gilt 7 Tage und nur einmal. Schick ihn per WhatsApp oder iMessage.</p>
+      </div>
+      <div class="card">
+        <h2>Code einlösen</h2>
+        <div class="row">
+          <input id="fr-join-code" placeholder="z. B. 7K3M9P" style="flex:1; background:var(--bg); border:1px solid var(--line); border-radius:10px; color:var(--fg); padding:10px 12px; font-size:15px; text-transform:uppercase">
+          <button class="btn secondary" id="fr-join">Einlösen</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Freunde</h2>
+        <div class="stack" id="fr-list"><p class="small muted">Noch keine Freunde. Lad jemanden ein!</p></div>
+      </div>
+    </section>
+
+    <!-- ---- Health / Kurzbefehl ---- -->
+    <section class="view hidden" id="tab-health">
+      <div class="card">
+        <h2>Apple Health automatisch anbinden</h2>
+        <p class="small muted">Diese Webversion darf nicht direkt auf Apple Health zugreifen – das erlaubt Apple keinem Browser. Ein Kurzbefehl auf deinem iPhone schickt deine Werte stattdessen täglich automatisch hierher.</p>
+        <button class="btn secondary block" id="hk-create-token">Gerätecode erzeugen</button>
+        <div class="stack hidden" id="hk-token-box">
+          <div class="field"><label>Dein Gerätecode (nur für diesen Kurzbefehl, geheim halten)</label>
+            <div class="codebox"><code id="hk-token" class="mono">–</code><button class="btn ghost" id="hk-token-copy" style="padding:6px 10px">Kopieren</button></div>
+          </div>
+          <div class="field"><label>Adresse, die der Kurzbefehl aufruft</label>
+            <div class="codebox"><code id="hk-url" class="mono">–</code><button class="btn ghost" id="hk-url-copy" style="padding:6px 10px">Kopieren</button></div>
+          </div>
+          <button class="btn ghost block" id="hk-howto">Wie baue ich den Kurzbefehl?</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Werte von Hand eintragen</h2>
+        <p class="small muted">Geht immer, auch ohne Kurzbefehl – als Rückfalloption oder zum Nachtragen.</p>
+        <button class="btn secondary block" id="hk-manual-btn">Heute eintragen</button>
+      </div>
+      <div class="card">
+        <h2>Verlauf</h2>
+        <div class="stack" id="hk-history"><p class="small muted">Noch keine Werte.</p></div>
+      </div>
+    </section>
+
+    <!-- ---- Einstellungen ---- -->
+    <section class="view hidden" id="tab-settings">
+      <div class="card">
+        <h2>Konto</h2>
+        <p class="small muted">Angemeldet als <b id="set-email" style="color:var(--fg)">–</b></p>
+        <button class="btn secondary block" id="set-logout">Abmelden</button>
+      </div>
+      <div class="card">
+        <h2>Tagesform teilen</h2>
+        <div class="spread">
+          <p class="small muted" style="max-width:70%">Freunde sehen deine aktuelle Stimmung und tagesaktuelle Kampfkraft. Aus (Standard): Freunde sehen nur Level, Stufe und Serie.</p>
+          <label style="display:flex;align-items:center;gap:8px;white-space:nowrap">
+            <input type="checkbox" id="set-sharemood" style="width:20px;height:20px">
+          </label>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Gefahrenzone</h2>
+        <button class="btn danger block" id="set-delete">Konto endgültig löschen</button>
+      </div>
+      <div class="card">
+        <h2>Verbindung</h2>
+        <p class="small muted">Projekt: <code id="set-project" class="mono">–</code></p>
+        <button class="btn ghost block" id="set-reset-project">Supabase-Projekt wechseln</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs"><div class="inner">
+    <button data-tab="home" aria-current="true"><span class="ic">🏠</span>Home</button>
+    <button data-tab="friends"><span class="ic">🤝</span>Freunde</button>
+    <button data-tab="health"><span class="ic">❤️</span>Health</button>
+    <button data-tab="settings"><span class="ic">⚙️</span>Mehr</button>
+  </div></nav>
+</div>
+
+<!-- ============ Modal: Tageswerte eintragen ============ -->
+<div id="modal-entry" class="hidden" style="position:fixed;inset:0;z-index:30;background:rgba(5,7,14,.72);display:flex;align-items:flex-end;justify-content:center">
+  <div class="card" style="width:100%;max-width:520px;border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))">
+    <div class="spread"><h2 style="font-size:17px;color:var(--fg)" id="entry-title">Heute eintragen</h2><button class="btn ghost" id="entry-close" style="padding:6px 10px">✕</button></div>
+    <div class="grid2">
+      <div class="field"><label for="e-steps">Schritte</label><input id="e-steps" type="number" min="0" inputmode="numeric" placeholder="6000"></div>
+      <div class="field"><label for="e-active">Aktive kcal</label><input id="e-active" type="number" min="0" inputmode="numeric" placeholder="300"></div>
+      <div class="field"><label for="e-workout">Workout (Min.)</label><input id="e-workout" type="number" min="0" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label for="e-sleep">Schlaf (Std.)</label><input id="e-sleep" type="number" min="0" max="24" step="0.1" inputmode="decimal" placeholder="7.5"></div>
+      <div class="field"><label for="e-hrv">HRV in ms (optional)</label><input id="e-hrv" type="number" min="0" inputmode="numeric" placeholder="–"></div>
+      <div class="field"><label for="e-rhr">Ruhepuls (optional)</label><input id="e-rhr" type="number" min="0" inputmode="numeric" placeholder="–"></div>
+    </div>
+    <button class="btn block" id="entry-save">Speichern</button>
+  </div>
+</div>
+
+<!-- ============ Modal: Bestätigung ============ -->
+<div id="modal-confirm" class="hidden" style="position:fixed;inset:0;z-index:40;background:rgba(5,7,14,.78);display:flex;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="width:100%;max-width:400px">
+    <p id="confirm-text" style="color:var(--fg)">Bist du sicher?</p>
+    <div class="row" style="justify-content:flex-end">
+      <button class="btn secondary" id="confirm-no">Abbrechen</button>
+      <button class="btn danger" id="confirm-yes">Ja, fortfahren</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: Kurzbefehl-Anleitung ============ -->
+<div id="modal-howto" class="hidden" style="position:fixed;inset:0;z-index:30;background:rgba(5,7,14,.72);display:flex;align-items:flex-end;justify-content:center">
+  <div class="card" style="width:100%;max-width:520px;border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))">
+    <div class="spread"><h2 style="font-size:17px;color:var(--fg)">Kurzbefehl einrichten</h2><button class="btn ghost" id="howto-close" style="padding:6px 10px">✕</button></div>
+    <ol class="small" style="padding-left:20px; display:flex; flex-direction:column; gap:10px; color:var(--fg)">
+      <li>App <b>Kurzbefehle</b> öffnen → <b>+</b> für einen neuen Kurzbefehl.</li>
+      <li>Aktion <b>"Datum"</b> hinzufügen, Format <b>Benutzerdefiniert</b> → <code class="mono">yyyy-MM-dd</code> (das wird das Feld "Datum").</li>
+      <li>Je eine Aktion <b>"Health-Beispiel abrufen"</b> (bzw. "Gesundheitsstichprobe") für <b>Schritte</b>, <b>Aktive Energie</b>, <b>Trainingszeit</b> und <b>Schlafanalyse</b> hinzufügen, Zeitraum jeweils <b>heute</b>.</li>
+      <li>Aktion <b>"Text"</b> hinzufügen und folgendes JSON eintragen, die Platzhalter durch die Variablen aus Schritt 2–3 ersetzen (lange auf ein Feld tippen → Variable einfügen):
+        <div class="codebox" style="margin-top:6px"><code class="mono" style="white-space:pre-wrap">{"p_token":"DEIN_GERÄTECODE","p_date":"DATUM","p_steps":SCHRITTE,"p_active_energy_kcal":KCAL,"p_workout_minutes":MINUTEN,"p_sleep_hours":SCHLAF}</code></div>
+      </li>
+      <li>Aktion <b>"Inhalt von URL abrufen"</b> hinzufügen:
+        <div class="stack" style="margin-top:6px">
+          <span>Methode: <b>POST</b></span>
+          <span>URL: siehe Feld "Adresse" oben</span>
+          <span>Kopfzeilen: <code class="mono">Content-Type: application/json</code> und <code class="mono">apikey: DEIN_ANON_KEY</code></span>
+          <span>Text/Body: Text aus Schritt 4, Anfrage-Textkörper <b>JSON</b></span>
+        </div>
+      </li>
+      <li>Im Kurzbefehl oben auf <b>ⓘ</b> → <b>Automatisch ausführen</b> → <b>Neue Automation</b> → <b>Uhrzeit</b>, z. B. 7:00 Uhr täglich, "Ohne Nachfrage ausführen" aktivieren.</li>
+    </ol>
+    <p class="small muted" style="margin-top:4px">Den anon key findest du oben unter "Verbindung" in den Einstellungen.</p>
+  </div>
+</div>
+
+<!-- Supabase JS Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   1) Avatar: Vertrag + Zeichnung (identisch zur Demo)
+   ========================================================================= */
+const STAGES=[
+  {n:'Grundform',   lvl:1,   aura:null,      gi:'#41507e', giShade:'#2d385c', belt:'#151a2c', hair:['#1f2238','#4a5590'], eyes:['#4a2c1a','#b07a48']},
+  {n:'Erwacht',     lvl:10,  aura:'#46d4ff', gi:'#2f73c9', giShade:'#1f4f92', belt:'#14213b', hair:['#1f2238','#4a5590'], eyes:['#4a2c1a','#b07a48']},
+  {n:'Entfesselt',  lvl:25,  aura:'#5ef0ff', gi:'#1c9aa3', giShade:'#11686f', belt:'#0d3135', hair:['#1f2238','#4a5590'], eyes:['#0f5f7a','#7fe0ff'], bolts:true},
+  {n:'Aufgestiegen',lvl:45,  aura:'#b07bff', gi:'#6a47c4', giShade:'#47308a', belt:'#22174a', hair:['#2f1f58','#7b5bd0'], eyes:['#0f6f96','#86e8ff'], bolts:true},
+  {n:'Meisterform', lvl:70,  aura:'#ff6fae', gi:'#c23a5e', giShade:'#8a2340', belt:'#3a0f1f', hair:['#3a1730','#a04a86'], eyes:['#0f6f96','#86e8ff'], bolts:true, sparks:true},
+  {n:'Legende',     lvl:100, aura:'#7dffc8', gi:'#eef0f8', giShade:'#c3c7da', belt:'#262b46', hair:['#c9d2ee','#ffffff'], eyes:['#b34f00','#ffb347'], bolts:true, sparks:true}
+];
+const MOODS={
+  charged:{l:'Voll aufgeladen',t:'Super geschlafen, gute Erholung. Heute geht was!'},
+  awake:{l:'Wach',t:'Solide Form. Ein bisschen Bewegung würde mir guttun.'},
+  tired:{l:'Müde',t:'Hab schlecht geschlafen … heute lieber locker machen.'},
+  proud:{l:'Erschöpft, aber stolz',t:'Puh, das war hart. Aber ich spüre, wie ich stärker werde!'},
+  lazy:{l:'Träge',t:'Mir ist langweilig. Gehen wir mal raus?'}
+};
+const OL='#1c1528', SK='#ffdcbc', SK2='#f0b48f', SK3='#d9906e';
+const PANT='#272b45', PANT2='#1a1d31', BOOT='#3a2620', BOOT2='#25170f', WRAP='#f4f1e8', WRAP2='#cfc9b8', BAND='#e0344f', BAND2='#a81f37';
+const lerp=(a,b,t)=>a+(b-a)*t;
+function limb(d,col,w,shade){
+  let s=`<path d="${d}" fill="none" stroke="${OL}" stroke-width="${w+5}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  s+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(shade) s+=`<path d="${d}" fill="none" stroke="${shade}" stroke-width="${w*.38}" stroke-linecap="round" stroke-linejoin="round" transform="translate(${w*.22} ${w*.18})" opacity=".9"/>`;
+  return s;
+}
+function arm(sh,el,wr,fist,st){
+  const sleeveEnd=[lerp(sh[0],el[0],.82),lerp(sh[1],el[1],.82)];
+  const dx=wr[0]-el[0],dy=wr[1]-el[1],len=Math.hypot(dx,dy)||1;
+  const wrapStart=[wr[0]-dx/len*11,wr[1]-dy/len*11];
+  let s='';
+  s+=limb(`M${sh[0]} ${sh[1]} L${el[0]} ${el[1]} L${wr[0]} ${wr[1]}`,SK,13,SK2);
+  s+=limb(`M${sh[0]} ${sh[1]} L${sleeveEnd[0]} ${sleeveEnd[1]}`,st.gi,21,st.giShade);
+  s+=limb(`M${wrapStart[0]} ${wrapStart[1]} L${wr[0]} ${wr[1]}`,WRAP,15,WRAP2);
+  s+=`<circle cx="${fist[0]}" cy="${fist[1]}" r="10.5" fill="${SK}" stroke="${OL}" stroke-width="2.6"/>`;
+  s+=`<path d="M${fist[0]+1} ${fist[1]+2} a8 8 0 0 0 7 -6 a10.5 10.5 0 0 1 -6 13 z" fill="${SK2}"/>`;
+  s+=`<path d="M${fist[0]-5} ${fist[1]-3} q5 -3 10 0 M${fist[0]-5} ${fist[1]+1.5} q4 -2 7 0" stroke="${OL}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+  return s;
+}
+function eye(cx,cy,kind,side,id,st){
+  const outer=cx+side*10, inner=cx-side*10;
+  if(kind==='happy'){
+    return `<path d="M${cx-9} ${cy+3} Q${cx} ${cy-9} ${cx+9} ${cy+3}" fill="none" stroke="${OL}" stroke-width="3.8" stroke-linecap="round"/>`+
+           `<path d="M${outer} ${cy+1} l${side*4} -3" stroke="${OL}" stroke-width="2.6" stroke-linecap="round"/>`;
+  }
+  const look=kind==='side'?side*3.2:0;
+  let s=`<path d="M${cx-10} ${cy-3} Q${cx} ${cy-14} ${cx+10} ${cy-3} Q${cx+9.5} ${cy+11} ${cx} ${cy+12.5} Q${cx-9.5} ${cy+11} ${cx-10} ${cy-3}Z" fill="#fff"/>`;
+  s+=`<path d="M${cx-10} ${cy-3} Q${cx} ${cy-14} ${cx+10} ${cy-3} Q${cx} ${cy-7} ${cx-10} ${cy-1}Z" fill="#c9cde0"/>`;
+  s+=`<ellipse cx="${cx+look}" cy="${cy+2.6}" rx="7.2" ry="9.2" fill="url(#ir${id})"/>`;
+  s+=`<ellipse cx="${cx+look}" cy="${cy+2.6}" rx="7.2" ry="9.2" fill="none" stroke="${st.eyes[0]}" stroke-width="1.3"/>`;
+  s+=`<ellipse cx="${cx+look}" cy="${cy+3.4}" rx="3.3" ry="4.8" fill="${OL}"/>`;
+  s+=`<path d="M${cx+look-5} ${cy+7} Q${cx+look} ${cy+11} ${cx+look+5} ${cy+7}" stroke="${st.eyes[1]}" stroke-width="1.6" fill="none" opacity=".9"/>`;
+  s+=`<ellipse cx="${cx+look+3}" cy="${cy-1.4}" rx="3.1" ry="2.6" fill="#fff"/>`;
+  s+=`<circle cx="${cx+look-3.2}" cy="${cy+6.6}" r="1.4" fill="#fff"/>`;
+  if(kind==='fierce'){
+    const yo=cy-9, yi=cy-3;
+    s+=`<path d="M${outer+side*2} ${cy-18} L${inner-side*2} ${cy-18} L${inner-side*2} ${yi} L${outer+side*2} ${yo}Z" fill="${SK}"/>`;
+    s+=`<path d="M${outer+side*1} ${yo} L${inner} ${yi}" stroke="${OL}" stroke-width="3.8" stroke-linecap="round"/>`;
+    s+=`<path d="M${outer+side*1} ${yo} l${side*4} -3" stroke="${OL}" stroke-width="2.6" stroke-linecap="round"/>`;
+  }else if(kind==='half'||kind==='side'){
+    s+=`<path d="M${cx-12} ${cy-18} L${cx+12} ${cy-18} L${cx+12} ${cy+1} Q${cx} ${cy-3} ${cx-12} ${cy+1}Z" fill="${SK}"/>`;
+    s+=`<path d="M${cx-10.5} ${cy+0.8} Q${cx} ${cy-3.4} ${cx+10.5} ${cy+0.8}" fill="none" stroke="${OL}" stroke-width="3.6" stroke-linecap="round"/>`;
+    s+=`<path d="M${cx-9} ${cy-3.5} Q${cx} ${cy-7} ${cx+9} ${cy-3.5}" fill="none" stroke="${SK3}" stroke-width="1.4" stroke-linecap="round"/>`;
+  }else{
+    s+=`<path d="M${inner} ${cy-2} Q${cx} ${cy-14.5} ${outer} ${cy-4}" fill="none" stroke="${OL}" stroke-width="3.8" stroke-linecap="round"/>`;
+    s+=`<path d="M${outer} ${cy-4} l${side*4.5} -3.5" stroke="${OL}" stroke-width="2.6" stroke-linecap="round"/>`;
+  }
+  s+=`<path d="M${cx-5} ${cy+12.2} Q${cx} ${cy+13.8} ${cx+5} ${cy+12.2}" fill="none" stroke="${OL}" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>`;
+  return s;
+}
+function avatarSvg(stageIndex,moodKey,uniqueId,opts){
+  opts=opts||{};
+  const st=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
+  const m=MOODS[moodKey]?moodKey:'awake';
+  const id=String(uniqueId==null?'a':uniqueId).replace(/[^A-Za-z0-9_-]/g,'_');
+  const label=`Avatar, ${MOODS[m].l}, Stufe ${st.n}`;
+  let s=`<svg class="av" viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}">`;
+  s+=`<defs>
+    <radialGradient id="ir${id}" cx="50%" cy="78%" r="75%"><stop offset="0" stop-color="${st.eyes[1]}"/><stop offset=".55" stop-color="${st.eyes[0]}"/><stop offset="1" stop-color="${OL}"/></radialGradient>
+    <linearGradient id="hg${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${st.hair[1]}"/><stop offset=".45" stop-color="${st.hair[0]}"/><stop offset="1" stop-color="${st.hair[0]}"/></linearGradient>
+    <radialGradient id="ag${id}" cx="50%" cy="68%" r="62%"><stop offset="0" stop-color="#ffffff" stop-opacity=".9"/><stop offset=".35" stop-color="${st.aura||'#000'}" stop-opacity=".8"/><stop offset="1" stop-color="${st.aura||'#000'}" stop-opacity=".05"/></radialGradient>
+    <linearGradient id="gg${id}" x1="0" y1="0" x2="1" y2="0"><stop offset=".55" stop-color="${st.gi}"/><stop offset=".56" stop-color="${st.giShade}"/></linearGradient>
+  </defs>`;
+  if(opts.flip) s+=`<g transform="translate(240 0) scale(-1 1)">`;
+  s+=`<ellipse cx="120" cy="270" rx="58" ry="8" fill="#000" opacity=".32"/>`;
+  if(st.aura && m!=='lazy'){
+    const dim=m==='tired'?.4:1;
+    const flame='M120 2 C108 28 96 40 92 68 C84 54 70 62 68 90 C56 82 46 102 52 126 C40 138 36 168 44 196 C50 228 74 264 120 268 C166 264 190 228 196 196 C204 168 200 138 188 126 C194 102 184 82 172 90 C170 62 156 54 148 68 C144 40 132 28 120 2Z';
+    s+=`<g class="aura" opacity="${dim}">`;
+    s+=`<path d="${flame}" fill="url(#ag${id})" stroke="${st.aura}" stroke-width="2.4" stroke-opacity=".9"/>`;
+    s+=`<path d="${flame}" fill="${st.aura}" opacity=".35" transform="translate(120 210) scale(.8 .82) translate(-120 -210)"/>`;
+    s+=`<path d="${flame}" fill="#ffffff" opacity=".28" transform="translate(120 220) scale(.6 .62) translate(-120 -220)"/>`;
+    s+=`<path d="M60 150 Q50 120 62 96 Q62 124 74 140Z M180 150 Q190 120 178 96 Q178 124 166 140Z M96 60 Q98 36 112 22 Q104 44 108 62Z M144 60 Q142 36 128 22 Q136 44 132 62Z" fill="${st.aura}" opacity=".55"/>`;
+    s+=`</g>`;
+    if(st.bolts && m!=='tired'){
+      const b='M34 104 l14 16 -10 5 16 22 M206 120 l-14 13 10 7 -16 20 M58 212 l10 -10 4 9 12 -12';
+      s+=`<path d="${b}" fill="none" stroke="${st.aura}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>`;
+      s+=`<path d="${b}" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    if(st.sparks){
+      const star=(x,y,r)=>`<path d="M${x} ${y-r} L${x+r*.28} ${y-r*.28} L${x+r} ${y} L${x+r*.28} ${y+r*.28} L${x} ${y+r} L${x-r*.28} ${y+r*.28} L${x-r} ${y} L${x-r*.28} ${y-r*.28}Z"/>`;
+      s+=`<g fill="#fff">${star(46,170,7)}${star(194,64,6)}${star(184,214,5)}${star(56,52,5)}<circle cx="200" cy="168" r="2"/><circle cx="38" cy="230" r="2"/></g>`;
+    }
+  }
+  const bob=m==='charged'?'bob fast':(m==='tired'||m==='lazy')?'bob slow':'bob';
+  const headT=m==='tired'?'rotate(6 120 132) translate(2 4)':m==='lazy'?'rotate(-7 120 132) translate(-2 5)':m==='proud'?'rotate(-3 120 132)':'';
+  const slump=(m==='tired'||m==='lazy')?4:0;
+  s+=`<g class="${bob}">`;
+  s+=`<g transform="${headT}">`;
+  s+=`<path d="M156 74 Q182 70 204 84 Q186 84 168 80Z" fill="${BAND}" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  s+=`<path d="M156 78 Q178 88 190 112 Q174 98 160 86Z" fill="${BAND2}" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  const backHair='M74 108 L48 100 L64 86 L36 72 L64 64 L44 38 L76 44 L70 14 L98 34 L110 4 L126 30 L150 8 L150 36 L180 26 L168 54 L196 58 L174 76 L192 92 L168 98 L166 110 Z';
+  s+=`<path d="${backHair}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
+  s+=`<path d="M150 36 L180 26 L168 54 L196 58 L174 76 L192 92 L168 98 L166 110 L150 104 Q160 70 150 36Z" fill="#000" opacity=".22"/>`;
+  s+=`<path d="M76 46 L90 58 M98 36 L104 52 M126 32 L120 48 M64 66 L80 70 M46 74 L64 80" stroke="${st.hair[1]}" stroke-width="3" stroke-linecap="round" opacity=".85"/>`;
+  s+=`</g>`;
+  s+=`<path d="M86 204 Q120 216 154 204 L166 244 L156 258 L128 258 L124 230 Q120 224 116 230 L112 258 L84 258 L74 244Z" fill="${PANT}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
+  s+=`<path d="M124 230 L128 258 L156 258 L166 244 L156 210 Q146 230 124 230Z" fill="${PANT2}" opacity=".8"/>`;
+  s+=`<path d="M96 216 L100 248 M140 216 L136 248 M82 232 L92 240 M158 232 L148 240 M108 222 L110 236" stroke="#3d4266" stroke-width="2" stroke-linecap="round" fill="none"/>`;
+  s+=`<path d="M86 248 L112 248 L112 258 L86 258Z M128 248 L154 248 L154 258 L128 258Z" fill="${WRAP}" stroke="${OL}" stroke-width="2.2"/>`;
+  s+=`<path d="M86 252 L112 254 M128 254 L154 252" stroke="${WRAP2}" stroke-width="1.6"/>`;
+  s+=`<path d="M84 256 L114 256 L116 272 L74 272 Q74 262 84 256Z M126 256 L156 256 Q166 262 166 272 L124 272Z" fill="${BOOT}" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  s+=`<path d="M74 272 L116 272 L116 267 L76 267Z M124 272 L166 272 L166 267 L124 267Z" fill="${BOOT2}"/>`;
+  s+=`<path d="M82 262 Q90 259 98 262 M134 262 Q142 259 150 262" stroke="#6b4a3c" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  s+=`<path d="M110 128 L110 150 L130 150 L130 128Z" fill="${SK2}" stroke="${OL}" stroke-width="2.4"/>`;
+  s+=`<path d="M110 136 Q120 142 130 136 L130 144 Q120 148 110 144Z" fill="${SK3}" opacity=".6"/>`;
+  const torso=`M82 ${150+slump} Q120 ${136+slump} 158 ${150+slump} L168 172 L156 208 Q120 216 84 208 L72 172Z`;
+  s+=`<path d="${torso}" fill="${st.gi}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
+  s+=`<path d="M138 ${142+slump} Q156 ${146+slump} 168 172 L156 208 Q144 211 132 212 Q144 180 138 ${142+slump}Z" fill="${st.giShade}"/>`;
+  s+=`<path d="M86 160 Q92 152 104 ${146+slump}" stroke="#fff" stroke-opacity=".3" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+  s+=`<path d="M106 ${142+slump} L120 176 L134 ${142+slump}Z" fill="#171a2c" stroke="${OL}" stroke-width="2"/>`;
+  s+=`<path d="M114 160 Q120 166 126 160" stroke="#2c3150" stroke-width="1.6" fill="none"/>`;
+  s+=`<path d="M104 ${141+slump} L122 186 L128 182 L110 ${139+slump}Z" fill="${st.giShade}" stroke="${OL}" stroke-width="2" stroke-linejoin="round"/>`;
+  s+=`<path d="M136 ${141+slump} L121 180 L116 176 L130 ${139+slump}Z" fill="${st.gi}" stroke="${OL}" stroke-width="2" stroke-linejoin="round"/>`;
+  s+=`<g transform="translate(96 172)"><circle r="9" fill="#f6f4ee" stroke="${OL}" stroke-width="2"/><path d="M0 -6 L5 0 L0 6 L-5 0Z" fill="${st.aura||BAND}" stroke="${OL}" stroke-width="1.2"/><path d="M0 -3 Q2 0 0 3 Q-2 0 0 -3Z" fill="#fff"/></g>`;
+  s+=`<path d="M90 194 Q100 190 108 196 M146 188 Q140 196 146 202" stroke="${OL}" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".5"/>`;
+  s+=`<path d="M82 196 Q120 208 158 196 L158 210 Q120 222 82 210Z" fill="${st.belt}" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  s+=`<path d="M84 200 Q120 211 156 200" stroke="#fff" stroke-opacity=".18" stroke-width="2" fill="none"/>`;
+  s+=`<path d="M128 210 L120 240 L130 238 L134 214Z M138 210 L148 236 L156 230 L142 208Z" fill="${st.belt}" stroke="${OL}" stroke-width="2.3" stroke-linejoin="round"/>`;
+  s+=`<rect x="126" y="200" width="16" height="13" rx="4" fill="${st.belt}" stroke="${OL}" stroke-width="2.3"/>`;
+  if(m==='charged'){ s+=arm([84,156],[60,182],[84,176],[93,172],st); s+=arm([156,156],[182,168],[166,144],[160,135],st); }
+  else if(m==='proud'){ s+=arm([84,156],[54,160],[58,128],[60,119],st); s+=arm([156,156],[186,160],[182,128],[180,119],st); }
+  else if(m==='awake'){ s+=arm([82,158],[70,186],[74,208],[75,216],st); s+=arm([158,158],[170,186],[166,208],[165,216],st); }
+  else { const d=6, inn=m==='tired'?4:0; s+=arm([82,160],[72,190],[76+inn,212+d],[77+inn,220+d],st); s+=arm([158,160],[168,190],[164-inn,212+d],[163-inn,220+d],st); }
+  s+=`<g transform="${headT}">`;
+  s+=`<ellipse cx="78" cy="102" rx="8" ry="10" fill="${SK}" stroke="${OL}" stroke-width="2.6"/><path d="M79 98 q-4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`;
+  s+=`<ellipse cx="162" cy="102" rx="8" ry="10" fill="${SK2}" stroke="${OL}" stroke-width="2.6"/><path d="M161 98 q4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`;
+  s+=`<path d="M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z" fill="${SK}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
+  s+=`<path d="M152 92 C153 110 146 124 134 132 C128 136 124 137 121 138 C134 126 146 112 147 94Z" fill="${SK2}"/>`;
+  s+=`<path d="M82 86 Q120 74 158 86 L158 92 Q120 82 82 92Z" fill="${SK2}" opacity=".7"/>`;
+  const BR={
+    charged:['M88 88 L110 95','M152 88 L130 95'], awake:['M90 90 Q99 85 110 89','M150 90 Q141 85 130 89'],
+    tired:['M90 92 Q100 89 110 90','M150 92 Q140 89 130 90'], proud:['M90 86 Q100 80 110 85','M150 86 Q140 80 130 85'],
+    lazy:['M90 91 L110 91','M130 91 L150 90']
+  }[m];
+  const ek={charged:'fierce',awake:'open',tired:'half',proud:'happy',lazy:'side'}[m];
+  s+=eye(102,106,ek,-1,id,st)+eye(138,106,ek,1,id,st);
+  if(m==='tired') s+=`<path d="M92 120 Q101 124 111 120 M129 120 Q139 124 148 120" stroke="#a7737f" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/>`;
+  s+=`<path d="M121 113 L118.5 119.5 L122.5 119.5" stroke="${SK3}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(m==='charged'){
+    s+=`<path d="M108 125 Q120 130 132 122 Q128 134 118 134 Q110 133 108 125Z" fill="#5a1f2c" stroke="${OL}" stroke-width="2" stroke-linejoin="round"/>`;
+    s+=`<path d="M109.5 125.6 Q120 129.6 130.6 123.2 L130 126.6 Q120 132 110.6 128.4Z" fill="#fff"/>`;
+    s+=`<path d="M132 122 l3 -2" stroke="${OL}" stroke-width="2" stroke-linecap="round"/>`;
+  }else if(m==='awake'){ s+=`<path d="M111 126 Q120 131 129 125" stroke="${OL}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`; }
+  else if(m==='tired'){ s+=`<ellipse cx="120" cy="128" rx="5.5" ry="7" fill="#5a1f2c" stroke="${OL}" stroke-width="2.2"/><ellipse cx="120" cy="131.5" rx="3.2" ry="2.2" fill="#e06b7a"/>`; }
+  else if(m==='proud'){
+    s+=`<path d="M106 121 Q120 140 134 121Z" fill="#5a1f2c" stroke="${OL}" stroke-width="2.3" stroke-linejoin="round"/>`;
+    s+=`<path d="M107.5 121.6 Q120 124.5 132.5 121.6 L131 125 Q120 127.6 109 125Z" fill="#fff"/>`;
+    s+=`<ellipse cx="120" cy="131" rx="6" ry="3" fill="#e06b7a"/>`;
+    s+=`<ellipse cx="94" cy="120" rx="8" ry="3.6" fill="#ff8f9a" opacity=".55"/><ellipse cx="146" cy="120" rx="8" ry="3.6" fill="#ff8f9a" opacity=".55"/>`;
+    s+=`<path d="M90 118 l3 -3 M95 118 l3 -3 M142 118 l3 -3 M147 118 l3 -3" stroke="#e05a6a" stroke-width="1.4" stroke-linecap="round"/>`;
+  }else{ s+=`<path d="M112 127 Q116 125 120 127 Q124 129 128 126" stroke="${OL}" stroke-width="2.3" fill="none" stroke-linecap="round"/>`; }
+  s+=`<path d="M76 86 L84 102 L90 82 L100 100 L106 78 L116 98 L122 76 L130 98 L138 78 L146 100 L152 82 L160 102 L164 86 C166 58 146 44 120 44 C94 44 74 58 76 86Z" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  s+=`<path d="M138 78 L146 100 L152 82 L160 102 L164 86 C165 70 158 58 146 51 Q152 68 138 78Z" fill="#000" opacity=".2"/>`;
+  s+=`<path d="M92 60 Q104 52 118 52" stroke="${st.hair[1]}" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".9"/>`;
+  s+=`<path d="M76 70 Q120 54 164 70 L164 80 Q120 64 76 80Z" fill="${BAND}" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  s+=`<path d="M136 63 Q152 66 164 72 L164 80 Q150 72 136 70Z" fill="${BAND2}"/>`;
+  s+=`<path d="M82 70 Q110 60 132 61" stroke="#fff" stroke-opacity=".45" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  s+=`<rect x="113" y="61" width="14" height="9" rx="2" fill="#f2f0ea" stroke="${OL}" stroke-width="1.6" transform="rotate(-1 120 66)"/>`;
+  s+=`<g transform="translate(0 2)"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="6.6" stroke-linecap="round" fill="none"/>`;
+  s+=`<path d="${BR[0]} ${BR[1]}" stroke="${OL}" stroke-width="3.8" stroke-linecap="round" fill="none"/></g>`;
+  s+=`</g>`;
+  if(m==='tired') s+=`<g class="zzz" font-family="Baloo 2, Impact, sans-serif" fill="#e6ebff" stroke="${OL}" stroke-width="1.2" paint-order="stroke"><text x="168" y="40" font-size="24">Z</text><text x="188" y="22" font-size="16">z</text></g>`;
+  if(m==='proud') s+=`<path d="M170 60 q7 10 0 15 q-7 -5 0 -15Z M66 94 q6 9 0 13 q-6 -4 0 -13Z M176 100 q5 8 0 11 q-5 -3 0 -11Z" fill="#a8e4ff" stroke="${OL}" stroke-width="1.6"/>`;
+  if(m==='lazy'){
+    s+=`<g fill="#9a95a8" opacity=".75"><circle cx="72" cy="150" r="2.2"/><circle cx="164" cy="176" r="2.6"/><circle cx="108" cy="166" r="1.8"/><circle cx="96" cy="36" r="2.2"/><circle cx="146" cy="140" r="1.7"/><circle cx="132" cy="236" r="2"/></g>`;
+    s+=`<path d="M160 130 L184 116 M160 130 L188 134 M160 130 L176 150 M168 125 Q172 132 179 131 M172 139 Q170 133 176 128 M176 120 Q180 128 186 128" stroke="#d6d2e2" stroke-width="1.1" fill="none" opacity=".7"/>`;
+    s+=`<path d="M176 150 L178 164" stroke="#d6d2e2" stroke-width=".9" opacity=".6"/><circle cx="178" cy="166" r="2.4" fill="#2a2433"/>`;
+  }
+  s+=`</g>`;
+  if(opts.flip) s+=`</g>`;
+  s+=`</svg>`;
+  return s;
+}
+
+/* =========================================================================
+   2) Spielregeln (Port von src/game/rules.ts)
+   ========================================================================= */
+const SLEEP_GOAL_HOURS=8;
+const BALANCE={xpPerStrain:11, overtrainingStrainCap:12, overtrainingStrain:14, overtrainingRecovery:34, streakRestDays:2, streakWindowDays:7, neutralEnergy:60};
+const clamp=(v,lo=0,hi=100)=>Math.max(lo,Math.min(hi,v));
+function sleepScore(m){ if(m.sleepHours==null) return 60; return Math.round(clamp((m.sleepHours/SLEEP_GOAL_HOURS)*100)); }
+function recoveryScore(m,base){
+  const sleep=sleepScore(m);
+  let hrvPart=50;
+  if(m.hrvMs!=null && base.hrvMs) hrvPart=clamp(50+((m.hrvMs-base.hrvMs)/base.hrvMs)*150);
+  let rhrPart=50;
+  if(m.restingHr!=null && base.restingHr) rhrPart=clamp(50-((m.restingHr-base.restingHr)/base.restingHr)*300);
+  const hasVitals=m.hrvMs!=null && base.hrvMs!=null;
+  const score=hasVitals? 0.45*hrvPart+0.2*rhrPart+0.35*sleep : 0.2*50+0.8*sleep;
+  return Math.round(clamp(score));
+}
+function strainScore(m){ const load=m.activeEnergyKcal+m.workoutMinutes*4+m.steps/40; return Math.round(21*(1-Math.exp(-load/900))*10)/10; }
+function moodFor(recovery,strain,sleep,steps,overtraining){
+  const energy=Math.round(recovery*0.6+sleep*0.4);
+  if(overtraining) return 'tired';
+  if(steps<3000 && strain<4) return 'lazy';
+  if(strain>=15) return 'proud';
+  if(energy>=67) return 'charged';
+  if(energy>=40) return 'awake';
+  return 'tired';
+}
+function scoreDay(m,base){
+  const recovery=recoveryScore(m,base), strain=strainScore(m), sleep=sleepScore(m);
+  const energy=Math.round(recovery*0.6+sleep*0.4);
+  const overtraining=strain>=BALANCE.overtrainingStrain && recovery<BALANCE.overtrainingRecovery;
+  const mood=moodFor(recovery,strain,sleep,m.steps,overtraining);
+  const xpStrain=overtraining? Math.min(strain,BALANCE.overtrainingStrainCap) : strain;
+  const base_=xpStrain*BALANCE.xpPerStrain + m.steps/220 + (sleep>=85?25:0);
+  const bonus=!overtraining && recovery>=67 ? 1.25 : 1;
+  return {date:m.date, recovery, strain, sleep, energy, mood, overtraining, xp:Math.round(base_*bonus)};
+}
+const xpNeeded=(level)=>100+level*18;
+function stageFor(level){ let i=0; STAGES.forEach((s,k)=>{ if(level>=s.lvl) i=k; }); return i; }
+function power(progress,energy){
+  const s=progress.stats;
+  return Math.round((s.str*1.4+s.end*1.2+s.rec+s.dis*1.1)*progress.level*2.3*(0.75+energy/400));
+}
+function daysBetween(a,b){ const ta=Date.parse(a+'T00:00:00Z'), tb=Date.parse(b+'T00:00:00Z'); if(Number.isNaN(ta)||Number.isNaN(tb)) return 0; return Math.round((tb-ta)/86400000); }
+function nextStreak(p,date,active){
+  const inWindow=(p.restDays||[]).filter(r=>{ const diff=daysBetween(r,date); return diff>=0 && diff<BALANCE.streakWindowDays; });
+  if(active) return {streak:p.streak+1, restDays:inWindow};
+  if(p.streak===0) return {streak:0, restDays:[]};
+  if(inWindow.length<BALANCE.streakRestDays) return {streak:p.streak, restDays:[...inWindow,date]};
+  return {streak:0, restDays:[]};
+}
+function bookDay(p,m,d){
+  const stageBefore=stageFor(p.level);
+  if(p.booked.includes(d.date)) return {progress:p, levelsGained:0, stageBefore, stageAfter:stageBefore};
+  const stats={...p.stats};
+  stats.str+=d.strain>=10?2:d.strain>=5?1:0;
+  stats.end+=Math.round(m.steps/6000)+(d.strain>=8?1:0);
+  stats.rec+=d.sleep>=85?2:d.sleep>=70?1:0;
+  const active=m.steps>=6000 || d.strain>=8;
+  const {streak,restDays}=nextStreak(p,d.date,active);
+  if(active) stats.dis+=streak>=7?2:1;
+  let level=p.level, xp=p.xp+d.xp;
+  while(xp>=xpNeeded(level)){ xp-=xpNeeded(level); level++; }
+  const booked=[...p.booked,d.date].slice(-60);
+  return {progress:{level,xp,stats,streak,restDays,booked}, levelsGained:level-p.level, stageBefore, stageAfter:stageFor(level)};
+}
+function baselineFrom(days){
+  const avg=(xs)=>{ const v=xs.filter(x=>x!=null); return v.length>=3? v.reduce((a,b)=>a+b,0)/v.length : null; };
+  return {hrvMs:avg(days.map(d=>d.hrvMs)), restingHr:avg(days.map(d=>d.restingHr)), sleepHours:avg(days.map(d=>d.sleepHours))};
+}
+function toPublic(name,p,d,opts){
+  const share=opts.shareMood;
+  return {
+    displayName:name, level:p.level, stage:stageFor(p.level),
+    mood: share? (d? d.mood : 'awake') : null,
+    power: power(p, share? (d? d.energy : BALANCE.neutralEnergy) : BALANCE.neutralEnergy),
+    streak:p.streak, updatedAt:new Date().toISOString()
+  };
+}
+const newProgress=()=>({level:1,xp:0,stats:{str:10,end:10,rec:10,dis:10},streak:0,restDays:[],booked:[]});
+
+function recomputeProgress(allMetrics, startProgress){
+  const sorted=[...allMetrics].sort((a,b)=>a.date.localeCompare(b.date));
+  let prog=startProgress || newProgress();
+  let lastScore=null;
+  for(let i=0;i<sorted.length;i++){
+    const m=sorted[i];
+    const prior=sorted.slice(Math.max(0,i-7), i);
+    const base=baselineFrom(prior);
+    const d=scoreDay(m, base);
+    lastScore=d;
+    if(!prog.booked.includes(m.date)){
+      prog=bookDay(prog, m, d).progress;
+    }
+  }
+  return {progress:prog, lastScore};
+}
+
+/* =========================================================================
+   3) Supabase + App-Zustand
+   ========================================================================= */
+const $=(id)=>document.getElementById(id);
+function show(el){ el.classList.remove('hidden'); }
+function hide(el){ el.classList.add('hidden'); }
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._h); toast._h=setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsGetJSON(k,fallback){ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): fallback; }catch(e){ return fallback; } }
+function lsSetJSON(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+let sb=null, session=null, myProfile=null, myProgress=null, myMetrics=[], shareMood=false;
+
+function supaUrl(){ return lsGet('lvlme_url')||''; }
+function supaKey(){ return lsGet('lvlme_key')||''; }
+
+function initSupabase(){
+  const url=supaUrl(), key=supaKey();
+  if(!url || !key) return false;
+  try{
+    sb = window.supabase.createClient(url, key, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+
+async function boot(){
+  if(!initSupabase()){ show($('view-setup')); return; }
+  const { data } = await sb.auth.getSession();
+  session = data && data.session;
+  sb.auth.onAuthStateChange((_evt, sess)=>{
+    session = sess;
+    if(!session){ showAuth(); }
+  });
+  if(!session){ showAuth(); return; }
+  await enterApp();
+}
+
+function showAuth(){
+  hide($('view-setup')); hide($('view-onboarding')); hide($('view-app'));
+  show($('view-auth'));
+}
+
+async function enterApp(){
+  hide($('view-setup')); hide($('view-auth'));
+  const uid = session.user.id;
+  const { data: prof, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+  if(error){ toast('Profil konnte nicht geladen werden: '+error.message); }
+  myProfile = prof || { id:uid, display_name:'Kämpfer', avatar:null };
+  shareMood = lsGetJSON('lvlme_sharemood_'+uid, false);
+  $('set-sharemood').checked = !!shareMood;
+  $('set-email').textContent = session.user.email || '–';
+  $('set-project').textContent = supaUrl().replace(/^https?:\/\//,'');
+
+  if(!myProfile.display_name || myProfile.display_name==='Kämpfer'){
+    // Erstes Mal: Onboarding, aber nur wenn wirklich noch kein eigener Name gesetzt wurde
+    const seenOnboarding = lsGet('lvlme_onboarded_'+uid);
+    if(!seenOnboarding){ show($('view-onboarding')); return; }
+  }
+  show($('view-app'));
+  await refreshAll();
+}
+
+async function finishOnboarding(){
+  const name=$('ob-name').value.trim();
+  if(!name){ toast('Bitte einen Namen eingeben.'); return; }
+  const uid=session.user.id;
+  const { error } = await sb.from('profiles').update({ display_name:name }).eq('id', uid);
+  if(error){ toast('Konnte nicht speichern: '+error.message); return; }
+  myProfile.display_name=name;
+  lsSet('lvlme_onboarded_'+uid, '1');
+  hide($('view-onboarding'));
+  show($('view-app'));
+  await refreshAll();
+}
+
+async function refreshAll(){
+  const uid=session.user.id;
+  myProgress = lsGetJSON('lvlme_progress_'+uid, null) || newProgress();
+  const { data: metrics, error } = await sb.rpc('get_health_metrics', { p_days: 60 });
+  if(error){ toast('Werte konnten nicht geladen werden: '+error.message); myMetrics=[]; }
+  else {
+    myMetrics = (metrics||[]).map(r=>({
+      date:r.date, steps:r.steps||0, activeEnergyKcal:Number(r.active_energy_kcal)||0,
+      workoutMinutes:Number(r.workout_minutes)||0, sleepHours:r.sleep_hours==null?null:Number(r.sleep_hours),
+      hrvMs:r.hrv_ms==null?null:Number(r.hrv_ms), restingHr:r.resting_hr==null?null:Number(r.resting_hr), source:r.source
+    }));
+  }
+  const { progress, lastScore } = recomputeProgress(myMetrics, myProgress);
+  myProgress = progress;
+  lsSetJSON('lvlme_progress_'+uid, myProgress);
+
+  renderHome(lastScore);
+  renderHistory();
+  await pushPublicAvatar(lastScore);
+  await renderFriends();
+}
+
+async function pushPublicAvatar(lastScore){
+  const pub = toPublic(myProfile.display_name, myProgress, lastScore, { shareMood });
+  const { error } = await sb.from('profiles').update({ avatar: pub }).eq('id', session.user.id);
+  if(error) console.error('avatar push failed', error);
+}
+
+/* ---------- Rendering: Home ---------- */
+function renderHome(today){
+  $('tb-name').textContent = myProfile.display_name;
+  $('tb-level').textContent = 'Lv '+myProgress.level;
+  const stageIdx = stageFor(myProgress.level);
+  const stage = STAGES[stageIdx];
+  const mood = today? today.mood : 'awake';
+  $('home-avatar').innerHTML = avatarSvg(stageIdx, mood, 'home');
+  $('home-moodlabel').textContent = MOODS[mood].l;
+  $('home-moodtext').textContent = today? MOODS[mood].t : 'Noch keine Werte für heute. Trag sie unten ein, dann zeigt sich, wie es dir geht.';
+  $('home-xp').textContent = myProgress.xp+' / '+xpNeeded(myProgress.level)+' XP';
+  $('home-xpbar').style.width = Math.round(100*myProgress.xp/xpNeeded(myProgress.level))+'%';
+  $('st-str').textContent = myProgress.stats.str;
+  $('st-end').textContent = myProgress.stats.end;
+  $('st-rec').textContent = myProgress.stats.rec;
+  $('st-dis').textContent = myProgress.stats.dis;
+  $('st-streak').textContent = myProgress.streak;
+  $('st-stage').textContent = stage.n;
+  if(today){
+    $('home-today-summary').textContent = `Erholung ${today.recovery}%, Belastung ${today.strain}, Schlaf ${today.sleep}% des Ziels.`+(today.overtraining? ' Achtung: Übertraining – heute lieber ruhiger.' : '');
+    $('home-datasource').textContent = myMetrics.length && myMetrics[myMetrics.length-1].source==='shortcut' ? 'Kurzbefehl' : 'Manuell';
+  } else {
+    $('home-today-summary').textContent = 'Noch keine Werte für heute.';
+    $('home-datasource').textContent = '–';
+  }
+}
+
+function renderHistory(){
+  const box=$('hk-history');
+  if(!myMetrics.length){ box.innerHTML='<p class="small muted">Noch keine Werte.</p>'; return; }
+  const last=[...myMetrics].slice(-10).reverse();
+  box.innerHTML = last.map(m=>{
+    const d=new Date(m.date+'T00:00:00');
+    const ds=d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'});
+    return `<div class="spread small" style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <span>${ds}</span>
+      <span class="muted">${m.steps} Schr. · ${Math.round(m.activeEnergyKcal)} kcal${m.sleepHours!=null? ' · '+m.sleepHours+' h':''}</span>
+      <span class="badge">${m.source==='shortcut'?'Kurzbefehl':'Manuell'}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Freunde ---------- */
+async function renderFriends(){
+  const uid=session.user.id;
+  const { data: ships, error } = await sb.from('friendships').select('user_a,user_b');
+  if(error){ console.error(error); return; }
+  const ids = (ships||[]).map(f=> f.user_a===uid? f.user_b : f.user_a);
+  const box=$('fr-list');
+  if(!ids.length){ box.innerHTML='<p class="small muted">Noch keine Freunde. Lad jemanden ein!</p>'; return; }
+  const { data: profs, error: e2 } = await sb.from('profiles').select('id,display_name,avatar').in('id', ids);
+  if(e2){ console.error(e2); return; }
+  box.innerHTML = (profs||[]).map(p=>{
+    const av = p.avatar || {};
+    const stageIdx = typeof av.stage==='number'? av.stage : 0;
+    const mood = av.mood || null;
+    const svg = avatarSvg(stageIdx, mood||'awake', 'f'+p.id);
+    const moodTxt = mood? MOODS[mood]?.l || '–' : 'teilt Tagesform nicht';
+    return `<div class="friend">
+      <div class="mini">${svg}</div>
+      <div class="info"><b>${escapeHtml(p.display_name||'Kämpfer')}</b><span>Lv ${av.level??'?'} · ${moodTxt} · 🔥${av.streak??0}</span></div>
+      <button class="btn ghost" data-remove="${p.id}" style="padding:6px 10px">✕</button>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-remove]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const fid=btn.getAttribute('data-remove');
+      const { error } = await sb.rpc('remove_friend', { p_friend: fid });
+      if(error) toast('Konnte nicht entfernen: '+error.message);
+      else { toast('Freund entfernt.'); renderFriends(); }
+    });
+  });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* =========================================================================
+   4) UI-Verdrahtung
+   ========================================================================= */
+document.addEventListener('DOMContentLoaded', ()=>{
+  boot();
+
+  $('su-save').addEventListener('click', ()=>{
+    const url=$('su-url').value.trim().replace(/\/$/,'');
+    const key=$('su-key').value.trim();
+    if(!url || !key){ toast('Bitte beide Felder ausfüllen.'); return; }
+    lsSet('lvlme_url', url); lsSet('lvlme_key', key);
+    location.reload();
+  });
+
+  $('auth-send').addEventListener('click', async ()=>{
+    const email=$('auth-email').value.trim();
+    if(!email){ toast('Bitte E-Mail-Adresse eingeben.'); return; }
+    $('auth-send').disabled=true;
+    const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split('#')[0] } });
+    $('auth-send').disabled=false;
+    if(error){ toast('Fehler: '+error.message); return; }
+    $('auth-sent-email').textContent=email;
+    hide($('auth-form')); show($('auth-sent'));
+  });
+  $('auth-again').addEventListener('click', ()=>{ show($('auth-form')); hide($('auth-sent')); });
+
+  $('ob-save').addEventListener('click', finishOnboarding);
+
+  document.querySelectorAll('nav.tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('nav.tabs button').forEach(b=>b.removeAttribute('aria-current'));
+      btn.setAttribute('aria-current','true');
+      document.querySelectorAll('main .view').forEach(v=>v.classList.add('hidden'));
+      show($('tab-'+btn.getAttribute('data-tab')));
+    });
+  });
+
+  function openEntry(){ show($('modal-entry')); }
+  $('home-entry-btn').addEventListener('click', openEntry);
+  $('hk-manual-btn').addEventListener('click', openEntry);
+  $('entry-close').addEventListener('click', ()=>hide($('modal-entry')));
+  $('entry-save').addEventListener('click', async ()=>{
+    const today=new Date(); const iso=today.toISOString().slice(0,10);
+    const payload={
+      p_date: iso,
+      p_steps: parseInt($('e-steps').value||'0',10) || 0,
+      p_active_energy_kcal: parseFloat($('e-active').value||'0') || 0,
+      p_workout_minutes: parseFloat($('e-workout').value||'0') || 0,
+      p_sleep_hours: $('e-sleep').value? parseFloat($('e-sleep').value) : null,
+      p_hrv_ms: $('e-hrv').value? parseFloat($('e-hrv').value) : null,
+      p_resting_hr: $('e-rhr').value? parseFloat($('e-rhr').value) : null
+    };
+    const { error } = await sb.rpc('upsert_health_metrics', payload);
+    if(error){ toast('Konnte nicht speichern: '+error.message); return; }
+    hide($('modal-entry'));
+    ['e-steps','e-active','e-workout','e-sleep','e-hrv','e-rhr'].forEach(id=>$(id).value='');
+    toast('Gespeichert!');
+    await refreshAll();
+  });
+
+  $('fr-create').addEventListener('click', async ()=>{
+    const { data, error } = await sb.rpc('create_invite');
+    if(error){ toast('Fehler: '+error.message); return; }
+    const row = Array.isArray(data)? data[0] : data;
+    $('fr-code').textContent = row.code;
+    show($('fr-code-box'));
+  });
+  $('fr-code-copy').addEventListener('click', async ()=>{
+    const txt=$('fr-code').textContent;
+    try{ await navigator.clipboard.writeText(txt); toast('Code kopiert.'); }
+    catch(e){ toast('Code: '+txt); }
+  });
+  $('fr-join').addEventListener('click', async ()=>{
+    const code=$('fr-join-code').value.trim();
+    if(!code){ toast('Bitte Code eingeben.'); return; }
+    const { data, error } = await sb.rpc('accept_invite', { p_code: code });
+    if(error){ toast('Fehler: '+error.message); return; }
+    toast('Jetzt befreundet mit '+data+'!');
+    $('fr-join-code').value='';
+    await renderFriends();
+  });
+
+  $('hk-create-token').addEventListener('click', async ()=>{
+    const { data, error } = await sb.rpc('create_device_token');
+    if(error){ toast('Fehler: '+error.message); return; }
+    $('hk-token').textContent = data;
+    $('hk-url').textContent = supaUrl()+'/rest/v1/rpc/ingest_health_metrics';
+    show($('hk-token-box'));
+  });
+  $('hk-token-copy').addEventListener('click', async ()=>{
+    try{ await navigator.clipboard.writeText($('hk-token').textContent); toast('Kopiert.'); }catch(e){ toast($('hk-token').textContent); }
+  });
+  $('hk-url-copy').addEventListener('click', async ()=>{
+    try{ await navigator.clipboard.writeText($('hk-url').textContent); toast('Kopiert.'); }catch(e){ toast($('hk-url').textContent); }
+  });
+  $('hk-howto').addEventListener('click', ()=> show($('modal-howto')));
+  $('howto-close').addEventListener('click', ()=> hide($('modal-howto')));
+
+  $('set-logout').addEventListener('click', async ()=>{ await sb.auth.signOut(); location.reload(); });
+  $('set-sharemood').addEventListener('change', async (e)=>{
+    shareMood = e.target.checked;
+    lsSetJSON('lvlme_sharemood_'+session.user.id, shareMood);
+    await refreshAll();
+    toast(shareMood? 'Tagesform wird jetzt geteilt.' : 'Tagesform ist jetzt privat.');
+  });
+  $('set-delete').addEventListener('click', ()=>{
+    askConfirm('Konto wirklich endgültig löschen? Das kann nicht zurückgenommen werden.', async ()=>{
+      const { error } = await sb.rpc('delete_account');
+      if(error){ toast('Fehler: '+error.message); return; }
+      try{ localStorage.clear(); }catch(e){}
+      location.reload();
+    });
+  });
+  $('set-reset-project').addEventListener('click', ()=>{
+    askConfirm('Supabase-Projekt wechseln? Du musst dich danach neu anmelden.', ()=>{
+      try{ localStorage.removeItem('lvlme_url'); localStorage.removeItem('lvlme_key'); }catch(e){}
+      location.reload();
+    });
+  });
+
+  /* ---- Vollbild: wirkt wie eine eigene App ohne Browser-Leiste ---- */
+  function fsSupported(){
+    const el=document.documentElement;
+    return !!(el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen);
+  }
+  function fsActive(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+  function updateFsIcon(){ $('fs-corner').textContent = fsActive()? '×' : '⛶'; $('fs-corner').title = fsActive()? 'Vollbild verlassen' : 'Vollbild'; }
+  async function toggleFullscreen(){
+    const el=document.documentElement;
+    try{
+      if(fsActive()){
+        if(document.exitFullscreen) await document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+      } else if(fsSupported()){
+        const req = el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
+        await req.call(el);
+      } else {
+        toast('Vollbild geht hier nicht direkt. Auf dem iPhone: Teilen → „Zum Home-Bildschirm" – dann startet LvlMe ohne Browser-Leiste, wie eine eigene App.');
+      }
+    }catch(e){
+      toast('Vollbild geht hier nicht direkt. Auf dem iPhone: Teilen → „Zum Home-Bildschirm" – dann startet LvlMe ohne Browser-Leiste, wie eine eigene App.');
+    }
+  }
+  $('fs-corner').addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', updateFsIcon);
+  document.addEventListener('webkitfullscreenchange', updateFsIcon);
+});
+
+/* ---- Bestätigungsdialog statt confirm() (das funktioniert in dieser Umgebung nicht zuverlässig) ---- */
+let _confirmAction=null;
+function askConfirm(msg, onYes){
+  _confirmAction=onYes;
+  document.getElementById('confirm-text').textContent=msg;
+  document.getElementById('modal-confirm').classList.remove('hidden');
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('confirm-no').addEventListener('click', ()=>{
+    document.getElementById('modal-confirm').classList.add('hidden'); _confirmAction=null;
+  });
+  document.getElementById('confirm-yes').addEventListener('click', ()=>{
+    document.getElementById('modal-confirm').classList.add('hidden');
+    const fn=_confirmAction; _confirmAction=null;
+    if(fn) fn();
+  });
+});
+
+})();
+</script>
