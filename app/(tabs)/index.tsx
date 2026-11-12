@@ -15,7 +15,7 @@ export default function Home() {
   const app = useApp();
   const { width: W, height: Hs } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<React.ComponentRef<typeof View>>(null);
   const [shareErr, setShareErr] = useState<string | null>(null);
 
   const mood = app.today?.mood ?? 'awake';

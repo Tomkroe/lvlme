@@ -1,11 +1,11 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, type ColorValue } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useApp } from '../../src/state/AppState.tsx';
 import { C } from '../../src/ui/theme.ts';
 
-const icon = (kind: 'home' | 'friends' | 'profile') => ({ color }: { color: string }) => (
+const icon = (kind: 'home' | 'friends' | 'profile') => ({ color }: { color: ColorValue }) => (
   <Svg width={26} height={26} viewBox="0 0 26 26" fill="none" stroke={color} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
     {kind === 'home' && (<>
       <Path d="M13 3.5 L10 7 L7 5.5 L8 9.5" /><Circle cx={13} cy={11} r={4.5} />

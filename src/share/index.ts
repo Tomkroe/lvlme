@@ -1,7 +1,7 @@
 /**
  * Teilen über das iOS-Teilen-Menü. Zuständig: Agent social-backend.
  */
-import type { RefObject } from 'react';
+import type { ComponentRef, RefObject } from 'react';
 import { Platform, Share, type View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -20,9 +20,11 @@ export async function shareInvite(invite: Invite, myName: string): Promise<void>
 }
 
 /** Macht ein Bild von `ref` (z. B. Avatar-Karte) und teilt es. */
-export async function shareCard(ref: RefObject<View | null>, message: string): Promise<void> {
+export type ViewRef = RefObject<ComponentRef<typeof View> | null>;
+
+export async function shareCard(ref: ViewRef, message: string): Promise<void> {
   if (!ref.current) throw new Error('Die Karte ist noch nicht bereit. Bitte gleich noch einmal versuchen.');
-  const uri = await captureRef(ref, { format: 'png', quality: 1, result: 'tmpfile' });
+  const uri = await captureRef(ref.current as unknown as Parameters<typeof captureRef>[0], { format: 'png', quality: 1, result: 'tmpfile' });
   if (Platform.OS === 'ios') {
     // iOS: Bild und Text zusammen im Teilen-Menü
     await Share.share({ url: uri, message });
