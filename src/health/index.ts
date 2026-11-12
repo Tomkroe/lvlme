@@ -4,6 +4,7 @@
  */
 import { Platform } from 'react-native';
 import type { DailyMetrics } from '../types.ts';
+import { demoProvider } from './demo.ts';
 
 export interface HealthProvider {
   /** Ist HealthKit auf diesem Gerät verfügbar? */
@@ -14,6 +15,25 @@ export interface HealthProvider {
   readDays(days: number): Promise<DailyMetrics[]>;
 }
 
-// Implementierungen in healthkit.ts (iOS) und demo.ts (Simulator/Android/Web)
-export { };
-export declare function getHealthProvider(): HealthProvider;
+let cached: HealthProvider | null = null;
+
+/** iOS: Apple Health; sonst (Android, Web) Demo-Daten. */
+export function getHealthProvider(): HealthProvider {
+  if (cached) return cached;
+  if (Platform.OS === 'ios') {
+    try {
+      // Lazy require, damit Android/Web das native Modul nie laden
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      // @ts-ignore – require ist in React Native vorhanden, Typen je nach Setup nicht
+      const { healthKitProvider } = require('./healthkit.ts') as typeof import('./healthkit.ts');
+      cached = healthKitProvider;
+      return cached;
+    } catch {
+      // natives Modul fehlt (z. B. Expo Go) → Demo
+    }
+  }
+  cached = demoProvider;
+  return cached;
+}
+
+export { demoProvider };

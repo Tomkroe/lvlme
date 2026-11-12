@@ -31,7 +31,8 @@
     "@supabase/supabase-js": "^2",
     "react-native-url-polyfill": "*",
     "@kingstinct/react-native-healthkit": "^14",
-    "react-native-nitro-modules": "*"
+    "react-native-nitro-modules": "*",
+    "expo-crypto": "*"
   },
   "devDependencies": {
     "typescript": "*",

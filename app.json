@@ -15,11 +15,23 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "android": { "package": "com.tomkroe.lvlme" },
+    "android": {
+      "package": "com.tomkroe.lvlme"
+    },
     "plugins": [
       "expo-router",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "LvlMe liest Schlaf, Schritte, aktive Kalorien, Workouts, HRV und Ruhepuls, damit dein Avatar deine Tagesform zeigt. Die Daten bleiben auf deinem iPhone.",
+          "NSHealthUpdateUsageDescription": "LvlMe schreibt keine Daten in Apple Health.",
+          "background": false
+        }
+      ]
     ],
-    "experiments": { "typedRoutes": false }
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }
