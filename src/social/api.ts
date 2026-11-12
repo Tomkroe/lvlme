@@ -61,10 +61,9 @@ export async function signInWithApple(): Promise<Me | null> {
   let credential: AppleAuthentication.AppleAuthenticationCredential;
   try {
     credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
+      // Keine Scopes: Wir brauchen weder E-Mail noch Namen von Apple.
+      // Den öffentlichen Namen wählt der Nutzer selbst (Kämpfername aus dem Onboarding → setDisplayName).
+      requestedScopes: [],
       nonce: hashedNonce,
     });
   } catch (e) {
@@ -80,11 +79,8 @@ export async function signInWithApple(): Promise<Me | null> {
   });
   if (error || !data.user) throw new Error(message(error));
 
-  // Apple liefert den Namen nur bei der allerersten Anmeldung – dann sofort speichern.
-  const given = credential.fullName?.givenName?.trim();
-  if (given) {
-    await supabase.from('profiles').update({ display_name: given.slice(0, 30), updated_at: new Date().toISOString() }).eq('id', data.user.id);
-  }
+  // Das Profil heißt serverseitig zunächst „Kämpfer“. Die App setzt danach den
+  // Kämpfernamen aus dem Onboarding über setDisplayName – nie den echten Namen von Apple.
   return getMe();
 }
 
@@ -169,7 +165,8 @@ export async function listFriends(): Promise<Friend[]> {
   return (data ?? [])
     .map(row => {
       const a = (row.avatar ?? {}) as Partial<PublicAvatar>;
-      const mood = MOODS.includes(a.mood as Mood) ? (a.mood as Mood) : 'awake';
+      // null = Freund teilt seine Tagesform nicht; das bleibt null (nicht raten).
+      const mood: Mood | null = MOODS.includes(a.mood as Mood) ? (a.mood as Mood) : null;
       return {
         userId: row.id as string,
         displayName: (row.display_name as string) ?? a.displayName ?? 'Kämpfer',

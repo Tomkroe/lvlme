@@ -1,6 +1,6 @@
 /** Profil: Stats, Serie, Verwandlungen, Datenquelle, Konto, Datenschutz. Zuständig: app-ui. */
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useApp } from '../../src/state/AppState.tsx';
@@ -10,7 +10,7 @@ import { Avatar } from '../../src/avatar/Avatar.tsx';
 import * as social from '../../src/social/api.ts';
 import { AppleSignIn } from '../../src/ui/AppleSignIn.tsx';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
-import { C, F, fmt } from '../../src/ui/theme.ts';
+import { C, F, PRIVACY_URL, fmt } from '../../src/ui/theme.ts';
 
 const SOURCE: Record<string, string> = { healthkit: 'Apple Health', whoop: 'WHOOP', demo: 'Beispieldaten' };
 
@@ -98,8 +98,18 @@ export default function Profile() {
       <Card>
         <H>Daten</H>
         <P>Quelle: <Text style={{ color: C.ink, fontWeight: '700' }}>{app.source ? SOURCE[app.source] ?? app.source : 'noch keine'}</Text></P>
-        <P>Deine Gesundheitsdaten bleiben auf deinem iPhone. LvlMe liest sie nur, um deinen Avatar zu berechnen. Freunde sehen höchstens Level, Stufe, Kampfkraft und Tagesform.</P>
+        <P>Deine Gesundheitsdaten bleiben auf deinem iPhone. LvlMe liest sie nur, um deinen Avatar zu berechnen. Freunde sehen Level, Stufe, Kampfkraft und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+        <View style={st.switchRow}>
+          <Text style={[st.label, { flex: 1 }]}>Tagesform mit Freunden teilen</Text>
+          <Switch value={app.shareMood} onValueChange={v => { app.setShareMood(v); }}
+            trackColor={{ true: C.ki, false: C.line }} ios_backgroundColor={C.line}
+            accessibilityLabel="Tagesform mit Freunden teilen"
+            accessibilityHint="Freunde sehen dann, ob du aufgeladen, müde usw. bist" />
+        </View>
+        <P>Freunde sehen dann, ob du aufgeladen, müde usw. bist. Daraus lassen sich Rückschlüsse auf Schlaf und Erholung ziehen. Du kannst das jederzeit wieder ausschalten.</P>
         <P>Welche Daten LvlMe lesen darf, änderst du in der Health-App unter Profil › Apps › LvlMe.</P>
+        <Text style={st.link} accessibilityRole="link" accessibilityHint="Öffnet die Datenschutzerklärung im Browser"
+          onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>Datenschutzerklärung</Text>
       </Card>
 
       <Card>
@@ -128,6 +138,8 @@ const st = StyleSheet.create({
   label: { color: C.ink, fontSize: 14 },
   val: { color: C.ink, fontSize: 14 },
   streak: { color: C.ki, fontSize: 28 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
+  link: { color: C.sky, fontWeight: '700', fontSize: 15, textDecorationLine: 'underline', paddingVertical: 6 },
   ladderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
   ladderName: { flex: 1, fontSize: 15 },

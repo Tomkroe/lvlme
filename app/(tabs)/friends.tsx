@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import * as social from '../../src/social/api.ts';
 import type { Friend } from '../../src/social/api.ts';
+import type { Mood } from '../../src/types.ts';
 import { shareInvite } from '../../src/share/index.ts';
 import { MOOD_TEXT, STAGES } from '../../src/game/rules.ts';
 import { useApp } from '../../src/state/AppState.tsx';
@@ -15,6 +16,9 @@ import { AppleSignIn } from '../../src/ui/AppleSignIn.tsx';
 import { FightModal, type Fighter } from '../../src/ui/FightModal.tsx';
 import { Button, Card, Chip, H, P } from '../../src/ui/components.tsx';
 import { C, F, fmt } from '../../src/ui/theme.ts';
+
+/** Darstellung, wenn ein Freund seine Tagesform nicht teilt: ruhiger Standard-Look */
+const NEUTRAL_MOOD: Mood = 'awake';
 
 export default function Friends() {
   const app = useApp();
@@ -87,7 +91,7 @@ export default function Friends() {
       {configured && !app.me && (
         <Card>
           <P style={{ color: C.ink, fontWeight: '700' }}>Melde dich an, um Freunde hinzuzufügen</P>
-          <P>Deine Freunde sehen nur deinen Avatar mit Level, Stufe, Kampfkraft und Tagesform. Schlaf, Puls oder Schritte sehen sie nie.</P>
+          <P>Freunde sehen Level, Stufe, Kampfkraft und – wenn du es erlaubst – deine Tagesform. Schlaf, Puls oder Schritte sehen sie nie.</P>
           <AppleSignIn />
         </Card>
       )}
@@ -115,27 +119,32 @@ export default function Friends() {
           {friends.length === 0 && !loading && (
             <P>Noch keine Freunde. Lade jemanden ein – sobald er die Einladung annimmt, erscheint sein Avatar hier.</P>
           )}
-          {friends.map(f => (
-            <View key={f.userId} style={st.friend}>
-              <View style={st.mini}>
-                <View style={StyleSheet.absoluteFill}><SvgXml xml={miniSkySvg(f.mood, `ms${f.userId.slice(0, 8)}`)} width="100%" height="100%" /></View>
-                <Avatar stage={f.stage} mood={f.mood} size={74} still id={`f${f.userId.slice(0, 8)}`} />
-              </View>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={st.fname} numberOfLines={1}>{f.displayName}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <Text style={st.meta}>Lv {f.level}</Text>
-                  <Chip text={STAGES[Math.max(0, Math.min(5, f.stage))].name} />
+          {friends.map(f => {
+            // mood === null: Freund teilt seine Tagesform nicht → neutral darstellen
+            const priv = f.mood == null;
+            const shownMood = f.mood ?? NEUTRAL_MOOD;
+            return (
+              <View key={f.userId} style={st.friend}>
+                <View style={st.mini} accessibilityElementsHidden={priv} importantForAccessibility={priv ? 'no-hide-descendants' : 'auto'}>
+                  <View style={StyleSheet.absoluteFill}><SvgXml xml={miniSkySvg(shownMood, `ms${f.userId.slice(0, 8)}`)} width="100%" height="100%" /></View>
+                  <Avatar stage={f.stage} mood={shownMood} size={74} still id={`f${f.userId.slice(0, 8)}`} />
                 </View>
-                <Text style={st.meta}>{MOOD_TEXT[f.mood].label} · Serie {f.streak} Tage</Text>
-                <Text style={[st.pow, F.num]}>⚡ {fmt(f.power)}</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                  <Button title="Kampf" onPress={() => setFoe({ name: f.displayName, stage: f.stage, power: f.power })} style={{ minHeight: 38, flex: 1 }} />
-                  <Button title="Entfernen" kind="ghost" onPress={() => remove(f)} style={{ minHeight: 38 }} />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={st.fname} numberOfLines={1}>{f.displayName}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={st.meta}>Lv {f.level}</Text>
+                    <Chip text={STAGES[Math.max(0, Math.min(5, f.stage))].name} />
+                  </View>
+                  <Text style={st.meta}>{f.mood ? MOOD_TEXT[f.mood].label : 'Tagesform privat'} · Serie {f.streak} Tage</Text>
+                  <Text style={[st.pow, F.num]}>⚡ {fmt(f.power)}</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                    <Button title="Kampf" onPress={() => setFoe({ name: f.displayName, stage: f.stage, power: f.power })} style={{ minHeight: 38, flex: 1 }} />
+                    <Button title="Entfernen" kind="ghost" onPress={() => remove(f)} style={{ minHeight: 38 }} />
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </>
       )}
 

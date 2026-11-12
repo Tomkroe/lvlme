@@ -49,30 +49,33 @@ export default function Home() {
       contentContainerStyle={{ paddingBottom: 24 }}
       refreshControl={<RefreshControl refreshing={app.loading} onRefresh={app.refresh} tintColor="#fff" />}
     >
-      {/* Teilbare Karte: Szene mit Avatar und HUD */}
-      <View ref={cardRef} collapsable={false} style={{ height: sceneH, overflow: 'hidden', backgroundColor: C.bg }}>
-        <Scene mood={mood} id="home" />
-        <View style={{ position: 'absolute', left: avLeft, top: avTop }}>
-          <Avatar stage={app.stage} mood={mood} size={avSize} id="me" />
-        </View>
+      <View style={{ height: sceneH }}>
+        {/* Teilbare Karte: Szene mit Avatar und HUD – ohne Sprechblase, die verrät die Tagesform */}
+        <View ref={cardRef} collapsable={false} style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: C.bg }]}>
+          <Scene mood={mood} id="home" />
+          <View style={{ position: 'absolute', left: avLeft, top: avTop }}>
+            <Avatar stage={app.stage} mood={mood} size={avSize} id="me" />
+          </View>
 
-        <View style={[st.hud, { top: insets.top + 8 }]}>
-          <View style={[st.glass, st.who]}>
-            <LevelRing frac={app.progress.xp / need} level={app.progress.level} />
-            <View style={{ gap: 2 }}>
-              <Text style={st.name} numberOfLines={1}>{name}</Text>
-              <Chip text={STAGES[app.stage].name.toUpperCase()} />
+          <View style={[st.hud, { top: insets.top + 8 }]}>
+            <View style={[st.glass, st.who]}>
+              <LevelRing frac={app.progress.xp / need} level={app.progress.level} />
+              <View style={{ gap: 2 }}>
+                <Text style={st.name} numberOfLines={1}>{name}</Text>
+                <Chip text={STAGES[app.stage].name.toUpperCase()} />
+              </View>
+            </View>
+            <View style={[st.glass, st.power]} accessible accessibilityLabel={`Kampfkraft ${fmt(app.power)}`}>
+              <Text style={st.powLabel}>KAMPFKRAFT</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Svg width={12} height={15} viewBox="0 0 13 16"><Path d="M8 0 L0 9 H5.5 L4 16 L13 6 H7.5Z" fill="#7fe3ff" /></Svg>
+                <Text style={[st.powVal, F.num]}>{fmt(app.power)}</Text>
+              </View>
             </View>
           </View>
-          <View style={[st.glass, st.power]} accessible accessibilityLabel={`Kampfkraft ${fmt(app.power)}`}>
-            <Text style={st.powLabel}>KAMPFKRAFT</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Svg width={12} height={15} viewBox="0 0 13 16"><Path d="M8 0 L0 9 H5.5 L4 16 L13 6 H7.5Z" fill="#7fe3ff" /></Svg>
-              <Text style={[st.powVal, F.num]}>{fmt(app.power)}</Text>
-            </View>
-          </View>
         </View>
 
+        {/* Sprechblase liegt über der Karte, gehört aber nicht zum geteilten Bild */}
         <View style={[st.bubble, { top: insets.top + 76 }, warn && { backgroundColor: '#ffd84d' }]} accessibilityLiveRegion="polite">
           <Text style={[st.bubbleLabel, warn && { color: '#6a4b00' }]}>{warn ? 'Achtung: Übertraining' : MOOD_TEXT[mood].label}</Text>
           <Text style={st.bubbleText}>

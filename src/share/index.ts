@@ -14,7 +14,7 @@ export async function shareInvite(invite: Invite, myName: string): Promise<void>
     `${name} lädt dich zu LvlMe ein! Lass unsere Avatare gegeneinander antreten.\n\n` +
     `Dein Code: ${invite.code}\n` +
     `Direkt öffnen (wenn LvlMe installiert ist): ${invite.url}\n\n` +
-    `Der Code gilt 7 Tage.`;
+    `Der Code gilt einmal und 7 Tage lang.`;
   // Link nur im Text: lvlme:// als separates url-Feld wird von manchen Apps verschluckt.
   await Share.share({ message: text });
 }
