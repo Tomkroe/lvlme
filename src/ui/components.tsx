@@ -43,7 +43,7 @@ export function LevelRing({ frac, level, size = 46 }: { frac: number; level: num
 export function Bar({ frac, color = C.ki, height = 10 }: { frac: number; color?: string; height?: number }) {
   return (
     <View style={{ height, borderRadius: height, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-      <View style={{ width: `${Math.max(0, Math.min(1, frac)) * 100}%`, height: '100%', borderRadius: height, backgroundColor: color }} />
+      <View style={{ width: `${Math.max(0, Math.min(1, frac)) * 100}%` as `${number}%`, height: '100%', borderRadius: height, backgroundColor: color }} />
     </View>
   );
 }
