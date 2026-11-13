@@ -62,3 +62,9 @@ _(hier eintragen)_
 
 ## Wünsche an B (von A)
 _(hier eintragen)_
+
+
+## KI-Bild (Web, erledigt)
+- Editor-Tab „KI-Bild“: Aus den Look-Einstellungen wird ein Prompt gebaut und kostenlos über Pollinations.ai gemalt (ohne Schlüssel, ohne Foto, ohne Gesundheitsdaten). Eine Pose pro Stimmung; „Neu würfeln“ ändert den Seed (`look.aiSeed`).
+- Freunde erzeugen aus demselben Look + Seed dasselbe Bild – kein Speicher nötig. Weißer Hintergrund wird im Browser entfernt; ohne Verbindung erscheint die gezeichnete Figur.
+- Offen für B: dieselbe Logik in der App übernehmen (`look.style = 'ai'`, `look.sex`, `look.aiSeed` beim Hochladen erhalten).

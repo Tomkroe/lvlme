@@ -284,9 +284,9 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .slrow input[type=range]{width:100%; accent-color:var(--ki)}
 .slrow{grid-template-columns:auto 1fr auto}
 .musclebox{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 10px; border-radius:12px; background:rgba(255,255,255,.04)}
-.looktabs{display:grid; grid-template-columns:repeat(6,1fr); gap:4px; position:sticky; top:236px; z-index:3; background:var(--surface); padding:6px 0; margin-top:4px}
+.looktabs{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; position:sticky; top:236px; z-index:3; background:var(--surface); padding:6px 0; margin-top:4px}
 .looktabs button{background:var(--surface2); border:1.5px solid var(--line); color:var(--fg-muted); border-radius:12px; padding:6px 2px; font-size:18px; font-weight:800; display:grid; justify-items:center; gap:1px}
-.looktabs button span{font-size:10.5px}
+.looktabs button span{font-size:9.5px; white-space:nowrap}
 .looktabs button[aria-selected="true"]{border-color:var(--ki); color:var(--ki2); background:rgba(255,138,31,.15)}
 #look-opts{min-height:260px}
 #modal-look .card>*{flex-shrink:0}
@@ -295,6 +295,9 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .tilegrid.scenes .tile span{width:100%}
 .lookprev .pvbg{position:absolute; inset:0; z-index:0}
 .lookprev .pvbg svg{width:100%; height:100%; display:block}
+.airow{display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap}
+.airow .btn{width:auto; padding:8px 14px}
+.av image{image-rendering:auto}
 .tilegrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px}
 .tile{background:linear-gradient(180deg,#3a7bd2,#93c6f4); border:2px solid var(--line); border-radius:14px; padding:4px 4px 0; display:grid; justify-items:center; gap:0; overflow:hidden; cursor:pointer}
 .tile svg{width:100%; height:auto; aspect-ratio:1/1; display:block}
@@ -753,13 +756,14 @@ const LOOK_OPTIONS={
     green:{n:'Grün', c:['#2fa463','#1f7244']}, purple:{n:'Lila', c:['#7a52d1','#553896']}, black:{n:'Schwarz', c:['#2b2f45','#1a1d2e']},
     grey:{n:'Grau', c:['#8c93a8','#646b80']}, white:{n:'Weiß', c:['#f1f2f6','#c8ccd8']} }},
   bottom:{ label:'Hose', items:{ navy:{n:'Dunkelblau', c:['#272b45','#1a1d31']}, black:{n:'Schwarz', c:['#1c1d24','#101116']}, grey:{n:'Grau', c:['#6b7083','#4d5163']}, blue:{n:'Blau', c:['#2f5fa8','#1f4278']} }},
-  style:{ label:'Zeichenstil', items:{ real:{n:'Realistisch'}, anime:{n:'Anime'} }},
+  style:{ label:'Zeichenstil', items:{ real:{n:'Realistisch'}, anime:{n:'Anime'}, ai:{n:'KI-Bild'} }},
+  sex:{ label:'Typ', items:{ man:{n:'Mann'}, woman:{n:'Frau'} }},
   scene:{ label:'Trainingsort', items:{ mountains:{n:'Berge'}, gym:{n:'Fitnessstudio'}, football:{n:'Fußballplatz'}, track:{n:'Laufbahn'}, court:{n:'Basketball'} }},
   band:{ label:'Stirnband', items:{
     red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
     black:{n:'Schwarz', c:['#2a2f4c','#151a2c']}, white:{n:'Weiß', c:['#f2f0ea','#c9c5b8']}, none:{n:'Keins'} }}
 };
-const DEFAULT_LOOK={skin:'fair',hairStyle:'sidepart',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy',scene:'gym',style:'real'};
+const DEFAULT_LOOK={skin:'fair',hairStyle:'sidepart',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy',scene:'gym',style:'real',sex:'man'};
 /* Schieberegler (0–10). Gespeichert als Buchstabe a–k, weil der geteilte Avatar nur
    kurze Wörter erlaubt. Rein optisch: Muskeln und Körperfett ändern nur die Figur,
    nie XP oder Level – und es werden keine Prozentwerte angezeigt oder geteilt. */
@@ -777,6 +781,7 @@ function normLook(l){
   const mu=l?ch2sl(l.muscle):null, fa=l?ch2sl(l.fat):null;
   o.muscle=sl2ch(mu!=null?mu:pre[0]); o.fat=sl2ch(fa!=null?fa:pre[1]);
   delete o.build;
+  if(l && typeof l.aiSeed==='string' && /^[a-z]{1,8}$/.test(l.aiSeed)) o.aiSeed=l.aiSeed;
   // Größe: genaue cm bleiben auf dem Gerät (heightCm), geteilt wird nur eine grobe Stufe (size a–x, 3-cm-Schritte)
   let cm = l && Number.isFinite(+l.heightCm) && +l.heightCm>0 ? +l.heightCm : null;
   if(cm==null && l && typeof l.size==='string' && /^[a-x]$/.test(l.size)) cm = 140 + (l.size.charCodeAt(0)-97)*3;
@@ -802,7 +807,7 @@ function publicLook(l){ if(!l) return null; const o={...l}; delete o.heightCm; d
 function ffmi(cm,kg,kfa){ const h=cm/100, ffm=kg*(1-kfa/100); return ffm/(h*h) + 6.1*(1.8-h); }
 function ffmiLabel(v){ return v<17?'wenig Muskeln':v<19?'durchschnittlich':v<21?'sportlich':v<23?'trainiert':v<25?'sehr muskulös':'extrem muskulös'; }
 function heightScale(cm){ return Math.max(.88, Math.min(1.07, 1+(cm-178)*.0029)); }
-const LOOK_GROUPS=[['Körper',['#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Ort',['scene']],['Extras',['style','glasses','band']]];
+const LOOK_GROUPS=[['KI-Bild',['#ai']],['Körper',['sex','#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Ort',['scene']],['Extras',['style','glasses','band']]];
 const FACES={
   oval:{p:'M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z', ex:0},
   round:{p:'M76 94 C76 64 96 52 120 52 C144 52 164 64 164 94 C164 116 154 132 138 137 C130 140 126 141 120 141 C114 141 110 140 102 137 C86 132 76 116 76 94Z', ex:-2},
@@ -1047,7 +1052,139 @@ function realFace(m,L,st,id,F){
   return s;
 }
 
+/* ---------- KI-Bild über Pollinations.ai (kostenlos, ohne Schlüssel) ----------
+   Aus den Editor-Einstellungen wird ein Text-Prompt gebaut – es wird nie ein Foto
+   und keine Gesundheitsdaten übertragen. Gleicher Look + gleicher Seed = gleiches Bild,
+   deshalb sehen Freunde dasselbe Bild, ohne dass wir es speichern müssen. */
+const AI_POSE={
+  charged:'full of energy, fists clenched, confident ready-to-train stance, determined grin',
+  awake:'relaxed standing pose, arms loosely at the sides, friendly smile',
+  proud:'proud victory pose flexing both biceps, slightly sweaty, big happy smile',
+  tired:'tired and sleepy, droopy half-closed eyes, slouching shoulders, yawning',
+  lazy:'bored and lazy, slumped posture, looking down at a smartphone in one hand'};
+function aiPrompt(L,m){
+  const woman=L.sex==='woman';
+  const MU=ch2sl(L.muscle)??5, FA=ch2sl(L.fat)??3;
+  const build = FA>=8?'heavy-set chubby build' : FA>=6?'slightly chubby build' :
+    MU>=9?'very muscular bodybuilder physique, big arms, broad chest, visible six-pack abs' :
+    MU>=7?'muscular athletic physique, defined arms and shoulders' : MU>=5?'athletic toned build' : MU<=2?'slim skinny build':'average fit build';
+  const skin={light:'very fair skin',fair:'fair skin',medium:'light olive skin',tan:'tanned skin',brown:'brown skin',dark:'dark brown skin'}[L.skin];
+  const hc={black:'black',darkbrown:'dark brown',brown:'brown',blonde:'blonde',red:'red',grey:'grey'}[L.hair];
+  const hs={sidepart:'short side-parted hair',undercut:'undercut hairstyle',quiff:'quiff hairstyle',crew:'short crew cut',buzz:'buzz cut',
+    middle:'middle-parted medium-length hair',curly:'curly hair',afro:'afro hair',dreads:'dreadlocks',bun:'hair tied in a bun',
+    ponytail:'hair in a ponytail',bob:'bob haircut',long:'long hair',bald:'',short:'short spiky hair',spiky:'spiky hair'}[L.hairStyle];
+  const hair = L.hairStyle==='bald' ? 'bald head' : `${hc} ${hs}`;
+  const face={oval:'oval face',round:'round face',square:'strong square jaw',narrow:'narrow face'}[L.face];
+  const beard={none:woman?'':'clean-shaven',stubble:'light stubble beard',full:'full beard'}[L.beard];
+  const top={red:'red',orange:'orange',blue:'blue',green:'green',purple:'purple',black:'black',grey:'grey',white:'white'}[L.top];
+  const bot={navy:'dark navy',black:'black',grey:'grey',blue:'blue'}[L.bottom];
+  const outfit={gi:'an orange martial arts training gi with a dark belt',muscle:`a ${top} sleeveless muscle tank top`,
+    tshirt:`a ${top} sports t-shirt`,hoodie:`a ${top} hoodie`,compression:`a ${top} tight compression shirt`}[L.outfit];
+  const band=L.band!=='none'?`a ${{red:'red',blue:'blue',black:'black',white:'white'}[L.band]} sports headband`:'';
+  const bits=[skin,face,hair,`${L.eyes==='dark'?'dark brown':L.eyes} eyes`,beard,L.glasses==='yes'?'wearing glasses':'',L.freckles==='yes'?'freckles':'',build,
+    `wearing ${outfit}, ${bot} training pants and sneakers`,band].filter(Boolean).join(', ');
+  return `Stylized 3D cartoon avatar of a ${woman?'woman':'man'}, ${bits}. ${AI_POSE[m]||AI_POSE.awake}. `+
+    `Full body from head to feet, centered, facing the viewer. Friendly cartoon style with soft shading, smooth skin, slightly oversized head, `+
+    `clean bright colors, high quality digital illustration. Isolated on a plain pure white background, no floor, no shadow, no text, no logo, no watermark.`;
+}
+function aiSeedNum(sd){ let n=7; for(const c of (sd||'lvlme')) n=(n*31+c.charCodeAt(0))%2147483647; return n; }
+function aiUrl(L,m){ return 'https://image.pollinations.ai/prompt/'+encodeURIComponent(aiPrompt(L,m))+
+  '?width=512&height=672&model=flux&nologo=true&private=true&seed='+aiSeedNum(L.aiSeed); }
+function aiHash(t){ let h=5381; for(let i=0;i<t.length;i++) h=((h*33)^t.charCodeAt(i))>>>0; return 'k'+h.toString(36); }
+const AI_DONE=new Map(), AI_FAIL=new Set(), AI_URL=new Map(), AI_WAIT=new Map(); let AI_Q=[], aiBusy=false, aiTok=0;
+const aiWait=ms=>new Promise(r=>setTimeout(r,ms));
+function aiRequest(key,url){
+  AI_URL.set(key,url);
+  if(AI_DONE.has(key)||AI_FAIL.has(key)) return;
+  AI_Q=AI_Q.filter(k=>k!==key); AI_Q.push(key);
+  setTimeout(aiPump,60);
+}
+async function aiPump(){
+  if(aiBusy) return; aiBusy=true;
+  while(AI_Q.length){
+    const key=AI_Q.pop();                       // Neueste zuerst (z. B. Vorschau im Editor)
+    if(AI_DONE.has(key)) continue;
+    if(!document.querySelector(`svg[data-aikey="${key}"]`)) continue;   // nicht mehr sichtbar
+    let res=null;
+    for(let t=0;t<3 && !res;t++){
+      try{ res=await aiLoad(AI_URL.get(key)); }catch(e){ if(t<2) await aiWait(t?16000:5000); }
+    }
+    if(res) AI_DONE.set(key,res); else AI_FAIL.add(key);
+    aiHydrate(key);
+  }
+  aiBusy=false;
+}
+function aiImg(url,cors){ return new Promise((ok,bad)=>{ const im=new Image(); if(cors) im.crossOrigin='anonymous';
+  const to=setTimeout(()=>{ im.src=''; bad(new Error('timeout')); },90000);
+  im.onload=()=>{ clearTimeout(to); ok(im); }; im.onerror=()=>{ clearTimeout(to); bad(new Error('load')); }; im.src=url; }); }
+async function aiLoad(url){
+  let im;
+  try{ im=await aiImg(url,true); }catch(e){
+    im=await aiImg(url,false);                  // ohne CORS: Bild zeigen, weißen Hintergrund per Mischmodus ausblenden
+    return {src:url, w:im.naturalWidth, h:im.naturalHeight, blend:true};
+  }
+  try{ return aiCutout(im); }catch(e){ return {src:url, w:im.naturalWidth, h:im.naturalHeight, blend:true}; }
+}
+/* Weißen Hintergrund vom Rand her entfernen (Flutfüllung) und auf die Figur zuschneiden */
+function aiCutout(im){
+  const W=im.naturalWidth, H=im.naturalHeight, c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0);
+  const d=g.getImageData(0,0,W,H), px=d.data, seen=new Uint8Array(W*H), st=[];
+  const bgLike=i=>{ const r=px[i*4],gg=px[i*4+1],b=px[i*4+2], mn=Math.min(r,gg,b), mx=Math.max(r,gg,b); return mn>214 && mx-mn<30; };
+  for(let x=0;x<W;x++){ st.push(x, (H-1)*W+x); } for(let y=0;y<H;y++){ st.push(y*W, y*W+W-1); }
+  while(st.length){ const i=st.pop(); if(seen[i]||!bgLike(i)) continue; seen[i]=1; px[i*4+3]=0;
+    const x=i%W, y=(i-x)/W; if(x>0) st.push(i-1); if(x<W-1) st.push(i+1); if(y>0) st.push(i-W); if(y<H-1) st.push(i+W); }
+  // weiche Kante: helle Randpixel teilweise durchsichtig
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){ const i=y*W+x; if(seen[i]) continue;
+    if(seen[i-1]||seen[i+1]||seen[i-W]||seen[i+W]){ const mn=Math.min(px[i*4],px[i*4+1],px[i*4+2]); if(mn>170) px[i*4+3]=Math.round(255*(255-mn)/85); } }
+  let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(px[(y*W+x)*4+3]>40){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  if(x1<0 || (x1-x0)*(y1-y0) > W*H*.97) throw new Error('kein Hintergrund erkannt');
+  g.putImageData(d,0,0);
+  const cw=x1-x0+1, ch=y1-y0+1, k=Math.min(1,420/ch), o=document.createElement('canvas');
+  o.width=Math.round(cw*k); o.height=Math.round(ch*k);
+  o.getContext('2d').drawImage(c,x0,y0,cw,ch,0,0,o.width,o.height);
+  return {src:o.toDataURL('image/png'), w:o.width, h:o.height, blend:false};
+}
+function aiHydrate(key){
+  document.querySelectorAll(`svg[data-aikey="${key}"]`).forEach(el=>{
+    const a=AI_WAIT.get(el.dataset.aitok); AI_WAIT.delete(el.dataset.aitok);
+    if(a) el.outerHTML=avatarSvg(...a);
+  });
+  if(AI_WAIT.size>300) for(const t of [...AI_WAIT.keys()]) if(!document.querySelector(`svg[data-aitok="${t}"]`)) AI_WAIT.delete(t);
+  if(window.aiStatusRefresh) window.aiStatusRefresh();
+}
+function aiState(look,mood){ const L=normLook(look); if(L.style!=='ai') return 'off'; const k=aiHash(aiUrl(L,MOODS[mood]?mood:'awake'));
+  return AI_DONE.has(k)?(AI_DONE.get(k).blend?'blend':'done'):AI_FAIL.has(k)?'fail':'wait'; }
+function aiRetry(){ AI_FAIL.clear(); }
+function aiSvg(r,stageIndex,m,opts){
+  const st=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
+  const sc=Math.min(200/r.w,262/r.h), w=r.w*sc, h=r.h*sc;
+  const bob=m==='charged'?'bob fast':(m==='tired'||m==='lazy')?'bob slow':'bob';
+  const gid='aig'+Math.random().toString(36).slice(2,8);
+  let s=`<svg class="av" viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar, ${MOODS[m].l}">`;
+  if(opts.flip) s+=`<g transform="translate(240 0) scale(-1 1)">`;
+  if(st.aura && m!=='lazy') s+=`<defs><radialGradient id="${gid}" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".45" stop-color="${st.aura}" stop-opacity=".55"/><stop offset="1" stop-color="${st.aura}" stop-opacity="0"/></radialGradient></defs><ellipse class="aura" cx="120" cy="150" rx="${m==='tired'?80:108}" ry="${m==='tired'?110:142}" fill="url(#${gid})" opacity="${m==='tired'?.45:1}"/>`;
+  s+=`<ellipse cx="120" cy="270" rx="58" ry="8" fill="#000" opacity=".32"/>`;
+  s+=`<g class="${bob}"><image href="${r.src}" x="${(120-w/2).toFixed(1)}" y="${(273-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"${r.blend?' style="mix-blend-mode:multiply"':''}/></g>`;
+  if(m==='tired') s+=`<g class="zzz" font-family="Baloo 2, Impact, sans-serif" fill="#e6ebff" stroke="${OL}" stroke-width="1.2" paint-order="stroke"><text x="172" y="40" font-size="24">Z</text><text x="192" y="22" font-size="16">z</text></g>`;
+  if(opts.flip) s+=`</g>`;
+  return s+`</svg>`;
+}
 function avatarSvg(stageIndex,moodKey,uniqueId,opts){
+  opts=opts||{};
+  const L=normLook(opts.look);
+  if(L.style==='ai' && !opts.noAi){
+    const m=MOODS[moodKey]?moodKey:'awake', url=aiUrl(L,m), key=aiHash(url), r=AI_DONE.get(key);
+    if(r) return aiSvg(r,stageIndex,m,opts);
+    aiRequest(key,url);
+    const tok='t'+(++aiTok); AI_WAIT.set(tok,[stageIndex,moodKey,uniqueId,opts]);
+    return avatarSvgCore(stageIndex,moodKey,uniqueId,{...opts,look:{...L,style:'real'}})
+      .replace('<svg class="av"',`<svg class="av ai-wait" data-aikey="${key}" data-aitok="${tok}"`);
+  }
+  return avatarSvgCore(stageIndex,moodKey,uniqueId,opts);
+}
+function avatarSvgCore(stageIndex,moodKey,uniqueId,opts){
   opts=opts||{};
   const st0=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
   const L=normLook(opts.look);
@@ -2077,24 +2214,42 @@ document.addEventListener('DOMContentLoaded', ()=>{
     {t:'Wie groß bist du?', sub:'Die genaue Zahl bleibt auf deinem Gerät.', keys:['#height']},
     {t:'Wie viel wiegst du?', sub:'Bleibt auf deinem Gerät – nur für die Figur.', keys:['#weight']},
     {t:'Wie hoch ist dein Körperfettanteil?', sub:'Ungefähr reicht. Daraus und aus Größe und Gewicht ergeben sich deine Muskeln.', keys:['#kfa','#muscle']},
-    {t:'Welcher Hautton passt zu dir?', keys:['skin']},
+    {t:'Typ und Hautton', keys:['sex','skin']},
     {t:'Wie sehen deine Haare aus?', keys:['hairStyle','hair']},
     {t:'Dein Gesicht', keys:['face','eyes','brows']},
     {t:'Bart oder Brille?', keys:['beard','glasses']},
     {t:'Was trägst du beim Sport?', keys:['outfit','top','bottom']},
-    {t:'Wo trainierst du am liebsten?', sub:'Das wird der Hintergrund deines Kämpfers.', keys:['scene']}
+    {t:'Wo trainierst du am liebsten?', sub:'Das wird der Hintergrund deines Kämpfers.', keys:['scene']},
+    {t:'Soll die KI dich malen?', sub:'Aus deinen Antworten entsteht ein Bild im Cartoon-Stil. Du kannst jederzeit zurück zur gezeichneten Figur.', keys:['#ai']}
   ];
-  const ICON={'Körper':'💪','Gesicht':'🙂','Haare':'💇','Outfit':'👕','Ort':'🏟️','Extras':'🕶️'};
-  let draftLook=null, previewMood='charged', lookTab='Körper', wizStep=null;
+  const ICON={'KI-Bild':'✨','Körper':'💪','Gesicht':'🙂','Haare':'💇','Outfit':'👕','Ort':'🏟️','Extras':'🕶️'};
+  let draftLook=null, previewMood='charged', lookTab='KI-Bild', wizStep=null;
   const q=sel=>document.querySelector('#look-opts '+sel);
   function drawPreview(){
     const si=Math.min(stageFor(myProgress.level),2);
     $('look-av').innerHTML=`<div class="pvbg">${sceneSvg(draftLook.scene, previewMood, 'pv')}</div><div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
+    aiStatus();
   }
+  function aiStatus(){
+    const el=$('ai-status'); if(!el || !draftLook) return;
+    const s=aiState(draftLook, previewMood);
+    el.innerHTML = s==='wait' ? '⏳ KI malt dein Bild…' : s==='fail' ? '⚠️ Gerade nicht erreichbar. <a href="#" data-airetry>Nochmal</a>' :
+      s==='blend' ? '✓ Fertig (einfache Darstellung)' : s==='done' ? '✓ Fertig' : '';
+    const a=el.querySelector('[data-airetry]'); if(a) a.onclick=e=>{ e.preventDefault(); aiRetry(); drawPreview(); };
+  }
+  window.aiStatusRefresh=aiStatus;
   function fieldHtml(key){
     if(key==='#height') return `<div class="optgrp"><b>Größe</b><div class="slrow"><input type="range" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hcm aria-label="Größe in cm"><span class="numin"><input type="number" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hnum inputmode="numeric"> cm</span></div></div>`;
     if(key==='#weight'){ const w=draftLook.weightKg||''; return `<div class="optgrp"><b>Gewicht</b><div class="slrow"><input type="range" min="40" max="160" step="1" value="${w||78}" data-wkg aria-label="Gewicht in kg"><span class="numin"><input type="number" min="35" max="200" step="1" value="${w}" placeholder="78" data-wnum inputmode="numeric"> kg</span></div></div>`; }
     if(key==='#kfa') return `<div class="optgrp"><b>Körperfettanteil (KFA)</b><div class="slrow"><input type="range" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfa aria-label="Körperfettanteil in Prozent"><span class="numin"><input type="number" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfanum inputmode="numeric"> %</span></div></div>`;
+    if(key==='#ai'){
+      const on=draftLook.style==='ai';
+      return `<div class="optgrp"><b>Wie soll dein Kämpfer aussehen?</b><div class="optrow">
+        <button data-k="style" data-v="real" aria-pressed="${!on}">✏️ Gezeichnet</button>
+        <button data-aion aria-pressed="${on}">✨ KI-Bild</button></div>
+        ${on?`<div class="airow"><button class="btn ghost" data-aiseed>🎲 Neu würfeln</button><span class="small" id="ai-status"></span></div>`:''}
+        <p class="small muted">Die KI malt deinen Kämpfer aus deinen Einstellungen (Typ, Haut, Haare, Gesicht, Statur, Outfit) – kostenlos über Pollinations.ai. Es wird kein Foto und keine Gesundheitsdaten übertragen. Für jede Stimmung entsteht eine eigene Pose; das erste Bild dauert 10–40 Sekunden.</p></div>`;
+    }
     if(key==='#muscle') return `<div class="optgrp"><b>Muskeln</b><div class="musclebox" id="look-muscle">${muscleHtml()}</div></div>`;
     const grp=LOOK_OPTIONS[key];
     if(key==='scene'){
@@ -2106,7 +2261,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(CROP[key]){
       return `<div class="optgrp"><b>${grp.label}</b><div class="tilegrid">`+
         Object.entries(grp.items).map(([v,it])=>{
-          const svg=avatarSvg(0,'awake','th_'+key+'_'+v,{look:{...draftLook,[key]:v, ...(key!=='glasses'&&key!=='outfit'?{band:'none'}:{})}})
+          if(key==='style' && v==='ai') return '';
+          const svg=avatarSvg(0,'awake','th_'+key+'_'+v,{noAi:true,look:{...draftLook,[key]:v, ...(key!=='glasses'&&key!=='outfit'?{band:'none'}:{})}})
             .replace('viewBox="0 0 240 280"',`viewBox="${CROP[key]}"`);
           return `<button class="tile" data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}" aria-label="${it.n}">${svg}<span>${it.n}</span></button>`;
         }).join('')+`</div></div>`;
@@ -2149,6 +2305,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     $('look-close').classList.toggle('hidden', wiz);
     document.querySelectorAll('#look-moods [data-pm]').forEach(b=>b.onclick=()=>{ previewMood=b.dataset.pm; renderLookEditor(); });
     document.querySelectorAll('#look-opts [data-k]').forEach(b=>b.onclick=()=>{ draftLook[b.dataset.k]=b.dataset.v; renderLookEditor(); });
+    const newSeed=()=>Array.from({length:6},()=>String.fromCharCode(97+Math.floor(Math.random()*26))).join('');
+    const aon=q('[data-aion]'); if(aon) aon.onclick=()=>{ draftLook.style='ai'; if(!draftLook.aiSeed) draftLook.aiSeed=newSeed(); renderLookEditor(); };
+    const asd=q('[data-aiseed]'); if(asd) asd.onclick=()=>{ draftLook.aiSeed=newSeed(); renderLookEditor(); };
     bindNum('[data-hcm]','[data-hnum]',140,210,178,v=>{ draftLook.heightCm=v; });
     bindNum('[data-wkg]','[data-wnum]',35,200,78,v=>{ draftLook.weightKg=v; });
     bindNum('[data-kfa]','[data-kfanum]',4,45,20,v=>{ draftLook.bodyFatPct=v; });
