@@ -875,6 +875,25 @@ function limb(d,col,w,shade){
   if(shade) s+=`<path d="${d}" fill="none" stroke="${shade}" stroke-width="${w*.38}" stroke-linecap="round" stroke-linejoin="round" transform="translate(${w*.22} ${w*.18})" opacity=".9"/>`;
   return s;
 }
+let HANDMODE='open';
+/* Hände: entspannt offen (Daumen nach vorn) oder Faust mit Knöcheln und Daumen */
+function handSvg(w, ang, leftArm){
+  const k=1.12*Math.sqrt(ARMK), fy=leftArm?1:-1;
+  let s=`<g transform="translate(${w[0]} ${w[1]}) rotate(${ang}) scale(${k} ${k*fy})">`;
+  if(HANDMODE==='fist'){
+    s+=`<path d="M-1 -7 C4 -9.6 11 -9.6 13.6 -6.4 C15.6 -3.6 15.6 3.6 13.6 6.4 C11 9.6 4 9.6 -1 7Z" fill="${SK}" stroke="${OL}" stroke-width="1.9" stroke-linejoin="round"/>`;
+    s+=`<path d="M2 5 C6 7.8 10.6 7.6 13.4 5.6" stroke="${SK2}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>`;
+    s+=`<path d="M13.8 -3.6 Q11.4 -2.4 14.2 -.9 M14.2 1.4 Q11.4 2.6 13.8 4.2" stroke="${SK3}" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
+    s+=`<path d="M1.6 -6.4 C6.4 -6.2 10.2 -4.4 10.8 -1.6 C11.2 .4 9.6 1.2 8.2 .2 C6.2 -1.2 3.8 -2.6 1.4 -2.4Z" fill="${SK}" stroke="${OL}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  } else {
+    s+=`<path d="M-1 -6.6 C5 -7.8 10.5 -7.2 12.2 -5.6 L21 -3.8 C22.4 -1 22 2.4 20.6 4.8 C18.8 7.2 14 7.6 11 6.6 C7 8 3 7.8 -1 6.6Z" fill="${SK}" stroke="${OL}" stroke-width="1.8" stroke-linejoin="round"/>`;
+    s+=`<path d="M2 4.6 C8 7 15 7 20.6 4.6" stroke="${SK2}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".75"/>`;
+    s+=`<path d="M12.6 -2.6 L20.6 -1.6 M12.8 .4 L21.2 1.2 M12.4 3.4 L20 4" stroke="${SK3}" stroke-width="1.1" fill="none" stroke-linecap="round"/>`;
+    s+=`<path d="M3.4 -6.2 C7.6 -10.6 12.8 -11.4 15.2 -9.6 C16.4 -8.4 14.8 -6.8 12 -6.2 C9.6 -5.8 7 -5.4 5 -4.4Z" fill="${SK}" stroke="${OL}" stroke-width="1.6" stroke-linejoin="round"/>`;
+    s+=`<path d="M14.4 -9.4 C15.6 -8.8 15.2 -7.6 14 -7.4" stroke="${SK3}" stroke-width="1" fill="none"/>`;
+  }
+  return s+`</g>`;
+}
 let BODYK=1, ARMK=1, SLEEVE='gi', TOP='#41507e', TOP2='#2d385c', MUSF=0;
 const bx=x=>120+(x-120)*BODYK;
 function arm(sh,el,wr,fist,st){
@@ -889,11 +908,14 @@ function arm(sh,el,wr,fist,st){
     const seg=(a,b,t)=>[lerp(a[0],b[0],t),lerp(a[1],b[1],t)];
     const ang=(a,b)=>Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;
     const [bx_,by_]=seg(sh,el,.56), a1=ang(sh,el), bw=(6.5+MUSF*4.5)*ARMK*.62, bl=Math.hypot(el[0]-sh[0],el[1]-sh[1])*.42;
-    s+=`<ellipse cx="${bx_}" cy="${by_}" rx="${bl}" ry="${bw}" transform="rotate(${a1} ${bx_} ${by_})" fill="${SK}" stroke="${OL}" stroke-width="2.2"/>`;
+    const lw=13*ARMK/2+2.4;
+    if(bw>lw) s+=`<ellipse cx="${bx_}" cy="${by_}" rx="${bl+1.2}" ry="${bw+1.2}" transform="rotate(${a1} ${bx_} ${by_})" fill="${OL}"/>`;
+    s+=`<ellipse cx="${bx_}" cy="${by_}" rx="${bl}" ry="${bw}" transform="rotate(${a1} ${bx_} ${by_})" fill="${SK}"/>`;
     s+=`<ellipse cx="${bx_}" cy="${by_}" rx="${bl*.8}" ry="${bw*.45}" transform="rotate(${a1} ${bx_} ${by_}) translate(0 ${bw*.45})" fill="${SK2}" opacity=".75"/>`;
     s+=`<path d="M${bx_-bl*.5} ${by_} q${bl*.5} ${-bw*.5} ${bl} 0" transform="rotate(${a1} ${bx_} ${by_})" stroke="#fff" stroke-opacity=".35" stroke-width="2" fill="none" stroke-linecap="round"/>`;
     const [fx,fy]=seg(el,wr,.32), a2=ang(el,wr), fw=(5.5+MUSF*2.6)*ARMK*.62, fl=Math.hypot(wr[0]-el[0],wr[1]-el[1])*.34;
-    s+=`<ellipse cx="${fx}" cy="${fy}" rx="${fl}" ry="${fw}" transform="rotate(${a2} ${fx} ${fy})" fill="${SK}" stroke="${OL}" stroke-width="2"/>`;
+    if(fw>lw) s+=`<ellipse cx="${fx}" cy="${fy}" rx="${fl+1.1}" ry="${fw+1.1}" transform="rotate(${a2} ${fx} ${fy})" fill="${OL}"/>`;
+    s+=`<ellipse cx="${fx}" cy="${fy}" rx="${fl}" ry="${fw}" transform="rotate(${a2} ${fx} ${fy})" fill="${SK}"/>`;
     s+=`<ellipse cx="${fx}" cy="${fy}" rx="${fl*.8}" ry="${fw*.4}" transform="rotate(${a2} ${fx} ${fy}) translate(0 ${fw*.45})" fill="${SK2}" opacity=".7"/>`;
   }
   if(SLEEVE==='gi'){
@@ -911,9 +933,7 @@ function arm(sh,el,wr,fist,st){
     s+=`<path d="M${sh[0]-5} ${sh[1]+8} q5 4 10 0" stroke="${SK2}" stroke-width="2.4" fill="none" opacity=".8"/>`;
     s+=`<path d="M${sh[0]-4} ${sh[1]+6} q4 3 8 0" stroke="${SK3}" stroke-width="1.6" fill="none" opacity=".7"/>`;
   }
-  s+=`<circle cx="${fist[0]}" cy="${fist[1]}" r="${10.5*Math.sqrt(ARMK)}" fill="${SK}" stroke="${OL}" stroke-width="2.6"/>`;
-  s+=`<path d="M${fist[0]+1} ${fist[1]+2} a8 8 0 0 0 7 -6 a10.5 10.5 0 0 1 -6 13 z" fill="${SK2}"/>`;
-  s+=`<path d="M${fist[0]-5} ${fist[1]-3} q5 -3 10 0 M${fist[0]-5} ${fist[1]+1.5} q4 -2 7 0" stroke="${OL}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+  s+=handSvg(wr, Math.atan2(wr[1]-el[1], wr[0]-el[0])*180/Math.PI, sh[0]<120);
   return s;
 }
 function eye(cx,cy,kind,side,id,st){
@@ -1043,6 +1063,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   BODYK=.84+FA*.04+MU*.014;           // Rumpfbreite
   ARMK=.82+MU*.045+FA*.012;           // Armdicke
   MUSF=Math.max(0,(MU-3)/7);          // 0..1: wie stark Muskeln sichtbar sind
+  HANDMODE=(moodKey==='charged'||moodKey==='proud')?'fist':'open';
   const HS=heightScale(L.heightCm);
   const OF=L.outfit||'gi';
   SLEEVE={gi:'gi',muscle:'none',tshirt:'short',hoodie:'full',compression:'tight'}[OF]||'gi';
