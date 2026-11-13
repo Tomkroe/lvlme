@@ -25,6 +25,10 @@ Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Sc
 - [ ] **A1** Web: Zufalls-„Kampf“-Knopf bei Freunden entfernen (Rangliste bleibt).
 - [ ] **B1** iPhone-App: Spielregeln in `src/game/` an die Webversion angleichen – Ränge (Bronze bis Großmeister, je III/II/I, nur aufsteigend), Ernährungs-XP (+10 fürs Erfassen, +10 ab 2 L Wasser), nur abgeschlossene Tage buchen. Mit Tests.
 
+### Phase 1b – Charakter-Editor („sieht aus wie ich“)
+- [x] **A5** Web: Editor für Hautton, Frisur (6), Haarfarbe, Augen, Bart, Brille, Stirnband; Live-Vorschau; wird als `avatar.look` geteilt, Freunde sehen es. Migration 0008. *(A)*
+- [ ] **B5** iPhone-App: dieselben Optionen in `src/avatar/` (Pfade/Farben aus `docs/web/index.html` → `LOOK_OPTIONS`, `HAIR` übernehmen) und Editor-Screen. **Wichtig:** Beim Hochladen des Avatar-Zustands `look` mitschicken bzw. erhalten, sonst wird es überschrieben.
+
 ### Phase 2 – Wochen-Duell (statt Zufallskampf)
 Idee: Du forderst einen Freund heraus, 7 Tage zählen echte Aktivität (aktive Tage, Schritte, Belastung). Wer mehr gemacht hat, gewinnt. Rohdaten bleiben privat – Freunde sehen nur Punktestand und Sieger.
 - [ ] **A2** Datenbank: Tabelle `duels` + Funktionen (herausfordern, annehmen, Stand abrufen); Punkte werden in der Datenbank aus `health_metrics` berechnet, nur die Punkte sind für den Gegner sichtbar. Migration 0008.
@@ -45,7 +49,7 @@ Idee: Du forderst einen Freund heraus, 7 Tage zählen echte Aktivität (aktive T
 - Push-Benachrichtigungen (z. B. „Luca hat dich herausgefordert“).
 
 ## Für Tom
-- [ ] `0007_nutrition.sql` im Supabase SQL Editor ausführen.
+- [ ] `0007_nutrition.sql` und `0008_avatar_look.sql` im Supabase SQL Editor ausführen.
 - [ ] Testkonten Luca und Tom anlegen (SQL aus dem Chat).
 - [ ] Für Phase 4: Apple Developer Program (ca. 99 €/Jahr) abschließen.
 

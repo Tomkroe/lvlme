@@ -35,7 +35,9 @@ Dauer: etwa 15 Minuten. Kosten: im kostenlosen Tarif von Supabase ist das enthal
 
 10. `0007_nutrition.sql` ausführen: Ernährung (kcal, Protein, Wasser) für Webversion und Kurzbefehl.
 
-11. Anmeldung in der Webversion: per **E-Mail + Passwort** (geht auch in der App vom Home-Bildschirm) oder per Anmeldelink (nur im Browser). Eigene Mail-Vorlagen mit Code bräuchten einen eigenen SMTP-Server, deshalb Passwort.
+11. `0008_avatar_look.sql` ausführen: Aussehen des Kämpfers (Charakter-Editor) für Freunde sichtbar.
+
+12. Anmeldung in der Webversion: per **E-Mail + Passwort** (geht auch in der App vom Home-Bildschirm) oder per Anmeldelink (nur im Browser). Eigene Mail-Vorlagen mit Code bräuchten einen eigenen SMTP-Server, deshalb Passwort.
 
 Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue Dateien in `supabase/migrations/` immer in der Reihenfolge ihrer Nummer ausführen.
 

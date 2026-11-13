@@ -265,6 +265,18 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .nutri span{font-size:11px; color:var(--fg-muted); text-transform:uppercase; letter-spacing:.06em}
 .quick{display:flex; gap:6px; flex-wrap:wrap}
 .quick button{background:var(--surface2); border:1px solid var(--line); color:var(--fg); border-radius:10px; padding:6px 10px; font-size:13px; font-weight:700}
+/* Charakter-Editor */
+.lookprev{position:sticky; top:-14px; z-index:3; height:250px; flex:none; min-height:250px; box-shadow:0 8px 16px rgba(0,0,0,.35); border-radius:18px; overflow:hidden; background:linear-gradient(180deg,#3a7bd2,#93c6f4 60%,#e2f1ff)}
+.lookprev::after{content:""; position:absolute; left:22%; right:22%; bottom:10px; height:22px; border-radius:50%; background:#4a3c58; box-shadow:inset 0 7px 0 #5cb36a}
+.lookprev .av-wrap{position:absolute; left:50%; bottom:16px; width:190px; transform:translateX(-50%); z-index:1}
+.lookprev svg{width:100%; height:auto; display:block; overflow:visible}
+.lookmoods{display:flex; gap:6px; justify-content:center; flex-wrap:wrap}
+.lookmoods button,.optrow button{background:var(--surface2); border:1.5px solid var(--line); color:var(--fg); border-radius:12px; padding:6px 10px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px}
+.lookmoods button[aria-pressed="true"],.optrow button[aria-pressed="true"]{border-color:var(--ki); background:rgba(255,138,31,.15)}
+.optgrp{display:grid; gap:6px; margin-top:6px}
+.optgrp>b{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted)}
+.optrow{display:flex; gap:6px; flex-wrap:wrap}
+.optrow .sw{width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(0,0,0,.4); display:block}
 /* Overlays */
 #overlay{position:fixed; inset:0; z-index:70; pointer-events:none}
 #overlay>*{pointer-events:auto}
@@ -479,6 +491,11 @@ nav.tabs button[aria-current="true"]{color:var(--ki); background:transparent}
     <!-- ---- Einstellungen ---- -->
     <section class="view hidden" id="tab-settings">
       <div class="card">
+        <h2>Dein Kämpfer</h2>
+        <p class="small muted">Gestalte deinen Avatar so, dass er aussieht wie du: Hautton, Frisur, Haarfarbe, Augen, Bart, Brille.</p>
+        <button class="btn block" data-openlook>✏️ Aussehen anpassen</button>
+      </div>
+      <div class="card">
         <h2>Konto</h2>
         <p class="small muted">Angemeldet als <b id="set-email" style="color:var(--fg)">–</b></p>
         <div class="field" style="margin-top:10px">
@@ -584,6 +601,18 @@ p_workout_minutes (Zahl) = Summe Trainingsminuten</code></div>
   </div>
 </div>
 
+<!-- ============ Modal: Charakter-Editor ============ -->
+<div id="modal-look" class="hidden" style="position:fixed;inset:0;z-index:40;background:rgba(5,7,14,.8);display:flex;align-items:flex-end;justify-content:center">
+  <div class="card" style="width:100%;max-width:560px;border-radius:20px 20px 0 0;max-height:94vh;overflow-y:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))">
+    <div class="spread"><h2 style="font-size:24px;color:var(--fg);font-family:var(--f-display);letter-spacing:.04em;text-transform:none;font-weight:400">Dein Kämpfer</h2><button class="btn ghost" id="look-close" style="padding:6px 10px">✕</button></div>
+    <div class="lookprev" id="look-preview" style="flex:none"></div>
+    <div class="lookmoods" id="look-moods"></div>
+    <div id="look-opts"></div>
+    <p class="small muted">Ab der Verwandlung „Aufgestiegen“ färbt die Verwandlung Haare und Augen – das ist der Effekt. Freunde sehen deinen Kämpfer so, wie du ihn hier gestaltest.</p>
+    <div class="row"><button class="btn secondary" id="look-reset" style="flex:1">Zurücksetzen</button><button class="btn" id="look-save" style="flex:2">Speichern</button></div>
+  </div>
+</div>
+
 <div id="overlay"></div>
 
 <!-- ============ Modal: Als App installieren (iPhone) ============ -->
@@ -625,8 +654,74 @@ const MOODS={
   proud:{l:'Erschöpft, aber stolz',t:'Puh, das war hart. Aber ich spüre, wie ich stärker werde!'},
   lazy:{l:'Träge',t:'Mir ist langweilig. Gehen wir mal raus?'}
 };
-const OL='#1c1528', SK='#ffdcbc', SK2='#f0b48f', SK3='#d9906e';
-const PANT='#272b45', PANT2='#1a1d31', BOOT='#3a2620', BOOT2='#25170f', WRAP='#f4f1e8', WRAP2='#cfc9b8', BAND='#e0344f', BAND2='#a81f37';
+const OL='#1c1528';
+let SK='#ffdcbc', SK2='#f0b48f', SK3='#d9906e';
+const PANT='#272b45', PANT2='#1a1d31', BOOT='#3a2620', BOOT2='#25170f', WRAP='#f4f1e8', WRAP2='#cfc9b8';
+let BAND='#e0344f', BAND2='#a81f37';
+
+/* ---------- Aussehen (Charakter-Editor) ----------
+   Feste Auswahl, kein Freitext. Wird als avatar.look geteilt, damit Freunde dich so sehen.
+   Ab der Verwandlung „Aufgestiegen“ färbt die Verwandlung Haare und Augen – das ist der Effekt. */
+const LOOK_OPTIONS={
+  skin:{ label:'Hautton', items:{
+    light:{n:'Hell', c:['#ffe6d2','#f5c3a3','#e0a284']},
+    fair:{n:'Hell-mittel', c:['#ffdcbc','#f0b48f','#d9906e']},
+    medium:{n:'Mittel', c:['#e8b88f','#d19a6e','#b67b52']},
+    tan:{n:'Gebräunt', c:['#c98e62','#ad7449','#8f5a35']},
+    brown:{n:'Braun', c:['#9a6440','#7f4f30','#663c22']},
+    dark:{n:'Dunkel', c:['#6b4128','#55321e','#432616']} }},
+  hairStyle:{ label:'Frisur', items:{
+    spiky:{n:'Stachelig'}, short:{n:'Kurz'}, buzz:{n:'Raspel'}, curly:{n:'Locken'}, long:{n:'Lang'}, bald:{n:'Glatze'} }},
+  hair:{ label:'Haarfarbe', items:{
+    black:{n:'Schwarz', c:['#1f2238','#4a5590']},
+    darkbrown:{n:'Dunkelbraun', c:['#2e1d14','#6b4630']},
+    brown:{n:'Braun', c:['#5a3a22','#a0703f']},
+    blonde:{n:'Blond', c:['#b98d3a','#f2d98a']},
+    red:{n:'Rot', c:['#8a2e1a','#e0663a']},
+    grey:{n:'Grau', c:['#6d7080','#d4d7e2']} }},
+  eyes:{ label:'Augen', items:{
+    brown:{n:'Braun', c:['#4a2c1a','#b07a48']},
+    dark:{n:'Dunkel', c:['#24160d','#6b4a32']},
+    blue:{n:'Blau', c:['#1d4f8a','#6fb6ff']},
+    green:{n:'Grün', c:['#2e6b3a','#7fd08a']},
+    grey:{n:'Grau', c:['#4a5466','#a9b6c9']} }},
+  beard:{ label:'Bart', items:{ none:{n:'Keiner'}, stubble:{n:'Stoppeln'}, full:{n:'Vollbart'} }},
+  glasses:{ label:'Brille', items:{ none:{n:'Keine'}, yes:{n:'Brille'} }},
+  band:{ label:'Stirnband', items:{
+    red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
+    black:{n:'Schwarz', c:['#2a2f4c','#151a2c']}, white:{n:'Weiß', c:['#f2f0ea','#c9c5b8']}, none:{n:'Keins'} }}
+};
+const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',beard:'none',glasses:'none',band:'red'};
+function normLook(l){
+  const o={...DEFAULT_LOOK};
+  if(l && typeof l==='object') for(const k in LOOK_OPTIONS){ if(l[k] && LOOK_OPTIONS[k].items[l[k]]) o[k]=l[k]; }
+  return o;
+}
+let myLook=null; // eigenes Aussehen (aus profiles.avatar.look)
+const HAIR={
+  spiky:{ back:'M74 108 L48 100 L64 86 L36 72 L64 64 L44 38 L76 44 L70 14 L98 34 L110 4 L126 30 L150 8 L150 36 L180 26 L168 54 L196 58 L174 76 L192 92 L168 98 L166 110 Z',
+          backShade:'M150 36 L180 26 L168 54 L196 58 L174 76 L192 92 L168 98 L166 110 L150 104 Q160 70 150 36Z',
+          streaks:'M76 46 L90 58 M98 36 L104 52 M126 32 L120 48 M64 66 L80 70 M46 74 L64 80',
+          front:'M76 86 L84 102 L90 82 L100 100 L106 78 L116 98 L122 76 L130 98 L138 78 L146 100 L152 82 L160 102 L164 86 C166 58 146 44 120 44 C94 44 74 58 76 86Z',
+          frontShade:'M138 78 L146 100 L152 82 L160 102 L164 86 C165 70 158 58 146 51 Q152 68 138 78Z', shine:'M92 60 Q104 52 118 52' },
+  short:{ back:'M78 104 L66 92 L74 80 L64 66 L80 60 L76 44 L96 46 L102 30 L118 40 L132 28 L140 44 L160 42 L158 58 L176 64 L166 80 L174 92 L162 104 Z',
+          backShade:'M140 44 L160 42 L158 58 L176 64 L166 80 L174 92 L162 104 Q164 70 140 44Z',
+          streaks:'M84 56 L94 64 M108 40 L110 52 M128 38 L124 50',
+          front:'M78 88 L86 98 L92 82 L102 94 L108 78 L118 92 L124 76 L132 92 L140 78 L148 94 L154 82 L162 98 L163 86 C164 60 146 46 120 46 C94 46 76 60 78 88Z',
+          frontShade:'M140 78 L148 94 L154 82 L162 98 L163 86 C164 70 156 58 146 52 Q150 68 140 78Z', shine:'M94 60 Q104 54 116 54' },
+  buzz:{ back:'M80 100 C74 66 96 48 120 48 C144 48 166 66 160 100 Z', backShade:'', streaks:'',
+          front:'M79 86 C80 62 98 50 120 50 C142 50 160 62 161 86 C150 76 136 72 120 72 C104 72 90 76 79 86Z',
+          frontShade:'M140 54 C152 60 160 70 161 86 C154 80 148 77 142 75 Q146 64 140 54Z', shine:'M96 58 Q106 54 116 54' },
+  curly:{ back:'M74 104 a13 13 0 0 1 -6 -24 a13 13 0 0 1 4 -24 a13 13 0 0 1 18 -16 a13 13 0 0 1 20 -10 a13 13 0 0 1 20 0 a13 13 0 0 1 20 10 a13 13 0 0 1 18 16 a13 13 0 0 1 4 24 a13 13 0 0 1 -6 24 Z',
+          backShade:'', streaks:'M84 52 q6 -4 10 2 M110 38 q6 -4 10 2 M136 42 q6 -4 10 2',
+          front:'M77 92 a11 11 0 0 1 6 -20 a11 11 0 0 1 14 -12 a11 11 0 0 1 16 -6 a11 11 0 0 1 16 0 a11 11 0 0 1 16 6 a11 11 0 0 1 14 12 a11 11 0 0 1 6 20 Q150 78 120 78 Q90 78 77 92Z',
+          frontShade:'', shine:'M96 60 q6 -4 12 0' },
+  long:{ back:'M80 94 C70 58 96 40 120 40 C144 40 170 58 160 94 L172 168 Q162 176 152 168 L150 120 L90 120 L88 168 Q78 176 68 168 Z',
+          backShade:'M150 120 L152 168 Q162 176 172 168 L160 94 Q160 112 150 120Z', streaks:'M78 120 L74 160 M164 120 L168 160',
+          front:'M77 96 C74 60 96 44 120 44 C146 44 166 60 163 96 C156 84 146 74 134 68 C126 80 108 90 86 92 Z',
+          frontShade:'M134 68 C146 74 156 84 163 96 C164 78 158 62 146 54 Q144 62 134 68Z', shine:'M94 58 Q106 50 120 50' },
+  bald:{ back:'', backShade:'', streaks:'', front:'', frontShade:'', shine:'' }
+};
 const lerp=(a,b,t)=>a+(b-a)*t;
 function limb(d,col,w,shade){
   let s=`<path d="${d}" fill="none" stroke="${OL}" stroke-width="${w+5}" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -680,7 +775,16 @@ function eye(cx,cy,kind,side,id,st){
 }
 function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   opts=opts||{};
-  const st=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
+  const st0=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
+  const L=normLook(opts.look);
+  const sk=LOOK_OPTIONS.skin.items[L.skin].c; SK=sk[0]; SK2=sk[1]; SK3=sk[2];
+  const bandOn=L.band!=='none'; if(bandOn){ const b=LOOK_OPTIONS.band.items[L.band].c; BAND=b[0]; BAND2=b[1]; }
+  const sidx=STAGES.indexOf(st0);
+  // Eigene Haar-/Augenfarbe bis „Entfesselt“, danach färbt die Verwandlung
+  const st={...st0,
+    hair: sidx<3 ? LOOK_OPTIONS.hair.items[L.hair].c : st0.hair,
+    eyes: sidx<2 ? LOOK_OPTIONS.eyes.items[L.eyes].c : st0.eyes};
+  const H=HAIR[L.hairStyle]||HAIR.spiky;
   const m=MOODS[moodKey]?moodKey:'awake';
   const id=String(uniqueId==null?'a':uniqueId).replace(/[^A-Za-z0-9_-]/g,'_');
   const label=`Avatar, ${MOODS[m].l}, Stufe ${st.n}`;
@@ -717,12 +821,13 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   const slump=(m==='tired'||m==='lazy')?4:0;
   s+=`<g class="${bob}">`;
   s+=`<g transform="${headT}">`;
-  s+=`<path d="M156 74 Q182 70 204 84 Q186 84 168 80Z" fill="${BAND}" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
-  s+=`<path d="M156 78 Q178 88 190 112 Q174 98 160 86Z" fill="${BAND2}" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
-  const backHair='M74 108 L48 100 L64 86 L36 72 L64 64 L44 38 L76 44 L70 14 L98 34 L110 4 L126 30 L150 8 L150 36 L180 26 L168 54 L196 58 L174 76 L192 92 L168 98 L166 110 Z';
-  s+=`<path d="${backHair}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
-  s+=`<path d="M150 36 L180 26 L168 54 L196 58 L174 76 L192 92 L168 98 L166 110 L150 104 Q160 70 150 36Z" fill="#000" opacity=".22"/>`;
-  s+=`<path d="M76 46 L90 58 M98 36 L104 52 M126 32 L120 48 M64 66 L80 70 M46 74 L64 80" stroke="${st.hair[1]}" stroke-width="3" stroke-linecap="round" opacity=".85"/>`;
+  if(bandOn){
+    s+=`<path d="M156 74 Q182 70 204 84 Q186 84 168 80Z" fill="${BAND}" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
+    s+=`<path d="M156 78 Q178 88 190 112 Q174 98 160 86Z" fill="${BAND2}" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  }
+  if(H.back) s+=`<path d="${H.back}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
+  if(H.backShade) s+=`<path d="${H.backShade}" fill="#000" opacity=".22"/>`;
+  if(H.streaks) s+=`<path d="${H.streaks}" stroke="${st.hair[1]}" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85"/>`;
   s+=`</g>`;
   s+=`<path d="M86 204 Q120 216 154 204 L166 244 L156 258 L128 258 L124 230 Q120 224 116 230 L112 258 L84 258 L74 244Z" fill="${PANT}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
   s+=`<path d="M124 230 L128 258 L156 258 L166 244 L156 210 Q146 230 124 230Z" fill="${PANT2}" opacity=".8"/>`;
@@ -767,6 +872,12 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   s+=eye(102,106,ek,-1,id,st)+eye(138,106,ek,1,id,st);
   if(m==='tired') s+=`<path d="M92 120 Q101 124 111 120 M129 120 Q139 124 148 120" stroke="#a7737f" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/>`;
   s+=`<path d="M121 113 L118.5 119.5 L122.5 119.5" stroke="${SK3}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(L.beard==='stubble'){
+    s+=`<path d="M90 112 C94 128 106 138 120 139 C134 138 146 128 150 112 C146 122 138 130 128 128 Q120 125 112 128 C102 130 94 122 90 112Z" fill="${st.hair[0]}" opacity=".28"/>`;
+  } else if(L.beard==='full'){
+    s+=`<path d="M84 104 C84 128 100 148 120 150 C140 148 156 128 156 104 C150 120 140 128 130 126 Q120 121 110 126 C100 128 90 120 84 104Z" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
+    s+=`<path d="M106 122 Q113 116 120 120 Q127 116 134 122 Q127 125 120 123 Q113 125 106 122Z" fill="${st.hair[0]}" stroke="${OL}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  }
   if(m==='charged'){
     s+=`<path d="M108 125 Q120 130 132 122 Q128 134 118 134 Q110 133 108 125Z" fill="#5a1f2c" stroke="${OL}" stroke-width="2" stroke-linejoin="round"/>`;
     s+=`<path d="M109.5 125.6 Q120 129.6 130.6 123.2 L130 126.6 Q120 132 110.6 128.4Z" fill="#fff"/>`;
@@ -780,15 +891,23 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<ellipse cx="94" cy="120" rx="8" ry="3.6" fill="#ff8f9a" opacity=".55"/><ellipse cx="146" cy="120" rx="8" ry="3.6" fill="#ff8f9a" opacity=".55"/>`;
     s+=`<path d="M90 118 l3 -3 M95 118 l3 -3 M142 118 l3 -3 M147 118 l3 -3" stroke="#e05a6a" stroke-width="1.4" stroke-linecap="round"/>`;
   }else{ s+=`<path d="M112 127 Q116 125 120 127 Q124 129 128 126" stroke="${OL}" stroke-width="2.3" fill="none" stroke-linecap="round"/>`; }
-  s+=`<path d="M76 86 L84 102 L90 82 L100 100 L106 78 L116 98 L122 76 L130 98 L138 78 L146 100 L152 82 L160 102 L164 86 C166 58 146 44 120 44 C94 44 74 58 76 86Z" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
-  s+=`<path d="M138 78 L146 100 L152 82 L160 102 L164 86 C165 70 158 58 146 51 Q152 68 138 78Z" fill="#000" opacity=".2"/>`;
-  s+=`<path d="M92 60 Q104 52 118 52" stroke="${st.hair[1]}" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".9"/>`;
-  s+=`<path d="M76 70 Q120 54 164 70 L164 80 Q120 64 76 80Z" fill="${BAND}" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
-  s+=`<path d="M136 63 Q152 66 164 72 L164 80 Q150 72 136 70Z" fill="${BAND2}"/>`;
-  s+=`<path d="M82 70 Q110 60 132 61" stroke="#fff" stroke-opacity=".45" stroke-width="2" fill="none" stroke-linecap="round"/>`;
-  s+=`<rect x="113" y="61" width="14" height="9" rx="2" fill="#f2f0ea" stroke="${OL}" stroke-width="1.6" transform="rotate(-1 120 66)"/>`;
+  if(H.front) s+=`<path d="${H.front}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  if(H.frontShade) s+=`<path d="${H.frontShade}" fill="#000" opacity=".2"/>`;
+  if(H.shine) s+=`<path d="${H.shine}" stroke="${st.hair[1]}" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".9"/>`;
+  if(L.hairStyle==='bald') s+=`<path d="M96 60 Q108 54 120 54" stroke="#fff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  if(bandOn){
+    s+=`<path d="M76 70 Q120 54 164 70 L164 80 Q120 64 76 80Z" fill="${BAND}" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
+    s+=`<path d="M136 63 Q152 66 164 72 L164 80 Q150 72 136 70Z" fill="${BAND2}"/>`;
+    s+=`<path d="M82 70 Q110 60 132 61" stroke="#fff" stroke-opacity=".45" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+    s+=`<rect x="113" y="61" width="14" height="9" rx="2" fill="#f2f0ea" stroke="${OL}" stroke-width="1.6" transform="rotate(-1 120 66)"/>`;
+  }
   s+=`<g transform="translate(0 2)"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="6.6" stroke-linecap="round" fill="none"/>`;
   s+=`<path d="${BR[0]} ${BR[1]}" stroke="${OL}" stroke-width="3.8" stroke-linecap="round" fill="none"/></g>`;
+  if(L.glasses==='yes'){
+    s+=`<g fill="#bfe6ff" fill-opacity=".14" stroke="${OL}" stroke-width="2.8"><rect x="87" y="94" width="30" height="25" rx="9"/><rect x="123" y="94" width="30" height="25" rx="9"/></g>`;
+    s+=`<path d="M117 103 Q120 100 123 103 M87 101 L78 97 M153 101 L162 97" stroke="${OL}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+    s+=`<path d="M92 99 L98 97 M128 99 L134 97" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>`;
+  }
   s+=`</g>`;
   if(m==='tired') s+=`<g class="zzz" font-family="Baloo 2, Impact, sans-serif" fill="#e6ebff" stroke="${OL}" stroke-width="1.2" paint-order="stroke"><text x="168" y="40" font-size="24">Z</text><text x="188" y="22" font-size="16">z</text></g>`;
   if(m==='proud') s+=`<path d="M170 60 q7 10 0 15 q-7 -5 0 -15Z M66 94 q6 9 0 13 q-6 -4 0 -13Z M176 100 q5 8 0 11 q-5 -3 0 -11Z" fill="#a8e4ff" stroke="${OL}" stroke-width="1.6"/>`;
@@ -965,7 +1084,8 @@ function toPublic(name,p,d,opts){
     displayName:name, level:p.level, stage:stageFor(p.level),
     mood: share? (d? d.mood : 'awake') : null,
     power: power(p, share? (d? d.energy : BALANCE.neutralEnergy) : BALANCE.neutralEnergy),
-    streak:p.streak, updatedAt:new Date().toISOString()
+    streak:p.streak, updatedAt:new Date().toISOString(),
+    ...(opts.look? { look: opts.look } : {})
   };
 }
 const newProgress=()=>({level:1,xp:0,stats:{str:10,end:10,rec:10,dis:10},streak:0,restDays:[],booked:[]});
@@ -1049,6 +1169,8 @@ async function enterApp(){
   const { data: prof, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
   if(error){ toast('Profil konnte nicht geladen werden: '+error.message); }
   myProfile = prof || { id:uid, display_name:'Kämpfer', avatar:null };
+  { const remote = myProfile.avatar && myProfile.avatar.look; const local = lsGetJSON('lvlme_look_'+uid, null);
+    myLook = (remote||local) ? normLook(remote||local) : null; }
   shareMood = lsGetJSON('lvlme_sharemood_'+uid, false);
   $('set-sharemood').checked = !!shareMood;
   $('set-email').textContent = session.user.email || '–';
@@ -1103,9 +1225,13 @@ async function refreshAll(){
 }
 
 async function pushPublicAvatar(lastScore){
-  const pub = toPublic(myProfile.display_name, myProgress, lastScore, { shareMood });
-  const { error } = await sb.from('profiles').update({ avatar: pub }).eq('id', session.user.id);
+  const pub = toPublic(myProfile.display_name, myProgress, lastScore, { shareMood, look: myLook });
+  let { error } = await sb.from('profiles').update({ avatar: pub }).eq('id', session.user.id);
+  if(error && pub.look){ // Migration 0008 fehlt noch -> ohne Aussehen teilen
+    delete pub.look; ({ error } = await sb.from('profiles').update({ avatar: pub }).eq('id', session.user.id));
+  }
   if(error) console.error('avatar push failed', error);
+  return !error;
 }
 
 /* ---------- Rendering: Home ---------- */
@@ -1120,7 +1246,7 @@ function renderHome(today){
   const need = xpNeeded(myProgress.level);
   const skyKey = today? mood : 'awake';
   if(skyKey!==lastSkyKey){ $('skyBox').innerHTML = skySvg(skyKey); lastSkyKey=skyKey; }
-  $('home-avatar').innerHTML = avatarSvg(si, mood, 'home');
+  $('home-avatar').innerHTML = avatarSvg(si, mood, 'home', {look:myLook});
   $('hud-name').textContent = myProfile.display_name;
   $('lvRing').innerHTML = lvRingSvg(myProgress.xp/need, myProgress.level);
   $('stageChip').textContent = stage.n;
@@ -1187,9 +1313,10 @@ function renderProfile(today){
     || '<li><span>Noch kein abgeschlossener Tag. Morgen siehst du hier deine XP von heute.</span></li>';
   $('tab-profile').innerHTML = `
     <div class="card prof-head">
-      <div class="mini2" style="background:${MINISKY[today?mood:'awake']}"><div class="av-wrap" style="width:78px">${avatarSvg(si,mood,'pr')}</div></div>
+      <div class="mini2" style="background:${MINISKY[today?mood:'awake']}"><div class="av-wrap" style="width:78px">${avatarSvg(si,mood,'pr',{look:myLook})}</div></div>
       <div style="min-width:0;display:grid;gap:4px">
         <div class="pnm">${escapeHtml(myProfile.display_name)}</div>
+        <button class="btn secondary" data-openlook style="padding:6px 10px;font-size:13px;justify-self:start">✏️ Aussehen anpassen</button>
         <div class="meta">Level ${p.level} · ${STAGES[si].n}</div>
         <div>${rankBadge(p.level)}</div>
         <div class="meta">Kampfkraft <b style="font-family:var(--f-num);color:var(--sky)">${fmt(power(p,energy))}</b></div>
@@ -1208,7 +1335,7 @@ function closeOverlay(){ clearTimeout(burstTimer); $('overlay').innerHTML=''; }
 function burst(title,sub,stage){
   closeOverlay();
   $('overlay').innerHTML=`<div class="ov burst" id="burst" role="dialog" aria-label="${title}"><div class="rays"></div>
-    <div class="bcontent">${stage!=null?`<div class="bav">${avatarSvg(stage,'proud','lv')}</div>`:''}
+    <div class="bcontent">${stage!=null?`<div class="bav">${avatarSvg(stage,'proud','lv',{look:myLook})}</div>`:''}
     <h2 class="bigword">${title}</h2><p>${sub}</p><small>Tippen zum Schließen</small></div></div>`;
   $('burst').onclick=closeOverlay;
   burstTimer=setTimeout(closeOverlay,4200);
@@ -1227,8 +1354,8 @@ function fight(f){
   const a=me*(.85+Math.random()*.3), b=(f.power||0)*(.85+Math.random()*.3), win=a>=b;
   closeOverlay();
   $('overlay').innerHTML=`<div class="ov fight" role="dialog" aria-label="Kampf gegen ${escapeHtml(f.name)}">
-    <div class="half me"><div class="fav">${avatarSvg(si,'charged','fm')}</div><div class="ftag">${escapeHtml(myProfile.display_name)}<b>${fmt(me)}</b></div></div>
-    <div class="half op"><div class="fav">${avatarSvg(f.stage,'charged','fo',{flip:true})}</div><div class="ftag">${escapeHtml(f.name)}<b>${fmt(f.power)}</b></div></div>
+    <div class="half me"><div class="fav">${avatarSvg(si,'charged','fm',{look:myLook})}</div><div class="ftag">${escapeHtml(myProfile.display_name)}<b>${fmt(me)}</b></div></div>
+    <div class="half op"><div class="fav">${avatarSvg(f.stage,'charged','fo',{flip:true,look:f.look})}</div><div class="ftag">${escapeHtml(f.name)}<b>${fmt(f.power)}</b></div></div>
     <div class="vs" aria-hidden="true">VS</div>
     <div class="fres ${win?'win':'lose'}" id="fres" hidden><h3>${win?'Sieg!':'Niederlage'}</h3>
       <p>${win?`Du schlägst ${escapeHtml(f.name)}! Trainingskampf – zählt nur für die Ehre.`:`${escapeHtml(f.name)} war heute stärker. Guter Schlaf und ein aktiver Tag, dann klappt die Revanche.`}</p>
@@ -1264,7 +1391,7 @@ async function renderFriends(){
     const { data: profs, error: e2 } = await sb.from('profiles').select('id,display_name,avatar').in('id', ids);
     if(e2){ console.error(e2); return; }
     friends=(profs||[]).map(p=>{ const av=p.avatar||{}; return { id:p.id, name:p.display_name||'Kämpfer', level:av.level||1,
-      stage: typeof av.stage==='number'? av.stage : stageFor(av.level||1), mood: av.mood||null, power:av.power||0, streak:av.streak||0 }; });
+      stage: typeof av.stage==='number'? av.stage : stageFor(av.level||1), mood: av.mood||null, power:av.power||0, streak:av.streak||0, look:av.look||null }; });
   }
   const board=[meEntry,...friends].sort((a,b)=>b.power-a.power);
   $('fr-board').innerHTML = board.map((e,i)=>`<li class="${e.me?'me':''}"><span class="pos">${i+1}</span>
@@ -1274,7 +1401,7 @@ async function renderFriends(){
   if(!friends.length){ box.innerHTML='<p class="small muted">Noch keine Freunde. Lad jemanden ein!</p>'; return; }
   box.innerHTML = friends.map((f,i)=>`
     <div class="fcard">
-      <div class="mini2" style="background:${MINISKY[f.mood||'none']}"><div class="av-wrap">${avatarSvg(f.stage, f.mood||'awake', 'f'+i)}</div></div>
+      <div class="mini2" style="background:${MINISKY[f.mood||'none']}"><div class="av-wrap">${avatarSvg(f.stage, f.mood||'awake', 'f'+i, {look:f.look})}</div></div>
       <div class="finfo">
         <div><div class="spread"><div class="nm">${escapeHtml(f.name)}</div><button class="xbtn" data-remove="${f.id}" aria-label="${escapeHtml(f.name)} entfernen">✕</button></div>
           <div class="meta">Lv ${f.level} · <span class="chip" style="font-size:10px">${STAGES[Math.min(STAGES.length-1,f.stage)].n}</span> ${rankBadge(f.level)}</div>
@@ -1407,6 +1534,34 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(error){ toast(/upsert_nutrition/.test(error.message)? 'Bitte zuerst Migration 0007 in Supabase ausführen.' : 'Konnte nicht speichern: '+error.message); return; }
     hide($('modal-food')); toast('Ernährung gespeichert ✓');
     await refreshAll();
+  });
+
+  /* ---------- Charakter-Editor ---------- */
+  let draftLook=null, previewMood='charged';
+  function renderLookEditor(){
+    const si=Math.min(stageFor(myProgress.level),2);
+    $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
+    $('look-moods').innerHTML=['charged','awake','proud','tired','lazy'].map(k=>`<button data-pm="${k}" aria-pressed="${k===previewMood}">${MOODS[k].l}</button>`).join('');
+    $('look-opts').innerHTML=Object.entries(LOOK_OPTIONS).map(([key,grp])=>`<div class="optgrp"><b>${grp.label}</b><div class="optrow">`+
+      Object.entries(grp.items).map(([v,it])=>`<button data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}">${it.c?`<i class="sw" style="background:${key==='skin'?it.c[0]:it.c[key==='band'?0:1]}"></i>`:''}${it.n}</button>`).join('')+`</div></div>`).join('');
+    document.querySelectorAll('#look-moods [data-pm]').forEach(b=>b.onclick=()=>{ previewMood=b.dataset.pm; renderLookEditor(); });
+    document.querySelectorAll('#look-opts [data-k]').forEach(b=>b.onclick=()=>{ draftLook[b.dataset.k]=b.dataset.v; renderLookEditor(); });
+  }
+  function openLook(){ draftLook=normLook(myLook); renderLookEditor(); show($('modal-look')); }
+  document.addEventListener('click', e=>{ if(e.target.closest('[data-openlook]')) openLook(); });
+  $('look-close').addEventListener('click', ()=>hide($('modal-look')));
+  $('look-reset').addEventListener('click', ()=>{ draftLook=normLook(null); renderLookEditor(); });
+  $('look-save').addEventListener('click', async ()=>{
+    myLook={...draftLook};
+    lsSet('lvlme_look_'+session.user.id, JSON.stringify(myLook));
+    $('look-save').disabled=true;
+    const pub = toPublic(myProfile.display_name, myProgress, lastTodayScore, { shareMood, look: myLook });
+    const { error } = await sb.from('profiles').update({ avatar: pub }).eq('id', session.user.id);
+    $('look-save').disabled=false;
+    hide($('modal-look'));
+    if(error){ toast('Gespeichert auf diesem Gerät. Damit Freunde es sehen: Migration 0008 in Supabase ausführen.'); pushPublicAvatar(lastTodayScore); }
+    else { myProfile.avatar=pub; toast('Dein Kämpfer ist gespeichert ✓'); }
+    lastSkyKey=''; renderHome(lastTodayScore); renderProfile(lastTodayScore);
   });
 
   $('fr-create').addEventListener('click', async ()=>{
