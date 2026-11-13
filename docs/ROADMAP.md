@@ -27,6 +27,7 @@ Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Sc
 
 ### Phase 1b – Charakter-Editor („sieht aus wie ich“)
 - [x] **A5** Web: Editor für Hautton, Frisur (6), Haarfarbe, Augen, Bart, Brille, Stirnband; Live-Vorschau; wird als `avatar.look` geteilt, Freunde sehen es. Migration 0008. *(A)*
+- [x] **A6** Web: Gesichtsform, Ohren, Augenbrauen, Nase, Mund, Sommersprossen, Größe (klein/mittel/groß) und Statur (schlank/athletisch/muskulös/kräftig). Migration 0009 (erlaubt beliebige kurze Auswahl-Schlüssel). *(A)*
 - [ ] **B5** iPhone-App: dieselben Optionen in `src/avatar/` (Pfade/Farben aus `docs/web/index.html` → `LOOK_OPTIONS`, `HAIR` übernehmen) und Editor-Screen. **Wichtig:** Beim Hochladen des Avatar-Zustands `look` mitschicken bzw. erhalten, sonst wird es überschrieben.
 
 ### Phase 2 – Wochen-Duell (statt Zufallskampf)
@@ -49,7 +50,7 @@ Idee: Du forderst einen Freund heraus, 7 Tage zählen echte Aktivität (aktive T
 - Push-Benachrichtigungen (z. B. „Luca hat dich herausgefordert“).
 
 ## Für Tom
-- [ ] `0007_nutrition.sql` und `0008_avatar_look.sql` im Supabase SQL Editor ausführen.
+- [ ] `0007_nutrition.sql`, `0008_avatar_look.sql` und `0009_avatar_look_more.sql` im Supabase SQL Editor ausführen.
 - [ ] Testkonten Luca und Tom anlegen (SQL aus dem Chat).
 - [ ] Für Phase 4: Apple Developer Program (ca. 99 €/Jahr) abschließen.
 

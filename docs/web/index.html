@@ -274,6 +274,7 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .lookmoods button,.optrow button{background:var(--surface2); border:1.5px solid var(--line); color:var(--fg); border-radius:12px; padding:6px 10px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px}
 .lookmoods button[aria-pressed="true"],.optrow button[aria-pressed="true"]{border-color:var(--ki); background:rgba(255,138,31,.15)}
 .optgrp{display:grid; gap:6px; margin-top:6px}
+.lookh{font-family:var(--f-display); font-weight:400; font-size:20px; letter-spacing:.04em; margin:14px 0 0; color:var(--ki2)}
 .optgrp>b{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted)}
 .optrow{display:flex; gap:6px; flex-wrap:wrap}
 .optrow .sw{width:16px; height:16px; border-radius:50%; border:1.5px solid rgba(0,0,0,.4); display:block}
@@ -492,7 +493,7 @@ nav.tabs button[aria-current="true"]{color:var(--ki); background:transparent}
     <section class="view hidden" id="tab-settings">
       <div class="card">
         <h2>Dein Kämpfer</h2>
-        <p class="small muted">Gestalte deinen Avatar so, dass er aussieht wie du: Hautton, Frisur, Haarfarbe, Augen, Bart, Brille.</p>
+        <p class="small muted">Gestalte deinen Avatar so, dass er aussieht wie du: Größe, Statur, Hautton, Gesicht, Frisur, Bart, Brille.</p>
         <button class="btn block" data-openlook>✏️ Aussehen anpassen</button>
       </div>
       <div class="card">
@@ -685,18 +686,33 @@ const LOOK_OPTIONS={
     blue:{n:'Blau', c:['#1d4f8a','#6fb6ff']},
     green:{n:'Grün', c:['#2e6b3a','#7fd08a']},
     grey:{n:'Grau', c:['#4a5466','#a9b6c9']} }},
+  face:{ label:'Gesichtsform', items:{ oval:{n:'Oval'}, round:{n:'Rund'}, square:{n:'Kantig'}, narrow:{n:'Schmal'} }},
+  ears:{ label:'Ohren', items:{ small:{n:'Klein'}, normal:{n:'Normal'}, big:{n:'Groß'} }},
+  brows:{ label:'Augenbrauen', items:{ thin:{n:'Dünn'}, normal:{n:'Normal'}, bushy:{n:'Buschig'} }},
+  nose:{ label:'Nase', items:{ small:{n:'Klein'}, round:{n:'Rund'}, long:{n:'Markant'} }},
+  mouth:{ label:'Mund', items:{ narrow:{n:'Schmal'}, normal:{n:'Normal'}, wide:{n:'Breit'} }},
+  freckles:{ label:'Sommersprossen', items:{ none:{n:'Keine'}, yes:{n:'Ja'} }},
   beard:{ label:'Bart', items:{ none:{n:'Keiner'}, stubble:{n:'Stoppeln'}, full:{n:'Vollbart'} }},
   glasses:{ label:'Brille', items:{ none:{n:'Keine'}, yes:{n:'Brille'} }},
+  height:{ label:'Größe', items:{ small:{n:'Klein'}, medium:{n:'Mittel'}, tall:{n:'Groß'} }},
+  build:{ label:'Statur', items:{ slim:{n:'Schlank'}, athletic:{n:'Athletisch'}, muscular:{n:'Muskulös'}, stocky:{n:'Kräftig'} }},
   band:{ label:'Stirnband', items:{
     red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
     black:{n:'Schwarz', c:['#2a2f4c','#151a2c']}, white:{n:'Weiß', c:['#f2f0ea','#c9c5b8']}, none:{n:'Keins'} }}
 };
-const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',beard:'none',glasses:'none',band:'red'};
+const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',height:'medium',build:'athletic',band:'red'};
 function normLook(l){
   const o={...DEFAULT_LOOK};
   if(l && typeof l==='object') for(const k in LOOK_OPTIONS){ if(l[k] && LOOK_OPTIONS[k].items[l[k]]) o[k]=l[k]; }
   return o;
 }
+const LOOK_GROUPS=[['Körper',['height','build','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Extras',['glasses','band']]];
+const FACES={
+  oval:{p:'M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z', ex:0},
+  round:{p:'M76 94 C76 64 96 52 120 52 C144 52 164 64 164 94 C164 116 154 132 138 137 C130 140 126 141 120 141 C114 141 110 140 102 137 C86 132 76 116 76 94Z', ex:-2},
+  square:{p:'M78 90 C78 64 96 52 120 52 C144 52 162 64 162 90 L162 112 C160 124 150 132 138 136 L120 140 L102 136 C90 132 80 124 78 112 Z', ex:0},
+  narrow:{p:'M83 92 C83 64 98 52 120 52 C142 52 157 64 157 92 C157 112 150 126 138 134 C131 139 126 141 120 141 C114 141 109 139 102 134 C90 126 83 112 83 92Z', ex:5}
+};
 let myLook=null; // eigenes Aussehen (aus profiles.avatar.look)
 const HAIR={
   spiky:{ back:'M74 108 L48 100 L64 86 L36 72 L64 64 L44 38 L76 44 L70 14 L98 34 L110 4 L126 30 L150 8 L150 36 L180 26 L168 54 L196 58 L174 76 L192 92 L168 98 L166 110 Z',
@@ -729,15 +745,18 @@ function limb(d,col,w,shade){
   if(shade) s+=`<path d="${d}" fill="none" stroke="${shade}" stroke-width="${w*.38}" stroke-linecap="round" stroke-linejoin="round" transform="translate(${w*.22} ${w*.18})" opacity=".9"/>`;
   return s;
 }
+let BODYK=1, ARMK=1;
+const bx=x=>120+(x-120)*BODYK;
 function arm(sh,el,wr,fist,st){
+  sh=[bx(sh[0]),sh[1]]; el=[bx(el[0]),el[1]]; wr=[bx(wr[0]),wr[1]]; fist=[bx(fist[0]),fist[1]];
   const sleeveEnd=[lerp(sh[0],el[0],.82),lerp(sh[1],el[1],.82)];
   const dx=wr[0]-el[0],dy=wr[1]-el[1],len=Math.hypot(dx,dy)||1;
   const wrapStart=[wr[0]-dx/len*11,wr[1]-dy/len*11];
   let s='';
-  s+=limb(`M${sh[0]} ${sh[1]} L${el[0]} ${el[1]} L${wr[0]} ${wr[1]}`,SK,13,SK2);
-  s+=limb(`M${sh[0]} ${sh[1]} L${sleeveEnd[0]} ${sleeveEnd[1]}`,st.gi,21,st.giShade);
-  s+=limb(`M${wrapStart[0]} ${wrapStart[1]} L${wr[0]} ${wr[1]}`,WRAP,15,WRAP2);
-  s+=`<circle cx="${fist[0]}" cy="${fist[1]}" r="10.5" fill="${SK}" stroke="${OL}" stroke-width="2.6"/>`;
+  s+=limb(`M${sh[0]} ${sh[1]} L${el[0]} ${el[1]} L${wr[0]} ${wr[1]}`,SK,13*ARMK,SK2);
+  s+=limb(`M${sh[0]} ${sh[1]} L${sleeveEnd[0]} ${sleeveEnd[1]}`,st.gi,21*ARMK,st.giShade);
+  s+=limb(`M${wrapStart[0]} ${wrapStart[1]} L${wr[0]} ${wr[1]}`,WRAP,15*ARMK,WRAP2);
+  s+=`<circle cx="${fist[0]}" cy="${fist[1]}" r="${10.5*Math.sqrt(ARMK)}" fill="${SK}" stroke="${OL}" stroke-width="2.6"/>`;
   s+=`<path d="M${fist[0]+1} ${fist[1]+2} a8 8 0 0 0 7 -6 a10.5 10.5 0 0 1 -6 13 z" fill="${SK2}"/>`;
   s+=`<path d="M${fist[0]-5} ${fist[1]-3} q5 -3 10 0 M${fist[0]-5} ${fist[1]+1.5} q4 -2 7 0" stroke="${OL}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
   return s;
@@ -785,6 +804,10 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     hair: sidx<3 ? LOOK_OPTIONS.hair.items[L.hair].c : st0.hair,
     eyes: sidx<2 ? LOOK_OPTIONS.eyes.items[L.eyes].c : st0.eyes};
   const H=HAIR[L.hairStyle]||HAIR.spiky;
+  BODYK={slim:.88,athletic:1,muscular:1.1,stocky:1.18}[L.build]||1;
+  ARMK={slim:.85,athletic:1,muscular:1.28,stocky:1.15}[L.build]||1;
+  const HS={small:.9,medium:1,tall:1.05}[L.height]||1;
+  const F=FACES[L.face]||FACES.oval;
   const m=MOODS[moodKey]?moodKey:'awake';
   const id=String(uniqueId==null?'a':uniqueId).replace(/[^A-Za-z0-9_-]/g,'_');
   const label=`Avatar, ${MOODS[m].l}, Stufe ${st.n}`;
@@ -820,6 +843,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   const headT=m==='tired'?'rotate(6 120 132) translate(2 4)':m==='lazy'?'rotate(-7 120 132) translate(-2 5)':m==='proud'?'rotate(-3 120 132)':'';
   const slump=(m==='tired'||m==='lazy')?4:0;
   s+=`<g class="${bob}">`;
+  s+=`<g transform="translate(120 272) scale(${HS}) translate(-120 -272)">`;
   s+=`<g transform="${headT}">`;
   if(bandOn){
     s+=`<path d="M156 74 Q182 70 204 84 Q186 84 168 80Z" fill="${BAND}" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
@@ -829,6 +853,8 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   if(H.backShade) s+=`<path d="${H.backShade}" fill="#000" opacity=".22"/>`;
   if(H.streaks) s+=`<path d="${H.streaks}" stroke="${st.hair[1]}" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85"/>`;
   s+=`</g>`;
+  const KL=1+(BODYK-1)*.55;
+  s+=`<g transform="translate(120 0) scale(${KL} 1) translate(-120 0)">`;
   s+=`<path d="M86 204 Q120 216 154 204 L166 244 L156 258 L128 258 L124 230 Q120 224 116 230 L112 258 L84 258 L74 244Z" fill="${PANT}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
   s+=`<path d="M124 230 L128 258 L156 258 L166 244 L156 210 Q146 230 124 230Z" fill="${PANT2}" opacity=".8"/>`;
   s+=`<path d="M96 216 L100 248 M140 216 L136 248 M82 232 L92 240 M158 232 L148 240 M108 222 L110 236" stroke="#3d4266" stroke-width="2" stroke-linecap="round" fill="none"/>`;
@@ -837,8 +863,12 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   s+=`<path d="M84 256 L114 256 L116 272 L74 272 Q74 262 84 256Z M126 256 L156 256 Q166 262 166 272 L124 272Z" fill="${BOOT}" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
   s+=`<path d="M74 272 L116 272 L116 267 L76 267Z M124 272 L166 272 L166 267 L124 267Z" fill="${BOOT2}"/>`;
   s+=`<path d="M82 262 Q90 259 98 262 M134 262 Q142 259 150 262" stroke="#6b4a3c" stroke-width="2" fill="none" stroke-linecap="round"/>`;
-  s+=`<path d="M110 128 L110 150 L130 150 L130 128Z" fill="${SK2}" stroke="${OL}" stroke-width="2.4"/>`;
-  s+=`<path d="M110 136 Q120 142 130 136 L130 144 Q120 148 110 144Z" fill="${SK3}" opacity=".6"/>`;
+  s+=`</g>`;
+  const NK=Math.max(1,BODYK);
+  s+=`<g transform="translate(120 0) scale(${NK} 1) translate(-120 0)"><path d="M110 128 L110 150 L130 150 L130 128Z" fill="${SK2}" stroke="${OL}" stroke-width="2.4"/>`;
+  s+=`<path d="M110 136 Q120 142 130 136 L130 144 Q120 148 110 144Z" fill="${SK3}" opacity=".6"/></g>`;
+  s+=`<g transform="translate(120 0) scale(${BODYK} 1) translate(-120 0)">`;
+  if(L.build==='stocky') s+=`<path d="M78 176 Q120 222 162 176 L158 206 Q120 222 82 206Z" fill="${st.gi}" stroke="${OL}" stroke-width="2.6"/>`;
   const torso=`M82 ${150+slump} Q120 ${136+slump} 158 ${150+slump} L168 172 L156 208 Q120 216 84 208 L72 172Z`;
   s+=`<path d="${torso}" fill="${st.gi}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
   s+=`<path d="M138 ${142+slump} Q156 ${146+slump} 168 172 L156 208 Q144 211 132 212 Q144 180 138 ${142+slump}Z" fill="${st.giShade}"/>`;
@@ -853,14 +883,18 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   s+=`<path d="M84 200 Q120 211 156 200" stroke="#fff" stroke-opacity=".18" stroke-width="2" fill="none"/>`;
   s+=`<path d="M128 210 L120 240 L130 238 L134 214Z M138 210 L148 236 L156 230 L142 208Z" fill="${st.belt}" stroke="${OL}" stroke-width="2.3" stroke-linejoin="round"/>`;
   s+=`<rect x="126" y="200" width="16" height="13" rx="4" fill="${st.belt}" stroke="${OL}" stroke-width="2.3"/>`;
+  if(L.build==='muscular') s+=`<path d="M92 166 Q104 172 116 166 M124 166 Q136 172 148 166" stroke="${st.giShade}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>`;
+  s+=`</g>`;
   if(m==='charged'){ s+=arm([84,156],[60,182],[84,176],[93,172],st); s+=arm([156,156],[182,168],[166,144],[160,135],st); }
   else if(m==='proud'){ s+=arm([84,156],[54,160],[58,128],[60,119],st); s+=arm([156,156],[186,160],[182,128],[180,119],st); }
   else if(m==='awake'){ s+=arm([82,158],[70,186],[74,208],[75,216],st); s+=arm([158,158],[170,186],[166,208],[165,216],st); }
   else { const d=6, inn=m==='tired'?4:0; s+=arm([82,160],[72,190],[76+inn,212+d],[77+inn,220+d],st); s+=arm([158,160],[168,190],[164-inn,212+d],[163-inn,220+d],st); }
   s+=`<g transform="${headT}">`;
-  s+=`<ellipse cx="78" cy="102" rx="8" ry="10" fill="${SK}" stroke="${OL}" stroke-width="2.6"/><path d="M79 98 q-4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`;
-  s+=`<ellipse cx="162" cy="102" rx="8" ry="10" fill="${SK2}" stroke="${OL}" stroke-width="2.6"/><path d="M161 98 q4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`;
-  s+=`<path d="M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z" fill="${SK}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
+  { const er={small:[6.5,8],normal:[8,10],big:[11,13]}[L.ears]||[8,10]; const eo=(L.ears==='big'?-3:0)+F.ex;
+    const lx=78+eo, rx_=162-eo;
+    s+=`<ellipse cx="${lx}" cy="102" rx="${er[0]}" ry="${er[1]}" fill="${SK}" stroke="${OL}" stroke-width="2.6"/><path d="M${lx+1} 98 q-4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`;
+    s+=`<ellipse cx="${rx_}" cy="102" rx="${er[0]}" ry="${er[1]}" fill="${SK2}" stroke="${OL}" stroke-width="2.6"/><path d="M${rx_-1} 98 q4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`; }
+  s+=`<path d="${F.p}" fill="${SK}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
   s+=`<path d="M152 92 C153 110 146 124 134 132 C128 136 124 137 121 138 C134 126 146 112 147 94Z" fill="${SK2}"/>`;
   s+=`<path d="M82 86 Q120 74 158 86 L158 92 Q120 82 82 92Z" fill="${SK2}" opacity=".7"/>`;
   const BR={
@@ -871,13 +905,18 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   const ek={charged:'fierce',awake:'open',tired:'half',proud:'happy',lazy:'side'}[m];
   s+=eye(102,106,ek,-1,id,st)+eye(138,106,ek,1,id,st);
   if(m==='tired') s+=`<path d="M92 120 Q101 124 111 120 M129 120 Q139 124 148 120" stroke="#a7737f" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/>`;
-  s+=`<path d="M121 113 L118.5 119.5 L122.5 119.5" stroke="${SK3}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(L.nose==='round') s+=`<path d="M116 117 Q120 122 124 117" stroke="${SK3}" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="120" cy="116" r="2.6" fill="${SK2}"/>`;
+  else if(L.nose==='long') s+=`<path d="M121 106 L117.5 120 L123 120" stroke="${SK3}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  else s+=`<path d="M121 113 L118.5 119.5 L122.5 119.5" stroke="${SK3}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(L.freckles==='yes') s+=`<g fill="${SK3}" opacity=".75"><circle cx="97" cy="117" r="1.3"/><circle cx="102" cy="120" r="1.1"/><circle cx="93" cy="121" r="1.1"/><circle cx="106" cy="116" r="1"/><circle cx="143" cy="117" r="1.3"/><circle cx="138" cy="120" r="1.1"/><circle cx="147" cy="121" r="1.1"/><circle cx="134" cy="116" r="1"/></g>`;
   if(L.beard==='stubble'){
     s+=`<path d="M90 112 C94 128 106 138 120 139 C134 138 146 128 150 112 C146 122 138 130 128 128 Q120 125 112 128 C102 130 94 122 90 112Z" fill="${st.hair[0]}" opacity=".28"/>`;
   } else if(L.beard==='full'){
     s+=`<path d="M84 104 C84 128 100 148 120 150 C140 148 156 128 156 104 C150 120 140 128 130 126 Q120 121 110 126 C100 128 90 120 84 104Z" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
     s+=`<path d="M106 122 Q113 116 120 120 Q127 116 134 122 Q127 125 120 123 Q113 125 106 122Z" fill="${st.hair[0]}" stroke="${OL}" stroke-width="1.6" stroke-linejoin="round"/>`;
   }
+  const MK={narrow:.8,normal:1,wide:1.22}[L.mouth]||1;
+  s+=`<g transform="translate(120 0) scale(${MK} 1) translate(-120 0)">`;
   if(m==='charged'){
     s+=`<path d="M108 125 Q120 130 132 122 Q128 134 118 134 Q110 133 108 125Z" fill="#5a1f2c" stroke="${OL}" stroke-width="2" stroke-linejoin="round"/>`;
     s+=`<path d="M109.5 125.6 Q120 129.6 130.6 123.2 L130 126.6 Q120 132 110.6 128.4Z" fill="#fff"/>`;
@@ -891,6 +930,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<ellipse cx="94" cy="120" rx="8" ry="3.6" fill="#ff8f9a" opacity=".55"/><ellipse cx="146" cy="120" rx="8" ry="3.6" fill="#ff8f9a" opacity=".55"/>`;
     s+=`<path d="M90 118 l3 -3 M95 118 l3 -3 M142 118 l3 -3 M147 118 l3 -3" stroke="#e05a6a" stroke-width="1.4" stroke-linecap="round"/>`;
   }else{ s+=`<path d="M112 127 Q116 125 120 127 Q124 129 128 126" stroke="${OL}" stroke-width="2.3" fill="none" stroke-linecap="round"/>`; }
+  s+=`</g>`;
   if(H.front) s+=`<path d="${H.front}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
   if(H.frontShade) s+=`<path d="${H.frontShade}" fill="#000" opacity=".2"/>`;
   if(H.shine) s+=`<path d="${H.shine}" stroke="${st.hair[1]}" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".9"/>`;
@@ -901,8 +941,9 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<path d="M82 70 Q110 60 132 61" stroke="#fff" stroke-opacity=".45" stroke-width="2" fill="none" stroke-linecap="round"/>`;
     s+=`<rect x="113" y="61" width="14" height="9" rx="2" fill="#f2f0ea" stroke="${OL}" stroke-width="1.6" transform="rotate(-1 120 66)"/>`;
   }
-  s+=`<g transform="translate(0 2)"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="6.6" stroke-linecap="round" fill="none"/>`;
-  s+=`<path d="${BR[0]} ${BR[1]}" stroke="${OL}" stroke-width="3.8" stroke-linecap="round" fill="none"/></g>`;
+  const BW={thin:2.6,normal:3.8,bushy:5.6}[L.brows]||3.8;
+  s+=`<g transform="translate(0 2)"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="${BW+2.8}" stroke-linecap="round" fill="none"/>`;
+  s+=`<path d="${BR[0]} ${BR[1]}" stroke="${L.brows==='bushy'?st.hair[0]:OL}" stroke-width="${BW}" stroke-linecap="round" fill="none"/></g>`;
   if(L.glasses==='yes'){
     s+=`<g fill="#bfe6ff" fill-opacity=".14" stroke="${OL}" stroke-width="2.8"><rect x="87" y="94" width="30" height="25" rx="9"/><rect x="123" y="94" width="30" height="25" rx="9"/></g>`;
     s+=`<path d="M117 103 Q120 100 123 103 M87 101 L78 97 M153 101 L162 97" stroke="${OL}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
@@ -916,7 +957,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<path d="M160 130 L184 116 M160 130 L188 134 M160 130 L176 150 M168 125 Q172 132 179 131 M172 139 Q170 133 176 128 M176 120 Q180 128 186 128" stroke="#d6d2e2" stroke-width="1.1" fill="none" opacity=".7"/>`;
     s+=`<path d="M176 150 L178 164" stroke="#d6d2e2" stroke-width=".9" opacity=".6"/><circle cx="178" cy="166" r="2.4" fill="#2a2433"/>`;
   }
-  s+=`</g>`;
+  s+=`</g></g>`;
   if(opts.flip) s+=`</g>`;
   s+=`</svg>`;
   return s;
@@ -1542,8 +1583,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const si=Math.min(stageFor(myProgress.level),2);
     $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
     $('look-moods').innerHTML=['charged','awake','proud','tired','lazy'].map(k=>`<button data-pm="${k}" aria-pressed="${k===previewMood}">${MOODS[k].l}</button>`).join('');
-    $('look-opts').innerHTML=Object.entries(LOOK_OPTIONS).map(([key,grp])=>`<div class="optgrp"><b>${grp.label}</b><div class="optrow">`+
-      Object.entries(grp.items).map(([v,it])=>`<button data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}">${it.c?`<i class="sw" style="background:${key==='skin'?it.c[0]:it.c[key==='band'?0:1]}"></i>`:''}${it.n}</button>`).join('')+`</div></div>`).join('');
+    $('look-opts').innerHTML=LOOK_GROUPS.map(([title,keys])=>`<h3 class="lookh">${title}</h3>`+keys.map(key=>{ const grp=LOOK_OPTIONS[key];
+      return `<div class="optgrp"><b>${grp.label}</b><div class="optrow">`+
+      Object.entries(grp.items).map(([v,it])=>`<button data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}">${it.c?`<i class="sw" style="background:${key==='skin'?it.c[0]:it.c[key==='band'?0:1]}"></i>`:''}${it.n}</button>`).join('')+`</div></div>`; }).join('')).join('');
     document.querySelectorAll('#look-moods [data-pm]').forEach(b=>b.onclick=()=>{ previewMood=b.dataset.pm; renderLookEditor(); });
     document.querySelectorAll('#look-opts [data-k]').forEach(b=>b.onclick=()=>{ draftLook[b.dataset.k]=b.dataset.v; renderLookEditor(); });
   }
@@ -1559,7 +1601,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const { error } = await sb.from('profiles').update({ avatar: pub }).eq('id', session.user.id);
     $('look-save').disabled=false;
     hide($('modal-look'));
-    if(error){ toast('Gespeichert auf diesem Gerät. Damit Freunde es sehen: Migration 0008 in Supabase ausführen.'); pushPublicAvatar(lastTodayScore); }
+    if(error){ toast('Gespeichert auf diesem Gerät. Damit Freunde es sehen: Migration 0009 in Supabase ausführen.'); pushPublicAvatar(lastTodayScore); }
     else { myProfile.avatar=pub; toast('Dein Kämpfer ist gespeichert ✓'); }
     lastSkyKey=''; renderHome(lastTodayScore); renderProfile(lastTodayScore);
   });
