@@ -22,8 +22,8 @@ Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Sc
 ## Schritte
 
 ### Phase 1 – Aufräumen und angleichen
-- [ ] **A1** Web: Zufalls-„Kampf“-Knopf bei Freunden entfernen (Rangliste bleibt).
-- [ ] **B1** iPhone-App: Spielregeln in `src/game/` an die Webversion angleichen – Ränge (Bronze bis Großmeister, je III/II/I, nur aufsteigend), Ernährungs-XP (+10 fürs Erfassen, +10 ab 2 L Wasser), nur abgeschlossene Tage buchen. Mit Tests.
+- [x] **A1** Web: Kampfkraft und Zufalls-„Kampf“ entfernt. Rangliste jetzt nach Level (bei Gleichstand Serie); HUD zeigt Serie und Rang. *(A)*
+- [ ] **B1** iPhone-App: Spielregeln in `src/game/` an die Webversion angleichen – Ränge (Bronze bis Großmeister, je III/II/I, nur aufsteigend), Ernährungs-XP (+10 fürs Erfassen, +10 ab 2 L Wasser), nur abgeschlossene Tage buchen. **Kampfkraft aus der App entfernen** (Tom will sie nicht mehr; Rangliste nach Level, dann Serie). Mit Tests.
 
 ### Phase 1b – Charakter-Editor („sieht aus wie ich“)
 - [x] **A5** Web: Editor für Hautton, Frisur (6), Haarfarbe, Augen, Bart, Brille, Stirnband; Live-Vorschau; wird als `avatar.look` geteilt, Freunde sehen es. Migration 0008. *(A)*

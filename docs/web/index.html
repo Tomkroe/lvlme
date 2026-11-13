@@ -176,7 +176,7 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .chip{display:inline-block; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; background:rgba(255,255,255,.14); color:#fff; white-space:nowrap}
 .power{padding:7px 13px 6px; text-align:right}
 .power small{display:block; font-family:var(--f-mono); font-size:9.5px; letter-spacing:.16em; color:rgba(255,255,255,.75)}
-.power b{display:flex; align-items:center; justify-content:flex-end; gap:5px; font-family:var(--f-num); font-weight:700; font-size:22px; line-height:1.1; color:#fff; font-variant-numeric:tabular-nums; text-shadow:0 0 14px rgba(63,208,255,.8)}
+.power b{display:flex; align-items:center; justify-content:flex-end; gap:5px; font-family:var(--f-num); font-weight:700; font-size:22px; line-height:1.1; color:#fff; font-variant-numeric:tabular-nums; text-shadow:0 0 14px rgba(255,138,31,.8)}
 .bubble{position:absolute; left:12px; top:84px; max-width:160px; z-index:5; background:#fff; color:var(--outline); border:2.5px solid var(--outline); border-radius:18px; padding:7px 11px 8px; font-size:12.5px; line-height:1.35; font-weight:600; box-shadow:3px 4px 0 rgba(26,20,38,.45)}
 .bubble b{display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#6b5f84; font-weight:800; margin-bottom:1px}
 .bubble::before,.bubble::after{content:""; position:absolute; border-style:solid}
@@ -398,7 +398,7 @@ nav.tabs button[aria-current="true"]{color:var(--ki); background:transparent}
               <div class="lvring" id="lvRing"></div>
               <div style="min-width:0"><div class="nm" id="hud-name">–</div><span class="chip" id="stageChip">Grundform</span></div>
             </div>
-            <div class="glass power"><small>KAMPFKRAFT</small><b><svg width="13" height="16" viewBox="0 0 13 16"><path d="M8 0 L0 9 H5.5 L4 16 L13 6 H7.5Z" fill="#7fe3ff"/></svg><span id="kk">0</span></b></div>
+            <div class="glass power"><small>SERIE</small><b><span aria-hidden="true">🔥</span><span id="kk">0</span></b><small id="hud-rank" style="margin-top:2px;letter-spacing:.08em">–</small></div>
           </div>
           <div class="bubble" id="bubble" role="status"><b id="home-moodlabel"></b><span id="home-moodtext"></span></div>
           <div class="hero" id="home-avatar"></div>
@@ -432,7 +432,7 @@ nav.tabs button[aria-current="true"]{color:var(--ki); background:transparent}
     <!-- ---- Freunde ---- -->
     <section class="view hidden" id="tab-friends">
       <div class="card">
-        <div class="spread"><h2>Rangliste</h2><span class="small muted">nach Kampfkraft</span></div>
+        <div class="spread"><h2>Rangliste</h2><span class="small muted">nach Level</span></div>
         <ol class="board" id="fr-board"></ol>
       </div>
       <div class="card">
@@ -513,7 +513,7 @@ nav.tabs button[aria-current="true"]{color:var(--ki); background:transparent}
       <div class="card">
         <h2>Tagesform teilen</h2>
         <div class="spread">
-          <p class="small muted" style="max-width:70%">Freunde sehen deine aktuelle Stimmung und tagesaktuelle Kampfkraft. Aus (Standard): Freunde sehen nur Level, Stufe und Serie.</p>
+          <p class="small muted" style="max-width:70%">Freunde sehen deine aktuelle Stimmung. Aus (Standard): Freunde sehen nur Level, Stufe, Serie und Aussehen.</p>
           <label style="display:flex;align-items:center;gap:8px;white-space:nowrap">
             <input type="checkbox" id="set-sharemood" style="width:20px;height:20px">
           </label>
@@ -710,7 +710,7 @@ const LOOK_OPTIONS={
 const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy'};
 /* Schieberegler (0–10). Gespeichert als Buchstabe a–k, weil der geteilte Avatar nur
    kurze Wörter erlaubt. Rein optisch: Muskeln und Körperfett ändern nur die Figur,
-   nie XP, Level oder Kampfkraft – und es werden keine Prozentwerte angezeigt oder geteilt. */
+   nie XP oder Level – und es werden keine Prozentwerte angezeigt oder geteilt. */
 const LOOK_SLIDERS={
   muscle:{label:'Muskeln', lo:'wenig', hi:'viel', def:5},
   fat:{label:'Körperfett', lo:'wenig', hi:'viel', def:3}
@@ -1411,7 +1411,8 @@ function renderHome(today){
   $('lvRing').innerHTML = lvRingSvg(myProgress.xp/need, myProgress.level);
   $('stageChip').textContent = stage.n;
   $('stageChip').style.background = stage.aura? stage.aura+'55' : 'rgba(255,255,255,.14)';
-  $('kk').textContent = fmt(power(myProgress, energy));
+  $('kk').textContent = myProgress.streak + (myProgress.streak===1?' Tag':' Tage');
+  { const rk=rankFor(myProgress.level); $('hud-rank').textContent=rk.label.toUpperCase(); $('hud-rank').style.color=rk.color; }
   const bub=$('bubble');
   if(today && today.overtraining){
     bub.classList.add('warn'); $('home-moodlabel').textContent='Achtung: Übertraining';
@@ -1434,7 +1435,6 @@ function renderHome(today){
   let pills = today? `<span class="pill">Heute ca. +${today.xp} XP</span>` : '';
   if(today && today.overtraining) pills+='<span class="pill warn">kein Bonus: Übertraining</span>';
   else if(today && today.recovery>=67) pills+='<span class="pill good">+25 % Erholungsbonus</span>';
-  pills += `<span class="pill sky">🔥 ${myProgress.streak} Tage Serie</span>` + rankBadge(myProgress.level);
   $('today').innerHTML = pills;
   const nx=STAGES[si+1];
   $('nextstage').innerHTML = nx? `<i style="background:${nx.aura};box-shadow:0 0 10px ${nx.aura}"></i><div>Nächste Verwandlung: <b>${nx.n}</b></div><span>noch ${nx.lvl-myProgress.level} Level</span>`
@@ -1479,7 +1479,7 @@ function renderProfile(today){
         <button class="btn secondary" data-openlook style="padding:6px 10px;font-size:13px;justify-self:start">✏️ Aussehen anpassen</button>
         <div class="meta">Level ${p.level} · ${STAGES[si].n}</div>
         <div>${rankBadge(p.level)}</div>
-        <div class="meta">Kampfkraft <b style="font-family:var(--f-num);color:var(--sky)">${fmt(power(p,energy))}</b></div>
+        <div class="meta">🔥 ${p.streak} Tage Serie</div>
       </div>
     </div>
     <div class="card"><h2>Stats</h2>${bars}<div class="streakrow"><b>${p.streak}</b><span>Tage in Folge aktiv</span></div></div>
@@ -1542,7 +1542,7 @@ function renderHistory(){
 async function renderFriends(){
   const uid=session.user.id;
   const myEnergy = lastTodayScore? lastTodayScore.energy : BALANCE.neutralEnergy;
-  const meEntry = { id:uid, name:myProfile.display_name, level:myProgress.level, power:power(myProgress,myEnergy), streak:myProgress.streak, me:true };
+  const meEntry = { id:uid, name:myProfile.display_name, level:myProgress.level, streak:myProgress.streak, me:true };
   const { data: ships, error } = await sb.from('friendships').select('user_a,user_b');
   if(error){ console.error(error); return; }
   const ids = (ships||[]).map(f=> f.user_a===uid? f.user_b : f.user_a);
@@ -1551,11 +1551,11 @@ async function renderFriends(){
     const { data: profs, error: e2 } = await sb.from('profiles').select('id,display_name,avatar').in('id', ids);
     if(e2){ console.error(e2); return; }
     friends=(profs||[]).map(p=>{ const av=p.avatar||{}; return { id:p.id, name:p.display_name||'Kämpfer', level:av.level||1,
-      stage: typeof av.stage==='number'? av.stage : stageFor(av.level||1), mood: av.mood||null, power:av.power||0, streak:av.streak||0, look:av.look||null }; });
+      stage: typeof av.stage==='number'? av.stage : stageFor(av.level||1), mood: av.mood||null, streak:av.streak||0, look:av.look||null }; });
   }
-  const board=[meEntry,...friends].sort((a,b)=>b.power-a.power);
+  const board=[meEntry,...friends].sort((a,b)=> b.level-a.level || b.streak-a.streak);
   $('fr-board').innerHTML = board.map((e,i)=>`<li class="${e.me?'me':''}"><span class="pos">${i+1}</span>
-    <div class="who2"><b>${escapeHtml(e.name)}${e.me?' (du)':''}</b><span>Lv ${e.level} · ${rankFor(e.level).label}</span></div><span class="val">${fmt(e.power)}</span></li>`).join('')
+    <div class="who2"><b>${escapeHtml(e.name)}${e.me?' (du)':''}</b><span>${rankFor(e.level).label} · 🔥 ${e.streak}</span></div><span class="val">Lv ${e.level}</span></li>`).join('')
     + (friends.length? '' : '<li><span class="pos">·</span><div class="who2"><span>Lad Freunde ein, dann kämpft ihr hier um Platz 1.</span></div><span></span></li>');
   const box=$('fr-list');
   if(!friends.length){ box.innerHTML='<p class="small muted">Noch keine Freunde. Lad jemanden ein!</p>'; return; }
@@ -1565,11 +1565,10 @@ async function renderFriends(){
       <div class="finfo">
         <div><div class="spread"><div class="nm">${escapeHtml(f.name)}</div><button class="xbtn" data-remove="${f.id}" aria-label="${escapeHtml(f.name)} entfernen">✕</button></div>
           <div class="meta">Lv ${f.level} · <span class="chip" style="font-size:10px">${STAGES[Math.min(STAGES.length-1,f.stage)].n}</span> ${rankBadge(f.level)}</div>
-          <div class="meta">${f.mood? MOODS[f.mood].l : 'teilt Tagesform nicht'} · 🔥 ${f.streak}</div></div>
-        <div class="bot"><div class="kk"><small>KAMPFKRAFT</small><b>${fmt(f.power)}</b></div><button class="fbtn" data-fight="${i}">Kampf</button></div>
+          <div class="meta">${f.mood? MOODS[f.mood].l : 'teilt Tagesform nicht'}</div></div>
+        <div class="bot"><div class="kk"><small>SERIE</small><b style="color:var(--ki2)">🔥 ${f.streak}</b></div></div>
       </div>
     </div>`).join('');
-  box.querySelectorAll('[data-fight]').forEach(b=>b.onclick=()=>fight(friends[+b.dataset.fight]));
   box.querySelectorAll('[data-remove]').forEach(btn=>{
     btn.addEventListener('click', async ()=>{
       const fid=btn.getAttribute('data-remove');
