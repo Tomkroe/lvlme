@@ -33,7 +33,9 @@ Dauer: etwa 15 Minuten. Kosten: im kostenlosen Tarif von Supabase ist das enthal
 
 9. Danach `0005_delete_account_health.sql` und `0006_shortcut_robust.sql` ausführen. 0006 sorgt dafür, dass der Kurzbefehl auch mit leeren Werten (z. B. keine Trainingsminuten ohne Apple Watch) und deutschen Kommazahlen funktioniert.
 
-10. Anmeldung in der Webversion: per **E-Mail + Passwort** (geht auch in der App vom Home-Bildschirm) oder per Anmeldelink (nur im Browser). Eigene Mail-Vorlagen mit Code bräuchten einen eigenen SMTP-Server, deshalb Passwort.
+10. `0007_nutrition.sql` ausführen: Ernährung (kcal, Protein, Wasser) für Webversion und Kurzbefehl.
+
+11. Anmeldung in der Webversion: per **E-Mail + Passwort** (geht auch in der App vom Home-Bildschirm) oder per Anmeldelink (nur im Browser). Eigene Mail-Vorlagen mit Code bräuchten einen eigenen SMTP-Server, deshalb Passwort.
 
 Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue Dateien in `supabase/migrations/` immer in der Reihenfolge ihrer Nummer ausführen.
 
