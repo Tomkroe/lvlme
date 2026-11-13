@@ -875,15 +875,27 @@ function limb(d,col,w,shade){
   if(shade) s+=`<path d="${d}" fill="none" stroke="${shade}" stroke-width="${w*.38}" stroke-linecap="round" stroke-linejoin="round" transform="translate(${w*.22} ${w*.18})" opacity=".9"/>`;
   return s;
 }
-let BODYK=1, ARMK=1, SLEEVE='gi', TOP='#41507e', TOP2='#2d385c';
+let BODYK=1, ARMK=1, SLEEVE='gi', TOP='#41507e', TOP2='#2d385c', MUSF=0;
 const bx=x=>120+(x-120)*BODYK;
 function arm(sh,el,wr,fist,st){
-  sh=[bx(sh[0]),sh[1]]; el=[bx(el[0]),el[1]]; wr=[bx(wr[0]),wr[1]]; fist=[bx(fist[0]),fist[1]];
+  const spread=(sh[0]<120?-1:1)*MUSF*5; sh=[bx(sh[0])+spread,sh[1]]; el=[bx(el[0])+spread*.6,el[1]]; wr=[bx(wr[0]),wr[1]]; fist=[bx(fist[0]),fist[1]];
   const sleeveEnd=[lerp(sh[0],el[0],.82),lerp(sh[1],el[1],.82)];
   const dx=wr[0]-el[0],dy=wr[1]-el[1],len=Math.hypot(dx,dy)||1;
   const wrapStart=[wr[0]-dx/len*11,wr[1]-dy/len*11];
   let s='';
   s+=limb(`M${sh[0]} ${sh[1]} L${el[0]} ${el[1]} L${wr[0]} ${wr[1]}`,SK,13*ARMK,SK2);
+  // sichtbare Muskeln: Bizeps/Trizeps am Oberarm, Unterarm-Muskel
+  if(MUSF>0 && SLEEVE!=='full' && SLEEVE!=='tight'){
+    const seg=(a,b,t)=>[lerp(a[0],b[0],t),lerp(a[1],b[1],t)];
+    const ang=(a,b)=>Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;
+    const [bx_,by_]=seg(sh,el,.56), a1=ang(sh,el), bw=(6.5+MUSF*4.5)*ARMK*.62, bl=Math.hypot(el[0]-sh[0],el[1]-sh[1])*.42;
+    s+=`<ellipse cx="${bx_}" cy="${by_}" rx="${bl}" ry="${bw}" transform="rotate(${a1} ${bx_} ${by_})" fill="${SK}" stroke="${OL}" stroke-width="2.2"/>`;
+    s+=`<ellipse cx="${bx_}" cy="${by_}" rx="${bl*.8}" ry="${bw*.45}" transform="rotate(${a1} ${bx_} ${by_}) translate(0 ${bw*.45})" fill="${SK2}" opacity=".75"/>`;
+    s+=`<path d="M${bx_-bl*.5} ${by_} q${bl*.5} ${-bw*.5} ${bl} 0" transform="rotate(${a1} ${bx_} ${by_})" stroke="#fff" stroke-opacity=".35" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+    const [fx,fy]=seg(el,wr,.32), a2=ang(el,wr), fw=(5.5+MUSF*2.6)*ARMK*.62, fl=Math.hypot(wr[0]-el[0],wr[1]-el[1])*.34;
+    s+=`<ellipse cx="${fx}" cy="${fy}" rx="${fl}" ry="${fw}" transform="rotate(${a2} ${fx} ${fy})" fill="${SK}" stroke="${OL}" stroke-width="2"/>`;
+    s+=`<ellipse cx="${fx}" cy="${fy}" rx="${fl*.8}" ry="${fw*.4}" transform="rotate(${a2} ${fx} ${fy}) translate(0 ${fw*.45})" fill="${SK2}" opacity=".7"/>`;
+  }
   if(SLEEVE==='gi'){
     s+=limb(`M${sh[0]} ${sh[1]} L${sleeveEnd[0]} ${sleeveEnd[1]}`,TOP,21*ARMK,TOP2);
     s+=limb(`M${wrapStart[0]} ${wrapStart[1]} L${wr[0]} ${wr[1]}`,WRAP,15*ARMK,WRAP2);
@@ -895,7 +907,8 @@ function arm(sh,el,wr,fist,st){
     s+=limb(`M${sh[0]} ${sh[1]} L${el[0]} ${el[1]} L${wrapStart[0]} ${wrapStart[1]}`,TOP,w,TOP2);
     if(SLEEVE==='full') s+=limb(`M${lerp(el[0],wrapStart[0],.8)} ${lerp(el[1],wrapStart[1],.8)} L${wrapStart[0]} ${wrapStart[1]}`,TOP2,w+1,null);
   } else if(SLEEVE==='none'){
-    s+=`<circle cx="${sh[0]}" cy="${sh[1]+2}" r="${8.5*ARMK}" fill="${SK}" stroke="${OL}" stroke-width="2.4"/>`;
+    s+=`<circle cx="${sh[0]}" cy="${sh[1]+2}" r="${(8+MUSF*2.6)*ARMK*.8}" fill="${SK}" stroke="${OL}" stroke-width="2.4"/>`;
+    s+=`<path d="M${sh[0]-5} ${sh[1]+8} q5 4 10 0" stroke="${SK2}" stroke-width="2.4" fill="none" opacity=".8"/>`;
     s+=`<path d="M${sh[0]-4} ${sh[1]+6} q4 3 8 0" stroke="${SK3}" stroke-width="1.6" fill="none" opacity=".7"/>`;
   }
   s+=`<circle cx="${fist[0]}" cy="${fist[1]}" r="${10.5*Math.sqrt(ARMK)}" fill="${SK}" stroke="${OL}" stroke-width="2.6"/>`;
@@ -934,6 +947,86 @@ function eye(cx,cy,kind,side,id,st){
   s+=`<path d="M${cx-5} ${cy+12.2} Q${cx} ${cy+13.8} ${cx+5} ${cy+12.2}" fill="none" stroke="${OL}" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>`;
   return s;
 }
+/* ---------- Realistisches Gesicht (inspiriert von modernen Avatar-Apps) ---------- */
+function mixHex(a,b,t){ const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)); const A=p(a),B=p(b); return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join(''); }
+function realEye(cx,cy,side,kind,id,col,look){
+  const w=12.6,h=6.6, cid=`ce${id}${side>0?'r':'l'}`;
+  const al=`M${-w} .6 Q${-w*.3} ${-h*1.25} ${w*.35} ${-h*.95} Q${w} ${-h*.3} ${w} .4 Q0 ${h*1.05} ${-w} .6Z`;
+  let s=`<g transform="translate(${cx} ${cy}) scale(${side} 1)">`;
+  if(kind==='happy'){
+    s+=`<path d="M${-w} 1.5 Q0 ${-h*1.4} ${w} 0" stroke="${OL}" stroke-width="2.3" fill="none" stroke-linecap="round"/>`;
+    s+=`<path d="M${w-.5} .2 l3 -1.6" stroke="${OL}" stroke-width="1.5" stroke-linecap="round"/>`;
+    s+=`<path d="M${-w+2} 4 Q0 ${h+1} ${w-2} 3" stroke="${SK3}" stroke-width="1.1" fill="none" opacity=".6"/>`;
+    return s+`</g>`;
+  }
+  s+=`<clipPath id="${cid}"><path d="${al}"/></clipPath>`;
+  s+=`<path d="${al}" fill="#f7f4f2"/>`;
+  s+=`<g clip-path="url(#${cid})">`;
+  const lx=look*side;
+  s+=`<circle cx="${lx}" cy=".9" r="5.6" fill="${col[1]}"/><circle cx="${lx}" cy=".9" r="5.6" fill="none" stroke="${col[0]}" stroke-width="1.6"/>`;
+  s+=`<circle cx="${lx}" cy=".9" r="2.6" fill="#140d10"/><circle cx="${lx+2*side}" cy="-1.1" r="1.4" fill="#fff"/>`;
+  s+=`<path d="M${-w-2} ${-h*2} H${w+2} V${-h*.55} Q0 ${-h*1.25} ${-w-2} ${-h*.35}Z" fill="#000" opacity=".16"/>`;
+  const cover = kind==='fierce'? .35 : kind==='half'? .7 : kind==='side'? .5 : 0;
+  if(cover) s+=`<path d="M${-w-2} ${-h*2} H${w+2} V${-h*1.1+cover*h*1.6} Q0 ${-h*1.3+cover*h*1.5} ${-w-2} ${-h*.8+cover*h*1.5}Z" fill="${SK}"/>`;
+  s+=`</g>`;
+  const ly = cover? cover*h*1.4 : 0;
+  s+=`<path d="M${-w-.5} ${.8+ly*.3} Q${-w*.3} ${-h*1.35+ly} ${w*.35} ${-h*1.05+ly} Q${w} ${-h*.35+ly*.6} ${w+1.5} ${-.6+ly*.3}" stroke="${OL}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+  s+=`<path d="M${w+1} ${-.4+ly*.3} l3 -2.2" stroke="${OL}" stroke-width="1.5" stroke-linecap="round"/>`;
+  if(!cover) s+=`<path d="M${-w+1} ${-h-1.6} Q0 ${-h*2.3} ${w} ${-h-1.2}" stroke="${SK3}" stroke-width="1.2" fill="none" opacity=".7"/>`;
+  s+=`<path d="M${-w+2} 2.4 Q0 ${h+1.6} ${w-1} 1.8" stroke="${SK3}" stroke-width="1.1" fill="none" opacity=".65"/>`;
+  return s+`</g>`;
+}
+function realBrow(cx,cy,side,m,thick,col){
+  const rot={charged:-13,awake:0,tired:10,proud:-4,lazy:4}[m]||0, dy={proud:-3,charged:1}[m]||0;
+  return `<g transform="translate(${cx} ${cy+dy}) scale(${side} 1) rotate(${rot}) scale(1 ${thick})"><path d="M-9 2 Q-3 -3.2 5 -3.6 Q10 -3.3 12.5 -1 Q8 -1.6 4 -1.1 Q-3 -.4 -9 3.6Z" fill="${col}"/></g>`;
+}
+function realFace(m,L,st,id,F){
+  let s='';
+  const lipU=mixHex(SK3,'#a5404c',.45), lipL=mixHex(SK2,'#cc6f78',.4), inner='#4a1820';
+  // Wangen-Schatten und leichtes Rouge
+  s+=`<ellipse cx="97" cy="119" rx="9" ry="5" fill="#e07a7c" opacity=".14"/><ellipse cx="143" cy="119" rx="9" ry="5" fill="#e07a7c" opacity=".14"/>`;
+  // Augen
+  const ek={charged:'fierce',awake:'open',tired:'half',proud:'happy',lazy:'side'}[m];
+  const ecol=st.eyes;
+  s+=realEye(103,104,-1,ek,id,ecol,m==='lazy'?3:0)+realEye(137,104,1,ek,id,ecol,m==='lazy'?3:0);
+  // Augenbrauen
+  const th={thin:.95,normal:1.35,bushy:1.85}[L.brows]||1.35, bcol=mixHex(st.hair[0],'#000000',.15);
+  s+=realBrow(103,92,-1,m,th,bcol)+realBrow(137,92,1,m,th,bcol);
+  // Nase
+  const NT={small:'translate(120 116) scale(.88) translate(-120 -116)', round:'translate(120 116) scale(1.18 1.02) translate(-120 -116)', long:'translate(120 108) scale(1.04 1.22) translate(-120 -108)'}[L.nose]||'';
+  s+=`<g transform="${NT}"><path d="M123 95 Q125.5 105 126.5 112" stroke="${SK3}" stroke-width="1.5" fill="none" opacity=".5" stroke-linecap="round"/>`;
+  s+=`<path d="M113.5 114.5 Q111.6 119 115.6 120.2 Q118 121.2 120 120.6 Q122 121.2 124.4 120.2 Q128.4 119 126.5 114.5" stroke="${SK3}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+  s+=`<ellipse cx="116.6" cy="118.6" rx="1.6" ry=".95" fill="#5a2e28" opacity=".55"/><ellipse cx="123.4" cy="118.6" rx="1.6" ry=".95" fill="#5a2e28" opacity=".55"/>`;
+  s+=`<circle cx="120.5" cy="115.6" r="1.7" fill="#fff" opacity=".3"/></g>`;
+  // Nasolabialfalte leicht bei Lächeln
+  if(m==='proud'||m==='charged') s+=`<path d="M110 118 Q106 123 107 128 M130 118 Q134 123 133 128" stroke="${SK3}" stroke-width="1.2" fill="none" opacity=".45" stroke-linecap="round"/>`;
+  // Mund
+  const MK={narrow:.85,normal:1,wide:1.18}[L.mouth]||1;
+  s+=`<g transform="translate(120 0) scale(${MK} 1) translate(-120 0)">`;
+  if(m==='charged'){
+    s+=`<path d="M107 125 Q120 122.4 133 124.6 Q130 133.5 120 134.4 Q110 133.6 107 125Z" fill="${inner}" stroke="${OL}" stroke-width="1.4" stroke-linejoin="round"/>`;
+    s+=`<path d="M108.6 125.4 Q120 123.4 131.4 125.2 L130.6 128.4 Q120 127.2 109.4 128.6Z" fill="#fbfaf7"/>`;
+    s+=`<path d="M111 133 Q120 136.6 129 133" stroke="${lipL}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+  } else if(m==='proud'){
+    s+=`<path d="M105 123.4 Q120 121 135 123.4 Q132 135.5 120 136.4 Q108 135.5 105 123.4Z" fill="${inner}" stroke="${OL}" stroke-width="1.4" stroke-linejoin="round"/>`;
+    s+=`<path d="M106.8 124 Q120 122.2 133.2 124 L132 127.6 Q120 126.4 108 127.6Z" fill="#fbfaf7"/>`;
+    s+=`<ellipse cx="120" cy="132.4" rx="6.5" ry="2.6" fill="#d76a76"/>`;
+    s+=`<path d="M104 122.4 l-2 -2 M136 122.4 l2 -2" stroke="${SK3}" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>`;
+  } else if(m==='tired'){
+    s+=`<ellipse cx="120" cy="128.6" rx="4.6" ry="6" fill="${inner}" stroke="${OL}" stroke-width="1.4"/><ellipse cx="120" cy="131.6" rx="2.8" ry="1.9" fill="#d76a76"/>`;
+  } else {
+    const up = m==='awake'? -1.6 : .9;
+    s+=`<path d="M108.5 ${126.4+up} Q113.5 123.6 117.6 124.6 Q120 123.8 122.4 124.6 Q126.5 123.6 131.5 ${126.4+up} Q120 127.6 108.5 ${126.4+up}Z" fill="${lipU}"/>`;
+    s+=`<path d="M110 ${126.6+up*.4} Q120 133 130 ${126.6+up*.4} Q120 128.2 110 ${126.6+up*.4}Z" fill="${lipL}"/>`;
+    s+=`<path d="M108.5 ${126.4+up} Q114 127.4 120 127.2 Q126 127.4 131.5 ${126.4+up}" stroke="${mixHex(lipU,'#000000',.45)}" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
+    s+=`<path d="M116 130.4 Q120 131.4 124 130.4" stroke="#fff" stroke-width="1" opacity=".35" fill="none" stroke-linecap="round"/>`;
+  }
+  s+=`</g>`;
+  // Kinn-Grübchen-Schatten
+  s+=`<path d="M114 137.5 Q120 139.6 126 137.5" stroke="${SK3}" stroke-width="1.2" fill="none" opacity=".5" stroke-linecap="round"/>`;
+  return s;
+}
+
 function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   opts=opts||{};
   const st0=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
@@ -949,6 +1042,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   const MU=ch2sl(L.muscle)??5, FA=ch2sl(L.fat)??3;
   BODYK=.84+FA*.04+MU*.014;           // Rumpfbreite
   ARMK=.82+MU*.045+FA*.012;           // Armdicke
+  MUSF=Math.max(0,(MU-3)/7);          // 0..1: wie stark Muskeln sichtbar sind
   const HS=heightScale(L.heightCm);
   const OF=L.outfit||'gi';
   SLEEVE={gi:'gi',muscle:'none',tshirt:'short',hoodie:'full',compression:'tight'}[OF]||'gi';
@@ -964,6 +1058,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     <radialGradient id="ir${id}" cx="50%" cy="78%" r="75%"><stop offset="0" stop-color="${st.eyes[1]}"/><stop offset=".55" stop-color="${st.eyes[0]}"/><stop offset="1" stop-color="${OL}"/></radialGradient>
     <linearGradient id="hg${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${st.hair[1]}"/><stop offset=".45" stop-color="${st.hair[0]}"/><stop offset="1" stop-color="${st.hair[0]}"/></linearGradient>
     <radialGradient id="ag${id}" cx="50%" cy="68%" r="62%"><stop offset="0" stop-color="#ffffff" stop-opacity=".9"/><stop offset=".35" stop-color="${st.aura||'#000'}" stop-opacity=".8"/><stop offset="1" stop-color="${st.aura||'#000'}" stop-opacity=".05"/></radialGradient>
+    <radialGradient id="fs${id}" cx="42%" cy="40%" r="72%"><stop offset=".5" stop-color="${SK}"/><stop offset="1" stop-color="${SK2}"/></radialGradient>
     <linearGradient id="gg${id}" x1="0" y1="0" x2="1" y2="0"><stop offset=".55" stop-color="${st.gi}"/><stop offset=".56" stop-color="${st.giShade}"/></linearGradient>
   </defs>`;
   if(opts.flip) s+=`<g transform="translate(240 0) scale(-1 1)">`;
@@ -1112,6 +1207,18 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=bolt(108,164,logoC);
     s+=`<path d="M84 204 Q120 214 156 204 L156 210 Q120 220 84 210Z" fill="${BOT[0]}" stroke="${OL}" stroke-width="2.2"/>`;
   }
+  // Sichtbare Brust-, Trapez- und Bauchmuskeln (je nach Muskeln und KFA)
+  if(MUSF>0 && OF!=='hoodie'){
+    const op=(.25+MUSF*.45).toFixed(2), d=MUSF*4;
+    const pec=(sx)=>`<path d="M120 ${152} Q${120+sx*12} ${148-d*.5} ${120+sx*(24+d)} ${156} Q${120+sx*(26+d)} ${168+d} ${120+sx*16} ${172+d} Q${120+sx*6} ${173+d} 120 ${166+d*.6}Z" fill="${TOP2}" opacity="${op}"/>`
+      + `<path d="M${120+sx*(25+d)} ${158} Q${120+sx*(24+d)} ${170+d} ${120+sx*14} ${173+d} Q${120+sx*6} ${173+d} 121 ${167+d*.6}" stroke="${OL}" stroke-width="${1.2+MUSF}" fill="none" opacity="${(.3+MUSF*.5).toFixed(2)}" stroke-linecap="round"/>`
+      + `<path d="M${120+sx*8} ${155} Q${120+sx*15} ${153} ${120+sx*20} ${157}" stroke="#fff" stroke-width="2" opacity="${(MUSF*.3).toFixed(2)}" fill="none" stroke-linecap="round"/>`;
+    s+=pec(-1)+pec(1);
+    if((OF==='compression'||OF==='muscle'||OF==='tshirt') && FA<=5 && MUSF>.25){
+      const ao=(.2+MUSF*.5)*(FA<=3?1:.6);
+      s+=`<g stroke="${OL}" stroke-width="${1.2+MUSF*.8}" stroke-linecap="round" fill="none" opacity="${ao.toFixed(2)}"><path d="M120 ${178+d} L120 204"/><path d="M110 ${183+d} Q115 ${185+d} 119 ${183+d} M121 ${183+d} Q125 ${185+d} 130 ${183+d}"/><path d="M110 ${192+d*.6} Q115 ${194+d*.6} 119 ${192+d*.6} M121 ${192+d*.6} Q125 ${194+d*.6} 130 ${192+d*.6}"/><path d="M111 200 Q115 202 119 200 M121 200 Q125 202 129 200"/><path d="M106 ${180+d} Q104 192 108 204 M134 ${180+d} Q136 192 132 204"/></g>`;
+    }
+  }
   s+=`</g>`;
   if(m==='charged'){ s+=arm([84,156],[60,182],[84,176],[93,172],st); s+=arm([156,156],[182,168],[166,144],[160,135],st); }
   else if(m==='proud'){ s+=arm([84,156],[54,160],[58,128],[60,119],st); s+=arm([156,156],[186,160],[182,128],[180,119],st); }
@@ -1119,13 +1226,16 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   else { const d=6, inn=m==='tired'?4:0; s+=arm([82,160],[72,190],[76+inn,212+d],[77+inn,220+d],st); s+=arm([158,160],[168,190],[164-inn,212+d],[163-inn,220+d],st); }
   s+=`</g>`;
   s+=`<g transform="${headT}">`;
-  { const er={small:[6.5,8],normal:[8,10],big:[11,13]}[L.ears]||[8,10]; const eo=(L.ears==='big'?-3:0)+F.ex;
+  if(REAL){ const es={small:.85,normal:1,big:1.25}[L.ears]||1; const eo=(L.ears==='big'?-2:0)+F.ex;
+    const ear=(x,side,fill)=>`<g transform="translate(${x} 104) scale(${side*es} ${es})"><path d="M4 -10 C-6 -12 -9 4 -3 10 C1 14 5 11 5 7" fill="${fill}" stroke="${OL}" stroke-width="1.9" stroke-linejoin="round"/><path d="M2 -6 C-4 -6 -5 2 -1 5" stroke="${SK3}" stroke-width="1.4" fill="none" stroke-linecap="round"/></g>`;
+    s+=ear(80+eo,1,SK)+ear(160-eo,-1,SK2);
+  } else { const er={small:[6.5,8],normal:[8,10],big:[11,13]}[L.ears]||[8,10]; const eo=(L.ears==='big'?-3:0)+F.ex;
     const lx=78+eo, rx_=162-eo;
     s+=`<ellipse cx="${lx}" cy="102" rx="${er[0]}" ry="${er[1]}" fill="${SK}" stroke="${OL}" stroke-width="2.6"/><path d="M${lx+1} 98 q-4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`;
     s+=`<ellipse cx="${rx_}" cy="102" rx="${er[0]}" ry="${er[1]}" fill="${SK2}" stroke="${OL}" stroke-width="2.6"/><path d="M${rx_-1} 98 q4 4 0 9" stroke="${SK3}" stroke-width="2" fill="none"/>`; }
-  s+=`<path d="${F.p}" fill="${SK}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
+  s+=`<path d="${F.p}" fill="${REAL?`url(#fs${id})`:SK}" stroke="${OL}" stroke-width="${REAL?2.2:2.8}" stroke-linejoin="round"/>`;
   if(FA>=8) s+=`<path d="M108 141 Q120 147 132 141" stroke="${SK3}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/>`;
-  s+=`<path d="M152 92 C153 110 146 124 134 132 C128 136 124 137 121 138 C134 126 146 112 147 94Z" fill="${SK2}"/>`;
+  s+=`<path d="M152 92 C153 110 146 124 134 132 C128 136 124 137 121 138 C134 126 146 112 147 94Z" fill="${SK2}" opacity="${REAL?.55:1}"/>`;
   if(L.style==='anime') s+=`<path d="M82 86 Q120 74 158 86 L158 92 Q120 82 82 92Z" fill="${SK2}" opacity=".7"/>`;
   const BR={
     charged:['M88 88 L110 95','M152 88 L130 95'], awake:['M90 90 Q99 85 110 89','M150 90 Q141 85 130 89'],
@@ -1133,21 +1243,13 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     lazy:['M90 91 L110 91','M130 91 L150 90']
   }[m];
   const ek={charged:'fierce',awake:'open',tired:'half',proud:'happy',lazy:'side'}[m];
-  if(REAL){
-    const ew=(cx)=>`translate(${cx} 106) scale(.8 .58) translate(${-cx} -106)`;
-    s+=`<g transform="${ew(102)}">${eye(102,106,ek,-1,id,st)}</g><g transform="${ew(138)}">${eye(138,106,ek,1,id,st)}</g>`;
-    // Lidfalte, Wangenknochen, Nasenschatten, Kinn – realistischere Gesichtszüge
-    if(ek!=='happy') s+=`<path d="M92 99 Q102 95 112 99 M128 99 Q138 95 148 99" stroke="${OL}" stroke-width="1.6" fill="none" opacity=".55" stroke-linecap="round"/>`;
-    s+=`<path d="M90 114 Q95 121 99 127 M150 114 Q145 121 141 127" stroke="${SK3}" stroke-width="1.6" fill="none" opacity=".45" stroke-linecap="round"/>`;
-    s+=`<path d="M117 98 L115 115" stroke="${SK3}" stroke-width="1.6" opacity=".55" stroke-linecap="round"/>`;
-    s+=`<path d="M112 136 Q120 139 128 136" stroke="${SK3}" stroke-width="1.6" fill="none" opacity=".7" stroke-linecap="round"/>`;
-  } else {
-    s+=eye(102,106,ek,-1,id,st)+eye(138,106,ek,1,id,st);
-  }
+  if(!REAL) s+=eye(102,106,ek,-1,id,st)+eye(138,106,ek,1,id,st);
+  if(!REAL){
   if(m==='tired') s+=`<path d="M92 120 Q101 124 111 120 M129 120 Q139 124 148 120" stroke="#a7737f" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/>`;
   if(L.nose==='round') s+=`<path d="M116 117 Q120 122 124 117" stroke="${SK3}" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="120" cy="116" r="2.6" fill="${SK2}"/>`;
   else if(L.nose==='long') s+=`<path d="M121 106 L117.5 120 L123 120" stroke="${SK3}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   else s+=`<path d="M121 113 L118.5 119.5 L122.5 119.5" stroke="${SK3}" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
   if(L.freckles==='yes') s+=`<g fill="${SK3}" opacity=".75"><circle cx="97" cy="117" r="1.3"/><circle cx="102" cy="120" r="1.1"/><circle cx="93" cy="121" r="1.1"/><circle cx="106" cy="116" r="1"/><circle cx="143" cy="117" r="1.3"/><circle cx="138" cy="120" r="1.1"/><circle cx="147" cy="121" r="1.1"/><circle cx="134" cy="116" r="1"/></g>`;
   if(L.beard==='stubble'){
     s+=`<path d="M90 112 C94 128 106 138 120 139 C134 138 146 128 150 112 C146 122 138 130 128 128 Q120 125 112 128 C102 130 94 122 90 112Z" fill="${st.hair[0]}" opacity=".28"/>`;
@@ -1155,7 +1257,9 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<path d="M84 104 C84 128 100 148 120 150 C140 148 156 128 156 104 C150 120 140 128 130 126 Q120 121 110 126 C100 128 90 120 84 104Z" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
     s+=`<path d="M106 122 Q113 116 120 120 Q127 116 134 122 Q127 125 120 123 Q113 125 106 122Z" fill="${st.hair[0]}" stroke="${OL}" stroke-width="1.6" stroke-linejoin="round"/>`;
   }
+  if(REAL) s+=realFace(m,L,st,id,F);
   const MK={narrow:.8,normal:1,wide:1.22}[L.mouth]||1;
+  if(!REAL){
   s+=`<g transform="translate(120 0) scale(${MK} 1) translate(-120 0)">`;
   if(m==='charged'){
     s+=`<path d="M108 125 Q120 130 132 122 Q128 134 118 134 Q110 133 108 125Z" fill="#5a1f2c" stroke="${OL}" stroke-width="2" stroke-linejoin="round"/>`;
@@ -1171,6 +1275,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<path d="M90 118 l3 -3 M95 118 l3 -3 M142 118 l3 -3 M147 118 l3 -3" stroke="#e05a6a" stroke-width="1.4" stroke-linecap="round"/>`;
   }else{ s+=`<path d="M112 127 Q116 125 120 127 Q124 129 128 126" stroke="${OL}" stroke-width="2.3" fill="none" stroke-linecap="round"/>`; }
   s+=`</g>`;
+  }
   if(H.sides) s+=`<path d="${H.sides}" fill="${st.hair[0]}" opacity=".42"/>`;
   if(H.cap) s+=`<path d="${H.cap}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
   if(H.front) s+=`<path d="${H.front}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
@@ -1186,8 +1291,8 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<rect x="113" y="61" width="14" height="9" rx="2" fill="#f2f0ea" stroke="${OL}" stroke-width="1.6" transform="rotate(-1 120 66)"/>`;
   }
   const BW={thin:2.6,normal:3.8,bushy:5.6}[L.brows]||3.8;
-  s+=`<g transform="translate(0 ${REAL?6:2})"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="${BW+2.8}" stroke-linecap="round" fill="none"/>`;
-  s+=`<path d="${BR[0]} ${BR[1]}" stroke="${L.brows==='bushy'?st.hair[0]:OL}" stroke-width="${BW}" stroke-linecap="round" fill="none"/></g>`;
+  if(!REAL) s+=`<g transform="translate(0 ${REAL?6:2})"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="${BW+2.8}" stroke-linecap="round" fill="none"/>`;
+  if(!REAL) s+=`<path d="${BR[0]} ${BR[1]}" stroke="${L.brows==='bushy'?st.hair[0]:OL}" stroke-width="${BW}" stroke-linecap="round" fill="none"/></g>`;
   if(L.glasses==='yes'){
     s+=`<g fill="#bfe6ff" fill-opacity=".14" stroke="${OL}" stroke-width="2.8"><rect x="87" y="94" width="30" height="25" rx="9"/><rect x="123" y="94" width="30" height="25" rx="9"/></g>`;
     s+=`<path d="M117 103 Q120 100 123 103 M87 101 L78 97 M153 101 L162 97" stroke="${OL}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
