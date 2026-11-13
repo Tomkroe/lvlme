@@ -275,7 +275,8 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .lookmoods button[aria-pressed="true"],.optrow button[aria-pressed="true"]{border-color:var(--ki); background:rgba(255,138,31,.15)}
 .optgrp{display:grid; gap:6px; margin-top:6px}
 .slrow{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; font-size:12px; color:var(--fg-muted)}
-.slrow input{width:100%; accent-color:var(--ki)}
+.slrow input[type=range]{width:100%; accent-color:var(--ki)}
+.slrow{grid-template-columns:auto 1fr auto}
 .lookh{font-family:var(--f-display); font-weight:400; font-size:20px; letter-spacing:.04em; margin:14px 0 0; color:var(--ki2)}
 .optgrp>b{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted)}
 .optrow{display:flex; gap:6px; flex-wrap:wrap}
@@ -696,12 +697,11 @@ const LOOK_OPTIONS={
   freckles:{ label:'Sommersprossen', items:{ none:{n:'Keine'}, yes:{n:'Ja'} }},
   beard:{ label:'Bart', items:{ none:{n:'Keiner'}, stubble:{n:'Stoppeln'}, full:{n:'Vollbart'} }},
   glasses:{ label:'Brille', items:{ none:{n:'Keine'}, yes:{n:'Brille'} }},
-  height:{ label:'Größe', items:{ small:{n:'Klein'}, medium:{n:'Mittel'}, tall:{n:'Groß'} }},
   band:{ label:'Stirnband', items:{
     red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
     black:{n:'Schwarz', c:['#2a2f4c','#151a2c']}, white:{n:'Weiß', c:['#f2f0ea','#c9c5b8']}, none:{n:'Keins'} }}
 };
-const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',height:'medium',band:'red'};
+const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red'};
 /* Schieberegler (0–10). Gespeichert als Buchstabe a–k, weil der geteilte Avatar nur
    kurze Wörter erlaubt. Rein optisch: Muskeln und Körperfett ändern nur die Figur,
    nie XP, Level oder Kampfkraft – und es werden keine Prozentwerte angezeigt oder geteilt. */
@@ -719,9 +719,19 @@ function normLook(l){
   const mu=l?ch2sl(l.muscle):null, fa=l?ch2sl(l.fat):null;
   o.muscle=sl2ch(mu!=null?mu:pre[0]); o.fat=sl2ch(fa!=null?fa:pre[1]);
   delete o.build;
+  // Größe: genaue cm bleiben auf dem Gerät (heightCm), geteilt wird nur eine grobe Stufe (size a–x, 3-cm-Schritte)
+  let cm = l && Number.isFinite(+l.heightCm) && +l.heightCm>0 ? +l.heightCm : null;
+  if(cm==null && l && typeof l.size==='string' && /^[a-x]$/.test(l.size)) cm = 140 + (l.size.charCodeAt(0)-97)*3;
+  if(cm==null && l && l.height) cm = {small:165, medium:178, tall:190}[l.height]||null;
+  if(cm==null) cm = 178;
+  o.heightCm = Math.max(140, Math.min(210, Math.round(cm)));
+  o.size = String.fromCharCode(97 + Math.round((o.heightCm-140)/3));
+  delete o.height;
   return o;
 }
-const LOOK_GROUPS=[['Körper',['height','@muscle','@fat','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Extras',['glasses','band']]];
+function publicLook(l){ if(!l) return null; const o={...l}; delete o.heightCm; return o; }
+function heightScale(cm){ return Math.max(.88, Math.min(1.07, 1+(cm-178)*.0029)); }
+const LOOK_GROUPS=[['Körper',['#height','@muscle','@fat','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Extras',['glasses','band']]];
 const FACES={
   oval:{p:'M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z', ex:0},
   round:{p:'M76 94 C76 64 96 52 120 52 C144 52 164 64 164 94 C164 116 154 132 138 137 C130 140 126 141 120 141 C114 141 110 140 102 137 C86 132 76 116 76 94Z', ex:-2},
@@ -822,7 +832,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   const MU=ch2sl(L.muscle)??5, FA=ch2sl(L.fat)??3;
   BODYK=.84+FA*.04+MU*.014;           // Rumpfbreite
   ARMK=.82+MU*.045+FA*.012;           // Armdicke
-  const HS={small:.9,medium:1,tall:1.05}[L.height]||1;
+  const HS=heightScale(L.heightCm);
   const F=FACES[L.face]||FACES.oval;
   const HK=1+Math.max(0,FA-5)*.014;  // vollere Wangen bei viel Körperfett
   const m=MOODS[moodKey]?moodKey:'awake';
@@ -1147,7 +1157,7 @@ function toPublic(name,p,d,opts){
     mood: share? (d? d.mood : 'awake') : null,
     power: power(p, share? (d? d.energy : BALANCE.neutralEnergy) : BALANCE.neutralEnergy),
     streak:p.streak, updatedAt:new Date().toISOString(),
-    ...(opts.look? { look: opts.look } : {})
+    ...(opts.look? { look: publicLook(opts.look) } : {})
   };
 }
 const newProgress=()=>({level:1,xp:0,stats:{str:10,end:10,rec:10,dis:10},streak:0,restDays:[],booked:[]});
@@ -1232,7 +1242,7 @@ async function enterApp(){
   if(error){ toast('Profil konnte nicht geladen werden: '+error.message); }
   myProfile = prof || { id:uid, display_name:'Kämpfer', avatar:null };
   { const remote = myProfile.avatar && myProfile.avatar.look; const local = lsGetJSON('lvlme_look_'+uid, null);
-    myLook = (remote||local) ? normLook(remote||local) : null; }
+    myLook = (remote||local) ? normLook({...(remote||local), ...(local && local.heightCm ? {heightCm: local.heightCm} : {})}) : null; }
   shareMood = lsGetJSON('lvlme_sharemood_'+uid, false);
   $('set-sharemood').checked = !!shareMood;
   $('set-email').textContent = session.user.email || '–';
@@ -1605,6 +1615,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
     $('look-moods').innerHTML=['charged','awake','proud','tired','lazy'].map(k=>`<button data-pm="${k}" aria-pressed="${k===previewMood}">${MOODS[k].l}</button>`).join('');
     $('look-opts').innerHTML=LOOK_GROUPS.map(([title,keys])=>`<h3 class="lookh">${title}</h3>`+keys.map(key=>{
+      if(key==='#height'){ return `<div class="optgrp"><b>Größe</b><div class="slrow"><input type="range" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hcm aria-label="Größe in cm"><span style="display:flex;align-items:center;gap:4px"><input type="number" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hnum inputmode="numeric" style="width:64px;padding:6px 8px;text-align:right"> cm</span></div><small class="small muted">Freunde sehen nur, wie groß dein Kämpfer ist – nicht die genaue Zahl.</small></div>`; }
       if(key[0]==='@'){ const k=key.slice(1), def=LOOK_SLIDERS[k]; const v=ch2sl(draftLook[k]);
         return `<div class="optgrp"><b>${def.label}</b><div class="slrow"><span>${def.lo}</span><input type="range" min="0" max="10" step="1" value="${v}" data-sl="${k}" aria-label="${def.label}"><span>${def.hi}</span></div></div>`; }
       const grp=LOOK_OPTIONS[key];
@@ -1612,6 +1623,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
       Object.entries(grp.items).map(([v,it])=>`<button data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}">${it.c?`<i class="sw" style="background:${key==='skin'?it.c[0]:it.c[key==='band'?0:1]}"></i>`:''}${it.n}</button>`).join('')+`</div></div>`; }).join('')).join('');
     document.querySelectorAll('#look-moods [data-pm]').forEach(b=>b.onclick=()=>{ previewMood=b.dataset.pm; renderLookEditor(); });
     document.querySelectorAll('#look-opts [data-k]').forEach(b=>b.onclick=()=>{ draftLook[b.dataset.k]=b.dataset.v; renderLookEditor(); });
+    const setH=(v,from)=>{ v=Math.max(140,Math.min(210,Math.round(+v||178))); draftLook.heightCm=v; draftLook.size=String.fromCharCode(97+Math.round((v-140)/3));
+      if(from!=='r') document.querySelector('#look-opts [data-hcm]').value=v; if(from!=='n') document.querySelector('#look-opts [data-hnum]').value=v;
+      const si=Math.min(stageFor(myProgress.level),2);
+      $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`; };
+    document.querySelector('#look-opts [data-hcm]').oninput=e=>setH(e.target.value,'r');
+    document.querySelector('#look-opts [data-hnum]').onchange=e=>setH(e.target.value,'n');
     document.querySelectorAll('#look-opts [data-sl]').forEach(r=>r.oninput=()=>{
       draftLook[r.dataset.sl]=sl2ch(+r.value);
       const si=Math.min(stageFor(myProgress.level),2);
