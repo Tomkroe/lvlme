@@ -267,7 +267,7 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .quick button{background:var(--surface2); border:1px solid var(--line); color:var(--fg); border-radius:10px; padding:6px 10px; font-size:13px; font-weight:700}
 /* Charakter-Editor */
 .lookprev{position:sticky; top:-14px; z-index:3; height:250px; flex:none; min-height:250px; box-shadow:0 8px 16px rgba(0,0,0,.35); border-radius:18px; overflow:hidden; background:linear-gradient(180deg,#3a7bd2,#93c6f4 60%,#e2f1ff)}
-.lookprev::after{content:""; position:absolute; left:22%; right:22%; bottom:10px; height:22px; border-radius:50%; background:#4a3c58; box-shadow:inset 0 7px 0 #5cb36a}
+.lookprev::after{display:none;content:""; position:absolute; left:22%; right:22%; bottom:10px; height:22px; border-radius:50%; background:#4a3c58; box-shadow:inset 0 7px 0 #5cb36a}
 .lookprev .av-wrap{position:absolute; left:50%; bottom:16px; width:190px; transform:translateX(-50%); z-index:1}
 .lookprev svg{width:100%; height:auto; display:block; overflow:visible}
 .lookmoods{position:absolute; top:8px; right:8px; z-index:4; display:flex; flex-direction:column; gap:4px}
@@ -284,12 +284,17 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .slrow input[type=range]{width:100%; accent-color:var(--ki)}
 .slrow{grid-template-columns:auto 1fr auto}
 .musclebox{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 10px; border-radius:12px; background:rgba(255,255,255,.04)}
-.looktabs{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; position:sticky; top:236px; z-index:3; background:var(--surface); padding:6px 0; margin-top:4px}
+.looktabs{display:grid; grid-template-columns:repeat(6,1fr); gap:4px; position:sticky; top:236px; z-index:3; background:var(--surface); padding:6px 0; margin-top:4px}
 .looktabs button{background:var(--surface2); border:1.5px solid var(--line); color:var(--fg-muted); border-radius:12px; padding:6px 2px; font-size:18px; font-weight:800; display:grid; justify-items:center; gap:1px}
 .looktabs button span{font-size:10.5px}
 .looktabs button[aria-selected="true"]{border-color:var(--ki); color:var(--ki2); background:rgba(255,138,31,.15)}
 #look-opts{min-height:260px}
 #modal-look .card>*{flex-shrink:0}
+.tilegrid.scenes .tile{padding:0; background:#222}
+.tilegrid.scenes .tile svg{aspect-ratio:4/3; width:100%; height:auto}
+.tilegrid.scenes .tile span{width:100%}
+.lookprev .pvbg{position:absolute; inset:0; z-index:0}
+.lookprev .pvbg svg{width:100%; height:100%; display:block}
 .tilegrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px}
 .tile{background:linear-gradient(180deg,#3a7bd2,#93c6f4); border:2px solid var(--line); border-radius:14px; padding:4px 4px 0; display:grid; justify-items:center; gap:0; overflow:hidden; cursor:pointer}
 .tile svg{width:100%; height:auto; aspect-ratio:1/1; display:block}
@@ -298,6 +303,9 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .scene{transition:height .35s ease}
 .hero{left:50% !important; bottom:26px !important; transition:width .35s ease, bottom .35s ease}
 #tab-home.big .hero{bottom:30px !important}
+.sidestats{display:none !important}
+#tab-home.big .sidestats{display:grid !important}
+#tab-home.big .rings{display:none}
 .sidestats{position:absolute; right:10px; top:82px; z-index:4; display:grid; gap:6px}
 .sidestats figure{margin:0; display:grid; justify-items:center; gap:0; padding:5px 6px 4px; border-radius:16px; background:rgba(9,13,30,.46); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.16)}
 .sidestats svg{width:52px; height:52px; display:block}
@@ -439,6 +447,7 @@ nav.tabs button[aria-current="true"]{color:var(--ki); background:transparent}
         </div>
         <div class="sheet" id="home-sheet">
           <button class="grabbtn" id="home-grab" aria-label="Avatar größer oder kleiner anzeigen"><span class="grab"></span></button>
+          <div class="rings" id="rings-big"></div>
           <div class="xp">
             <div class="row"><b id="xpTitle">Level 1 → 2</b><span id="home-xp"></span></div>
             <div class="track"><i id="home-xpbar" style="width:0%"></i></div>
@@ -742,11 +751,12 @@ const LOOK_OPTIONS={
     green:{n:'Grün', c:['#2fa463','#1f7244']}, purple:{n:'Lila', c:['#7a52d1','#553896']}, black:{n:'Schwarz', c:['#2b2f45','#1a1d2e']},
     grey:{n:'Grau', c:['#8c93a8','#646b80']}, white:{n:'Weiß', c:['#f1f2f6','#c8ccd8']} }},
   bottom:{ label:'Hose', items:{ navy:{n:'Dunkelblau', c:['#272b45','#1a1d31']}, black:{n:'Schwarz', c:['#1c1d24','#101116']}, grey:{n:'Grau', c:['#6b7083','#4d5163']}, blue:{n:'Blau', c:['#2f5fa8','#1f4278']} }},
+  scene:{ label:'Trainingsort', items:{ mountains:{n:'Berge'}, gym:{n:'Fitnessstudio'}, football:{n:'Fußballplatz'}, track:{n:'Laufbahn'}, court:{n:'Basketball'} }},
   band:{ label:'Stirnband', items:{
     red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
     black:{n:'Schwarz', c:['#2a2f4c','#151a2c']}, white:{n:'Weiß', c:['#f2f0ea','#c9c5b8']}, none:{n:'Keins'} }}
 };
-const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy'};
+const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy',scene:'gym'};
 /* Schieberegler (0–10). Gespeichert als Buchstabe a–k, weil der geteilte Avatar nur
    kurze Wörter erlaubt. Rein optisch: Muskeln und Körperfett ändern nur die Figur,
    nie XP oder Level – und es werden keine Prozentwerte angezeigt oder geteilt. */
@@ -789,7 +799,7 @@ function publicLook(l){ if(!l) return null; const o={...l}; delete o.heightCm; d
 function ffmi(cm,kg,kfa){ const h=cm/100, ffm=kg*(1-kfa/100); return ffm/(h*h) + 6.1*(1.8-h); }
 function ffmiLabel(v){ return v<17?'wenig Muskeln':v<19?'durchschnittlich':v<21?'sportlich':v<23?'trainiert':v<25?'sehr muskulös':'extrem muskulös'; }
 function heightScale(cm){ return Math.max(.88, Math.min(1.07, 1+(cm-178)*.0029)); }
-const LOOK_GROUPS=[['Körper',['#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Extras',['glasses','band']]];
+const LOOK_GROUPS=[['Körper',['#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Ort',['scene']],['Extras',['glasses','band']]];
 const FACES={
   oval:{p:'M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z', ex:0},
   round:{p:'M76 94 C76 64 96 52 120 52 C144 52 164 64 164 94 C164 116 154 132 138 137 C130 140 126 141 120 141 C114 141 110 140 102 137 C86 132 76 116 76 94Z', ex:-2},
@@ -941,7 +951,9 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     }
   }
   const bob=m==='charged'?'bob fast':(m==='tired'||m==='lazy')?'bob slow':'bob';
-  const headT=(m==='tired'?'rotate(6 120 132) translate(2 4)':m==='lazy'?'rotate(-7 120 132) translate(-2 5)':m==='proud'?'rotate(-3 120 132)':'')+` translate(120 0) scale(${HK} 1) translate(-120 0)`;
+  const PK={leg:1.32, torso:1.06, head:.78}; PK.dLeg=(272-204)*(PK.leg-1); // Chibi wäre leg 1, torso 1, head 1
+  const neckTop=(128-204)*PK.torso+204-PK.dLeg, HDY=(neckTop+8)-139;
+  const headT=`translate(0 ${HDY}) translate(120 139) scale(${PK.head}) translate(-120 -139) `+(m==='tired'?'rotate(6 120 132) translate(2 4)':m==='lazy'?'rotate(-7 120 132) translate(-2 5)':m==='proud'?'rotate(-3 120 132)':'')+` translate(120 0) scale(${HK} 1) translate(-120 0)`;
   const slump=(m==='tired'||m==='lazy')?4:0;
   s+=`<g class="${bob}">`;
   s+=`<g transform="translate(120 272) scale(${HS}) translate(-120 -272)">`;
@@ -954,6 +966,8 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   if(H.backShade) s+=`<path d="${H.backShade}" fill="#000" opacity=".22"/>`;
   if(H.streaks) s+=`<path d="${H.streaks}" stroke="${st.hair[1]}" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85"/>`;
   s+=`</g>`;
+  // Proportionen: menschlicher als Chibi – längerer Körper, kleinerer Kopf
+  s+=`<g transform="translate(0 272) scale(1 ${PK.leg}) translate(0 -272)">`;
   const KL=1+(BODYK-1)*.55;
   // ---------- Beine & Schuhe ----------
   const sneaker=()=>{
@@ -990,6 +1004,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     sneaker();
   }
   s+=`</g>`;
+  s+=`</g><g transform="translate(0 ${-PK.dLeg}) translate(0 204) scale(1 ${PK.torso}) translate(0 -204)">`;
   const NK=Math.max(1,BODYK);
   s+=`<g transform="translate(120 0) scale(${NK} 1) translate(-120 0)"><path d="M110 128 L110 150 L130 150 L130 128Z" fill="${SK2}" stroke="${OL}" stroke-width="2.4"/>`;
   s+=`<path d="M110 136 Q120 142 130 136 L130 144 Q120 148 110 144Z" fill="${SK3}" opacity=".6"/></g>`;
@@ -1059,6 +1074,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   else if(m==='proud'){ s+=arm([84,156],[54,160],[58,128],[60,119],st); s+=arm([156,156],[186,160],[182,128],[180,119],st); }
   else if(m==='awake'){ s+=arm([82,158],[70,186],[74,208],[75,216],st); s+=arm([158,158],[170,186],[166,208],[165,216],st); }
   else { const d=6, inn=m==='tired'?4:0; s+=arm([82,160],[72,190],[76+inn,212+d],[77+inn,220+d],st); s+=arm([158,160],[168,190],[164-inn,212+d],[163-inn,220+d],st); }
+  s+=`</g>`;
   s+=`<g transform="${headT}">`;
   { const er={small:[6.5,8],normal:[8,10],big:[11,13]}[L.ears]||[8,10]; const eo=(L.ears==='big'?-3:0)+F.ex;
     const lx=78+eo, rx_=162-eo;
@@ -1181,6 +1197,126 @@ function skySvg(m){
   s+=`<ellipse cx="222" cy="398" rx="124" ry="14" fill="${P.grass[0]}"/>`;
   s+=`<path d="M110 400 l4 -9 l3 8 M126 404 l3 -8 l3 7 M318 401 l3 -9 l4 8 M334 398 l2 -7 l3 6 M150 408 l3 -6 l2 6" stroke="${P.grass[1]}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   s+=`</g>`;
+  return s+'</svg>';
+}
+/* ---------- Sport-Hintergründe ----------
+   Ort frei wählbar (look.scene). Die Tagesform färbt das Licht: müde = Abend/Nacht,
+   träge = grau, stolz = Abendrot mit Speed-Linien, voll aufgeladen = warmes Licht. */
+const SCENES={ mountains:{n:'Berge'}, gym:{n:'Fitnessstudio'}, football:{n:'Fußballplatz'}, track:{n:'Laufbahn'}, court:{n:'Basketball'} };
+function moodLight(m,u,outdoor){
+  let s='';
+  if(m==='tired'){
+    s+=`<rect width="390" height="452" fill="#0e1133" opacity=".55"/>`;
+    if(outdoor) s+=`<g fill="#fff">${[[30,40,1.4],[80,70,1],[140,30,1.6],[230,50,1.2],[300,28,1.4],[360,80,1]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" opacity=".8"/>`).join('')}</g><circle cx="320" cy="70" r="16" fill="#f4efff" opacity=".9"/><circle cx="328" cy="64" r="15" fill="#2a2f5a" opacity=".9"/>`;
+  } else if(m==='lazy'){
+    s+=`<rect width="390" height="452" fill="#8890a4" opacity=".38"/>`;
+  } else if(m==='proud'){
+    s+=`<rect width="390" height="452" fill="url(#pr${u})" opacity=".45"/>`;
+    let g='';for(let a=0;a<360;a+=7.5){const r1=a*Math.PI/180,r2=(a+2.2)*Math.PI/180;const cx=195,cy=300,R=520;
+      g+=`<polygon points="${cx+Math.cos(r1)*80},${cy+Math.sin(r1)*80} ${cx+Math.cos(r1)*R},${cy+Math.sin(r1)*R} ${cx+Math.cos(r2)*R},${cy+Math.sin(r2)*R}"/>`;}
+    s+=`<g fill="#fff" opacity=".12">${g}</g>`;
+  } else if(m==='charged'){
+    s+=`<rect width="390" height="452" fill="url(#ch${u})"/>`;
+  }
+  return s;
+}
+function sceneSvg(scene, m, u){
+  u=u||'s';
+  if(!SCENES[scene] || scene==='mountains') return skySvg(m).replace(/id="(\w+)"/g,`id="$1${u}"`).replace(/url\(#(\w+)\)/g,`url(#$1${u})`);
+  const defs=`<defs>
+    <linearGradient id="pr${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b2470"/><stop offset=".6" stop-color="#f0604a"/><stop offset="1" stop-color="#ffc56a"/></linearGradient>
+    <radialGradient id="ch${u}" cx="50%" cy="20%" r="80%"><stop offset="0" stop-color="#ffe7a8" stop-opacity=".45"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient>
+    <linearGradient id="sk${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c86f5"/><stop offset=".7" stop-color="#8fcaff"/><stop offset="1" stop-color="#d9efff"/></linearGradient>
+    <linearGradient id="wl${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d4766"/><stop offset="1" stop-color="#2a3148"/></linearGradient>
+    <linearGradient id="mr${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fb3d9"/><stop offset="1" stop-color="#5d6f96"/></linearGradient>
+    <linearGradient id="gr${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fae55"/><stop offset="1" stop-color="#2b8a40"/></linearGradient>
+  </defs>`;
+  let s=`<svg class="sky" viewBox="0 0 390 452" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${defs}`;
+  const outdoor = scene!=='gym';
+  if(scene==='gym'){
+    s+=`<rect width="390" height="320" fill="url(#wl${u})"/>`;
+    // Deckenlampen
+    s+=[70,195,320].map(x=>`<rect x="${x-34}" y="0" width="68" height="10" fill="#e9eefb"/><path d="M${x-34} 10 L${x-60} 90 L${x+60} 90 L${x+34} 10Z" fill="#fff" opacity=".07"/>`).join('');
+    // Spiegelwand
+    s+=`<rect x="30" y="54" width="330" height="200" rx="6" fill="url(#mr${u})" stroke="#1e2438" stroke-width="5"/>`;
+    s+=`<path d="M80 54 L40 254 M150 54 L110 254 M250 54 L210 254" stroke="#fff" stroke-opacity=".18" stroke-width="10"/>`;
+    s+=`<path d="M140 54 L140 254 M250 54 L250 254" stroke="#1e2438" stroke-width="3"/>`;
+    // Wandstreifen
+    s+=`<rect y="262" width="390" height="10" fill="#ff8a1f"/>`;
+    s+=`<rect y="272" width="390" height="48" fill="#262c40"/>`;
+    // Boden (Gummi) mit Fugen
+    s+=`<rect y="320" width="390" height="132" fill="#2c2d36"/>`;
+    s+=`<path d="M0 360 H390 M0 404 H390 M65 320 L40 452 M195 320 L195 452 M325 320 L350 452" stroke="#1d1e25" stroke-width="2.5"/>`;
+    // Kurzhantel-Ablage links
+    s+=`<path d="M8 262 L8 330 M96 262 L96 330 M4 286 L100 286 M4 314 L100 314" stroke="#141720" stroke-width="7" stroke-linecap="round"/>`;
+    s+=[16,40,64,88].map((x,i)=>`<g><rect x="${x-9}" y="${278}" width="18" height="6" rx="2" fill="#9aa3b8"/><rect x="${x-11}" y="${273-i}" width="6" height="${14+i*2}" rx="2" fill="#1a1c24"/><rect x="${x+5}" y="${273-i}" width="6" height="${14+i*2}" rx="2" fill="#1a1c24"/></g>`).join('');
+    s+=[18,52,86].map((x,i)=>`<g><rect x="${x-10}" y="306" width="20" height="6" rx="2" fill="#9aa3b8"/><rect x="${x-14}" y="${299-i*2}" width="8" height="${20+i*4}" rx="2" fill="#1a1c24"/><rect x="${x+6}" y="${299-i*2}" width="8" height="${20+i*4}" rx="2" fill="#1a1c24"/></g>`).join('');
+    // Hantelbank + Langhantel rechts
+    s+=`<path d="M300 318 L300 352 M372 318 L372 352" stroke="#141720" stroke-width="6" stroke-linecap="round"/>`;
+    s+=`<rect x="290" y="306" width="92" height="14" rx="6" fill="#d93a4a" stroke="#141720" stroke-width="3"/>`;
+    s+=`<path d="M318 270 L318 306 M356 270 L356 306" stroke="#141720" stroke-width="6"/>`;
+    s+=`<path d="M276 272 L398 272" stroke="#b7bfd1" stroke-width="5" stroke-linecap="round"/><rect x="284" y="254" width="12" height="36" rx="3" fill="#1a1c24"/><rect x="378" y="254" width="12" height="36" rx="3" fill="#1a1c24"/>`;
+    // Matte unter dem Avatar
+    s+=`<ellipse cx="195" cy="404" rx="124" ry="16" fill="#1d1e25"/><ellipse cx="195" cy="400" rx="120" ry="13" fill="#3a3d4c"/>`;
+    s+=`<rect x="140" y="390" width="12" height="10" rx="2" fill="#ff8a1f" opacity=".0"/>`;
+  } else if(scene==='football'){
+    s+=`<rect width="390" height="260" fill="url(#sk${u})"/>`;
+    // Tribüne mit Zuschauern
+    s+=`<path d="M0 150 L390 130 L390 250 L0 250Z" fill="#283152"/>`;
+    s+=`<path d="M0 180 L390 164 M0 210 L390 198 M0 236 L390 228" stroke="#1d2440" stroke-width="3"/>`;
+    { let dots=''; const cols=['#ff8a1f','#e9eefb','#d93a4a','#3fd0ff','#ffd84d','#b48cff'];
+      for(let r=0;r<4;r++) for(let x=6;x<390;x+=13){ const y=160-x*0.05+r*24+((x*7+r*3)%5); dots+=`<circle cx="${x+(r%2)*6}" cy="${y}" r="3.4" fill="${cols[(x+r*5)%cols.length]}" opacity=".9"/>`; }
+      s+=`<g>${dots}</g>`; }
+    // Flutlicht
+    s+=[30,360].map(x=>`<path d="M${x} 150 L${x} 30" stroke="#8f98b0" stroke-width="5"/><rect x="${x-20}" y="16" width="40" height="18" rx="3" fill="#e9eefb" stroke="#5d6680" stroke-width="2"/><circle cx="${x}" cy="25" r="30" fill="#fff" opacity=".12"/>`).join('');
+    // Bande
+    s+=`<rect y="248" width="390" height="16" fill="#1f2a4a"/><path d="M10 256 H120 M150 256 H260 M290 256 H380" stroke="#ff8a1f" stroke-width="4"/>`;
+    // Rasen mit Streifen
+    s+=`<rect y="264" width="390" height="188" fill="url(#gr${u})"/>`;
+    s+=[0,1,2,3,4,5].map(i=>`<path d="M${i*80-40} 264 L${i*80} 264 L${i*120-80} 452 L${i*120-140} 452Z" fill="#fff" opacity=".06"/>`).join('');
+    s+=`<path d="M0 300 H390" stroke="#fff" stroke-width="3" opacity=".85"/>`;
+    s+=`<ellipse cx="195" cy="300" rx="90" ry="22" fill="none" stroke="#fff" stroke-width="3" opacity=".85"/>`;
+    // Tor links
+    s+=`<path d="M14 300 L14 236 L92 236 L92 300" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>`;
+    s+=`<path d="M14 236 L26 248 L80 248 L92 236 M26 248 L26 296" fill="none" stroke="#fff" stroke-width="2" opacity=".6"/>`;
+    s+=`<g stroke="#fff" stroke-width="1" opacity=".35">${[30,44,58,72].map(x=>`<path d="M${x} 248 L${x} 298"/>`).join('')}${[260,272,284].map(y=>`<path d="M26 ${y} L80 ${y}"/>`).join('')}</g>`;
+    // Ball
+    s+=`<g transform="translate(296 404)"><ellipse cx="0" cy="12" rx="16" ry="4" fill="#000" opacity=".2"/><circle r="14" fill="#fff" stroke="#1c1528" stroke-width="2.4"/><path d="M0 -6 L6 -2 L4 5 L-4 5 L-6 -2Z" fill="#1c1528"/><path d="M0 -6 L0 -14 M6 -2 L13 -5 M4 5 L9 11 M-4 5 L-9 11 M-6 -2 L-13 -5" stroke="#1c1528" stroke-width="1.6"/></g>`;
+    s+=`<ellipse cx="195" cy="404" rx="110" ry="12" fill="#000" opacity=".12"/>`;
+  } else if(scene==='track'){
+    s+=`<rect width="390" height="250" fill="url(#sk${u})"/>`;
+    s+=`<path d="M0 200 Q100 170 200 180 Q300 190 390 168 L390 250 L0 250Z" fill="#6fae78" opacity=".7"/>`;
+    // kleine Tribüne
+    s+=`<path d="M220 150 L380 140 L380 230 L220 230Z" fill="#2c3657"/><path d="M220 170 L380 162 M220 192 L380 186 M220 212 L380 208" stroke="#1d2440" stroke-width="3"/>`;
+    s+=`<path d="M210 146 L390 132 L390 140 L210 154Z" fill="#e9eefb"/>`;
+    // Bahn (rot) mit Linien in Kurve
+    s+=`<rect y="230" width="390" height="222" fill="#c4553f"/>`;
+    s+=`<path d="M0 238 Q195 222 390 238" stroke="#7ec27f" stroke-width="16" fill="none"/>`;
+    s+=[0,1,2,3,4,5].map(i=>`<path d="M-20 ${262+i*36} Q195 ${236+i*40} 410 ${262+i*36}" stroke="#fff" stroke-width="3" fill="none" opacity=".9"/>`).join('');
+    s+=[1,2,3,4,5].map(i=>`<text x="${32+i*6}" y="${256+i*38}" font-family="Chakra Petch, Consolas, monospace" font-size="16" font-weight="700" fill="#fff" opacity=".85">${i}</text>`).join('');
+    // Hürde
+    s+=`<g transform="translate(300 330)"><path d="M0 0 L0 54 M60 0 L60 54" stroke="#e9eefb" stroke-width="4"/><rect x="-4" y="-8" width="68" height="12" fill="#fff" stroke="#1c1528" stroke-width="2"/><path d="M8 -8 L18 4 M28 -8 L38 4 M48 -8 L58 4" stroke="#d93a4a" stroke-width="5"/><path d="M-8 54 L8 54 M52 54 L68 54" stroke="#e9eefb" stroke-width="4"/></g>`;
+    s+=`<ellipse cx="195" cy="404" rx="110" ry="12" fill="#000" opacity=".15"/>`;
+  } else if(scene==='court'){
+    s+=`<rect width="390" height="250" fill="url(#sk${u})"/>`;
+    // Häuser/Skyline
+    s+=`<path d="M0 250 L0 150 L40 150 L40 120 L90 120 L90 170 L130 170 L130 100 L180 100 L180 160 L230 160 L230 130 L280 130 L280 175 L330 175 L330 110 L390 110 L390 250Z" fill="#59647f"/>`;
+    s+=`<g fill="#ffe7a8" opacity=".7">${[[50,130],[66,130],[140,112],[156,112],[140,132],[156,132],[240,142],[256,142],[340,124],[356,124],[340,146],[372,146]].map(([x,y])=>`<rect x="${x}" y="${y}" width="9" height="11" rx="1"/>`).join('')}</g>`;
+    // Zaun
+    s+=`<rect y="196" width="390" height="60" fill="none"/><g stroke="#2a3148" stroke-width="1.5" opacity=".7">${Array.from({length:40},(_,i)=>`<path d="M${i*12-60} 256 L${i*12} 196 M${i*12} 256 L${i*12-60} 196"/>`).join('')}</g><path d="M0 196 H390" stroke="#2a3148" stroke-width="4"/>`;
+    // Spielfeld
+    s+=`<rect y="256" width="390" height="196" fill="#2f6bb8"/><path d="M0 256 L390 256" stroke="#fff" stroke-width="3"/>`;
+    s+=`<path d="M95 256 L80 330 L310 330 L295 256" fill="#d9663f" stroke="#fff" stroke-width="3"/>`;
+    s+=`<path d="M40 256 Q195 400 350 256" fill="none" stroke="#fff" stroke-width="3"/>`;
+    s+=`<ellipse cx="195" cy="330" rx="50" ry="14" fill="none" stroke="#fff" stroke-width="3"/>`;
+    // Korb
+    s+=`<path d="M195 252 L195 150" stroke="#8f98b0" stroke-width="7"/><rect x="155" y="96" width="80" height="54" rx="3" fill="#f4f5f8" stroke="#1c1528" stroke-width="3"/><rect x="180" y="116" width="30" height="22" fill="none" stroke="#d93a4a" stroke-width="3"/>`;
+    s+=`<ellipse cx="195" cy="150" rx="18" ry="4" fill="none" stroke="#ff8a1f" stroke-width="4"/><path d="M178 150 L184 172 L206 172 L212 150 M186 150 L190 172 M195 150 L195 172 M204 150 L200 172" stroke="#fff" stroke-width="1.6" fill="none" opacity=".9"/>`;
+    // Ball
+    s+=`<g transform="translate(300 404)"><ellipse cx="0" cy="12" rx="16" ry="4" fill="#000" opacity=".2"/><circle r="14" fill="#e8762e" stroke="#1c1528" stroke-width="2.4"/><path d="M-14 0 H14 M0 -14 V14 M-10 -10 Q0 0 -10 10 M10 -10 Q0 0 10 10" stroke="#1c1528" stroke-width="1.6" fill="none"/></g>`;
+    s+=`<ellipse cx="195" cy="404" rx="110" ry="12" fill="#000" opacity=".15"/>`;
+  }
+  s+=moodLight(m,u,outdoor);
   return s+'</svg>';
 }
 const MINISKY={charged:'linear-gradient(180deg,#2c86f5,#79c3ff 60%,#ffe2a8)',awake:'linear-gradient(180deg,#3a7bd2,#93c6f4 60%,#e2f1ff)',
@@ -1460,8 +1596,9 @@ function renderHome(today){
   const mood = today? today.mood : 'awake';
   const energy = today? today.energy : BALANCE.neutralEnergy;
   const need = xpNeeded(myProgress.level);
-  const skyKey = today? mood : 'awake';
-  if(skyKey!==lastSkyKey){ $('skyBox').innerHTML = skySvg(skyKey); lastSkyKey=skyKey; }
+  const scene = (myLook && myLook.scene) || 'mountains';
+  const skyKey = (today? mood : 'awake')+'|'+scene;
+  if(skyKey!==lastSkyKey){ $('skyBox').innerHTML = sceneSvg(scene, today? mood : 'awake', 'home'); lastSkyKey=skyKey; }
   $('home-avatar').innerHTML = avatarSvg(si, mood, 'home', {look:myLook});
   $('hud-name').textContent = myProfile.display_name;
   $('lvRing').innerHTML = lvRingSvg(myProgress.xp/need, myProgress.level);
@@ -1480,10 +1617,11 @@ function renderHome(today){
   }
   const tm = todayMetrics();
   const sleepH = tm && tm.sleepHours!=null ? tm.sleepHours : null;
-  $('rings').innerHTML =
+  const ringsHtml =
     `<figure>${ringSvg(energy/100,energyCol(energy),today?energy:'–','PROZENT')}<figcaption>Energie</figcaption></figure>`+
     `<figure>${ringSvg((today?today.strain:0)/21,'#3fd0ff',today?String(today.strain).replace('.',','):'–','VON 21')}<figcaption>Belastung</figcaption></figure>`+
     `<figure>${ringSvg((tm?tm.steps:0)/10000,'#b48cff',tm?(tm.steps>=10000?Math.round(tm.steps/1000)+'k':fmt(tm.steps)):'–','SCHRITTE')}<figcaption>Schritte</figcaption></figure>`;
+  $('rings').innerHTML = ringsHtml; $('rings-big').innerHTML = ringsHtml;
   $('xpTitle').textContent = `Level ${myProgress.level} → ${myProgress.level+1}`;
   $('home-xp').textContent = fmt(myProgress.xp)+' / '+fmt(need)+' XP';
   $('home-xpbar').style.width = Math.min(100, Math.round(100*myProgress.xp/need))+'%';
@@ -1760,14 +1898,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
     {t:'Wie sehen deine Haare aus?', keys:['hairStyle','hair']},
     {t:'Dein Gesicht', keys:['face','eyes','brows']},
     {t:'Bart oder Brille?', keys:['beard','glasses']},
-    {t:'Was trägst du beim Sport?', keys:['outfit','top','bottom']}
+    {t:'Was trägst du beim Sport?', keys:['outfit','top','bottom']},
+    {t:'Wo trainierst du am liebsten?', sub:'Das wird der Hintergrund deines Kämpfers.', keys:['scene']}
   ];
-  const ICON={'Körper':'💪','Gesicht':'🙂','Haare':'💇','Outfit':'👕','Extras':'🕶️'};
+  const ICON={'Körper':'💪','Gesicht':'🙂','Haare':'💇','Outfit':'👕','Ort':'🏟️','Extras':'🕶️'};
   let draftLook=null, previewMood='charged', lookTab='Körper', wizStep=null;
   const q=sel=>document.querySelector('#look-opts '+sel);
   function drawPreview(){
     const si=Math.min(stageFor(myProgress.level),2);
-    $('look-av').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
+    $('look-av').innerHTML=`<div class="pvbg">${sceneSvg(draftLook.scene, previewMood, 'pv')}</div><div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
   }
   function fieldHtml(key){
     if(key==='#height') return `<div class="optgrp"><b>Größe</b><div class="slrow"><input type="range" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hcm aria-label="Größe in cm"><span class="numin"><input type="number" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hnum inputmode="numeric"> cm</span></div></div>`;
@@ -1775,6 +1914,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(key==='#kfa') return `<div class="optgrp"><b>Körperfettanteil (KFA)</b><div class="slrow"><input type="range" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfa aria-label="Körperfettanteil in Prozent"><span class="numin"><input type="number" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfanum inputmode="numeric"> %</span></div></div>`;
     if(key==='#muscle') return `<div class="optgrp"><b>Muskeln</b><div class="musclebox" id="look-muscle">${muscleHtml()}</div></div>`;
     const grp=LOOK_OPTIONS[key];
+    if(key==='scene'){
+      return `<div class="optgrp"><b>${grp.label}</b><div class="tilegrid scenes">`+Object.entries(grp.items).map(([v,it])=>
+        `<button class="tile" data-k="scene" data-v="${v}" aria-pressed="${draftLook.scene===v}" aria-label="${it.n}">${sceneSvg(v,'awake','t'+v)}<span>${it.n}</span></button>`).join('')+`</div></div>`;
+    }
     // Bild-Auswahl: kleine Vorschau statt Text
     const CROP={hairStyle:'48 -6 144 150', face:'58 38 124 112', beard:'66 70 108 90', glasses:'66 66 108 80', ears:'58 60 124 80', outfit:'40 128 160 152'};
     if(CROP[key]){
