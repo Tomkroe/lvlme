@@ -1,0 +1,56 @@
+# LvlMe – Fahrplan für zwei parallele Sitzungen
+
+Dieser Plan ist die gemeinsame Absprache zwischen zwei Claude-Sitzungen, die gleichzeitig am Repo arbeiten.
+**Jede Sitzung liest diese Datei vor dem Start und hakt erledigte Schritte hier ab.**
+
+## Wer macht was
+
+| Sitzung | Zuständig für (nur diese Ordner ändern) |
+| --- | --- |
+| **A – Web & Backend** | `docs/web/`, `supabase/migrations/`, `docs/*.md` |
+| **B – iPhone-App** | `app/`, `src/`, `package.json`, `app.json`, `eas.json`, `.github/` |
+
+Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Schritten ändern und im Commit erwähnen.
+
+## Spielregeln für die Zusammenarbeit
+1. Vor jedem Schritt: `git pull` (bzw. `git fetch` + rebase) auf `main`.
+2. Nach jedem Schritt: committen, pushen, hier den Haken setzen (`[x]`) und Kürzel der Sitzung dazuschreiben.
+3. Neue Datenbank-Migrationen legt **nur Sitzung A** an (sonst kollidieren die Nummern). Braucht B etwas in der Datenbank, schreibt B es unten unter „Wünsche an A“.
+4. Was Tom selbst tun muss (SQL ausführen, Konten anlegen), steht unter „Für Tom“.
+5. Regeln aus `CLAUDE.md` gelten: keine geschützten Figuren/Namen, Ruhetage und schlechte Tage nie bestrafen, keine Belohnung für wenig Essen oder Schlafentzug.
+
+## Schritte
+
+### Phase 1 – Aufräumen und angleichen
+- [ ] **A1** Web: Zufalls-„Kampf“-Knopf bei Freunden entfernen (Rangliste bleibt).
+- [ ] **B1** iPhone-App: Spielregeln in `src/game/` an die Webversion angleichen – Ränge (Bronze bis Großmeister, je III/II/I, nur aufsteigend), Ernährungs-XP (+10 fürs Erfassen, +10 ab 2 L Wasser), nur abgeschlossene Tage buchen. Mit Tests.
+
+### Phase 2 – Wochen-Duell (statt Zufallskampf)
+Idee: Du forderst einen Freund heraus, 7 Tage zählen echte Aktivität (aktive Tage, Schritte, Belastung). Wer mehr gemacht hat, gewinnt. Rohdaten bleiben privat – Freunde sehen nur Punktestand und Sieger.
+- [ ] **A2** Datenbank: Tabelle `duels` + Funktionen (herausfordern, annehmen, Stand abrufen); Punkte werden in der Datenbank aus `health_metrics` berechnet, nur die Punkte sind für den Gegner sichtbar. Migration 0008.
+- [ ] **A3** Web: Duell-Bereich bei Freunden (Herausfordern, laufende Duelle mit Fortschrittsbalken, Ergebnis).
+- [ ] **B2** iPhone-App: gleiche Duell-Funktion über `src/social/api.ts`.
+- [ ] **Privacy-Review** für Duelle (Agent `privacy-review`, Sitzung B).
+
+### Phase 3 – Kampfanimation als Duell-Finale
+- [ ] **B3** iPhone-App: Kampfanimation (Angriffe, Treffer, Lebensbalken, K.o.) – Agent `avatar-art`.
+- [ ] **A4** Web: dieselbe Animation übernehmen.
+
+### Phase 4 – Echte iPhone-App testen
+- [ ] **B4** EAS-Build und TestFlight, Apple Health direkt statt Kurzbefehl (braucht Apple-Developer-Konto, siehe „Für Tom“).
+- [ ] **Privacy-Review** vor TestFlight.
+
+### Später
+- WHOOP-Anbindung (Agent `health-data`).
+- Push-Benachrichtigungen (z. B. „Luca hat dich herausgefordert“).
+
+## Für Tom
+- [ ] `0007_nutrition.sql` im Supabase SQL Editor ausführen.
+- [ ] Testkonten Luca und Tom anlegen (SQL aus dem Chat).
+- [ ] Für Phase 4: Apple Developer Program (ca. 99 €/Jahr) abschließen.
+
+## Wünsche an A (von B)
+_(hier eintragen)_
+
+## Wünsche an B (von A)
+_(hier eintragen)_
