@@ -27,7 +27,7 @@ Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Sc
 
 ### Phase 1b – Charakter-Editor („sieht aus wie ich“)
 - [x] **A5** Web: Editor für Hautton, Frisur (6), Haarfarbe, Augen, Bart, Brille, Stirnband; Live-Vorschau; wird als `avatar.look` geteilt, Freunde sehen es. Migration 0008. *(A)*
-- [x] **A6** Web: Gesichtsform, Ohren, Augenbrauen, Nase, Mund, Sommersprossen, Größe in cm (140–210; genaue Zahl bleibt auf dem Gerät, geteilt wird nur eine 3-cm-Stufe `size` a–x), Körperfettanteil in % (4–45; genaue Zahl bleibt auf dem Gerät, geteilt wird nur die Figur-Stufe `fat` a–k) und Muskel-Regler (0–10); rein optisch, kein Einfluss auf XP/Level. Migration 0009 (erlaubt beliebige kurze Auswahl-Schlüssel). *(A)*
+- [x] **A6** Web: Gesichtsform, Ohren, Augenbrauen, Nase, Mund, Sommersprossen, Größe in cm (140–210; genaue Zahl bleibt auf dem Gerät, geteilt wird nur eine 3-cm-Stufe `size` a–x), Körperfettanteil in % (4–45; genaue Zahl bleibt auf dem Gerät, geteilt wird nur die Figur-Stufe `fat` a–k) und Gewicht in kg (bleibt auf dem Gerät); Muskeln ergeben sich daraus über den FFMI (fettfreier Masse-Index) – geteilt wird nur die Stufe `muscle` a–k; rein optisch, kein Einfluss auf XP/Level. Migration 0009 (erlaubt beliebige kurze Auswahl-Schlüssel). *(A)*
 - [x] **A7** Web: Outfits – Kampfanzug (Farbe je Verwandlung), Muscle-Shirt, Trainings-Shirt, Hoodie, Kompression; Oberteil-Farbe (8) und Hose (4); Sneaker bei Sport-Outfits. *(A)*
 - [ ] **B5** iPhone-App: dieselben Optionen in `src/avatar/` (Pfade/Farben aus `docs/web/index.html` → `LOOK_OPTIONS`, `HAIR` übernehmen) und Editor-Screen. **Wichtig:** Beim Hochladen des Avatar-Zustands `look` mitschicken bzw. erhalten, sonst wird es überschrieben.
 
