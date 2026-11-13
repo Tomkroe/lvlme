@@ -178,19 +178,20 @@ nav.tabs button[aria-current="true"]{color:var(--accent); background:var(--surfa
   <div class="card" id="auth-form">
     <div class="field">
       <label for="auth-email">E-Mail-Adresse</label>
-      <input id="auth-email" type="email" placeholder="du@example.com" autocapitalize="off" autocorrect="off">
+      <input id="auth-email" type="email" autocomplete="username" placeholder="du@example.com" autocapitalize="off" autocorrect="off">
     </div>
-    <button class="btn block" id="auth-send">Anmeldelink senden</button>
+    <div class="field">
+      <label for="auth-pass">Passwort</label>
+      <input id="auth-pass" type="password" autocomplete="current-password" placeholder="mind. 8 Zeichen">
+    </div>
+    <button class="btn block" id="auth-login">Anmelden</button>
+    <button class="btn secondary block" id="auth-signup">Neu hier? Konto erstellen</button>
+    <button class="btn ghost block" id="auth-send">Ohne Passwort: Anmeldelink per Mail</button>
+    <p class="small muted">Der Anmeldelink klappt nur im Browser, nicht in der App vom Home-Bildschirm. Dort mit Passwort anmelden.</p>
   </div>
   <div class="card hidden" id="auth-sent">
-    <p>📬 Mail geschickt an <b id="auth-sent-email"></b>. Gib den <b>Code</b> aus der Mail hier ein:</p>
-    <div class="field">
-      <label for="auth-code">Code aus der Mail</label>
-      <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" style="letter-spacing:4px;font-size:20px;text-align:center">
-    </div>
-    <button class="btn block" id="auth-verify">Anmelden</button>
-    <p class="small muted">Du kannst stattdessen auch den Link in der Mail antippen – das klappt aber nur im Browser, nicht in der App vom Home-Bildschirm.</p>
-    <button class="btn secondary block" id="auth-again">Andere E-Mail-Adresse</button>
+    <p id="auth-sent-text">📬 Mail geschickt an <b id="auth-sent-email"></b>. Link in der Mail antippen – in Safari meldet dich das danach automatisch an.</p>
+    <button class="btn secondary block" id="auth-again">Zurück</button>
   </div>
 </div>
 
@@ -300,6 +301,12 @@ nav.tabs button[aria-current="true"]{color:var(--accent); background:var(--surfa
       <div class="card">
         <h2>Konto</h2>
         <p class="small muted">Angemeldet als <b id="set-email" style="color:var(--fg)">–</b></p>
+        <div class="field" style="margin-top:10px">
+          <label for="set-pass">Passwort festlegen / ändern</label>
+          <input id="set-pass" type="password" autocomplete="new-password" placeholder="mind. 8 Zeichen">
+        </div>
+        <button class="btn secondary block" id="set-pass-save">Passwort speichern</button>
+        <p class="small muted">Mit Passwort kannst du dich auch in der App vom Home-Bildschirm anmelden.</p>
         <button class="btn secondary block" id="set-logout">Abmelden</button>
       </div>
       <div class="card">
@@ -390,7 +397,7 @@ p_workout_minutes (Zahl) = Summe Trainingsminuten</code></div>
       <li>In Safari unten auf <b>⋯</b> und dann auf <b>Teilen</b> tippen (das Quadrat mit Pfeil nach oben).</li>
       <li>Etwas nach unten scrollen und <b>„Zum Home-Bildschirm“</b> wählen.</li>
       <li><b>„Als Web-App öffnen“</b> anlassen und auf <b>Hinzufügen</b> tippen.</li>
-      <li>LvlMe ab jetzt über das neue Icon starten. Beim ersten Start einmal mit E-Mail und <b>Code</b> anmelden.</li>
+      <li>LvlMe ab jetzt über das neue Icon starten und mit <b>E-Mail und Passwort</b> anmelden. (Passwort festlegen: in Safari unter „Mehr“.)</li>
     </ol>
   </div>
 </div>
@@ -908,20 +915,38 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split('#')[0] } });
     $('auth-send').disabled=false;
     if(error){ toast('Fehler: '+error.message); return; }
-    $('auth-sent-email').textContent=email;
+    $('auth-sent-text').innerHTML='📬 Mail geschickt an <b>'+escapeHtml(email)+'</b>. Link in der Mail antippen – in Safari meldet dich das danach automatisch an.';
     hide($('auth-form')); show($('auth-sent'));
   });
   $('auth-again').addEventListener('click', ()=>{ show($('auth-form')); hide($('auth-sent')); });
-  $('auth-verify').addEventListener('click', async ()=>{
-    const email=$('auth-sent-email').textContent.trim();
-    const token=$('auth-code').value.replace(/\s/g,'');
-    if(!token){ toast('Bitte den Code aus der Mail eingeben.'); return; }
-    $('auth-verify').disabled=true;
-    const { data, error } = await sb.auth.verifyOtp({ email, token, type:'email' });
-    $('auth-verify').disabled=false;
-    if(error){ toast('Code stimmt nicht oder ist abgelaufen: '+error.message); return; }
-    session=data.session;
-    await enterApp();
+  const authErr=(e)=>{
+    const m=(e&&e.message)||'';
+    if(/Invalid login/i.test(m)) return 'E-Mail oder Passwort falsch. Noch kein Passwort? Unter „Mehr“ in der App festlegen (einmal per Anmeldelink einloggen).';
+    if(/not confirmed/i.test(m)) return 'Bitte zuerst den Bestätigungslink in deiner Mail antippen.';
+    if(/at least|weak/i.test(m)) return 'Passwort zu kurz – mindestens 8 Zeichen.';
+    if(/already registered/i.test(m)) return 'Diese E-Mail hat schon ein Konto. Bitte anmelden.';
+    return m;
+  };
+  $('auth-login').addEventListener('click', async ()=>{
+    const email=$('auth-email').value.trim(), password=$('auth-pass').value;
+    if(!email||!password){ toast('Bitte E-Mail und Passwort eingeben.'); return; }
+    $('auth-login').disabled=true;
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    $('auth-login').disabled=false;
+    if(error){ toast(authErr(error)); return; }
+    session=data.session; await enterApp();
+  });
+  $('auth-signup').addEventListener('click', async ()=>{
+    const email=$('auth-email').value.trim(), password=$('auth-pass').value;
+    if(!email||!password){ toast('Bitte E-Mail und ein Passwort eingeben.'); return; }
+    if(password.length<8){ toast('Passwort zu kurz – mindestens 8 Zeichen.'); return; }
+    $('auth-signup').disabled=true;
+    const { data, error } = await sb.auth.signUp({ email, password, options:{ emailRedirectTo: location.href.split('#')[0] } });
+    $('auth-signup').disabled=false;
+    if(error){ toast(authErr(error)); return; }
+    if(data.session){ session=data.session; await enterApp(); return; }
+    $('auth-sent-text').innerHTML='📬 Fast geschafft! Wir haben dir an <b>'+escapeHtml(email)+'</b> einen Bestätigungslink geschickt. Antippen, dann hier mit E-Mail und Passwort anmelden.';
+    hide($('auth-form')); show($('auth-sent'));
   });
 
   /* Beim Zurückkehren in die App (z. B. vom Home-Bildschirm) neue Werte holen */
@@ -1001,6 +1026,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $('hk-howto').addEventListener('click', ()=> show($('modal-howto')));
   $('howto-close').addEventListener('click', ()=> hide($('modal-howto')));
 
+  $('set-pass-save').addEventListener('click', async ()=>{
+    const password=$('set-pass').value;
+    if(password.length<8){ toast('Mindestens 8 Zeichen.'); return; }
+    const { error } = await sb.auth.updateUser({ password });
+    if(error){ toast('Fehler: '+error.message); return; }
+    $('set-pass').value=''; toast('Passwort gespeichert ✓');
+  });
   $('set-logout').addEventListener('click', async ()=>{ await sb.auth.signOut(); location.reload(); });
   $('set-sharemood').addEventListener('change', async (e)=>{
     shareMood = e.target.checked;
