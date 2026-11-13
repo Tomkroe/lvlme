@@ -31,6 +31,10 @@ Dauer: etwa 15 Minuten. Kosten: im kostenlosen Tarif von Supabase ist das enthal
 
 8. Für die **Webversion** (Prototyp ohne App Store) zusätzlich `supabase/migrations/0004_web_health.sql` ausführen. Das legt die Tabellen für Tageswerte an, die die Webversion braucht, weil ein Browser nicht direkt auf Apple Health zugreifen darf. Werte kommen dort über einen Apple-Kurzbefehl (per Geheim-Token, siehe unten) oder per Hand in die App.
 
+9. Danach `0005_delete_account_health.sql` und `0006_shortcut_robust.sql` ausführen. 0006 sorgt dafür, dass der Kurzbefehl auch mit leeren Werten (z. B. keine Trainingsminuten ohne Apple Watch) und deutschen Kommazahlen funktioniert.
+
+10. Für die Anmeldung per **Code** (nötig für die App auf dem Home-Bildschirm): **Authentication → Emails → Magic Link** öffnen und im Text der Mail `{{ .Token }}` ergänzen, z. B. `Dein Code: {{ .Token }}`. Speichern.
+
 Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue Dateien in `supabase/migrations/` immer in der Reihenfolge ihrer Nummer ausführen.
 
 ## 3a. Anmeldung per E-Mail (für die Webversion)

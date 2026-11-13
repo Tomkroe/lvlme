@@ -1,7 +1,16 @@
-<meta name="claude:viewport-fit-sides" content="cover">
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0d1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LvlMe">
 <meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>LvlMe</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap">
@@ -138,6 +147,8 @@ nav.tabs button[aria-current="true"]{color:var(--accent); background:var(--surfa
 .logo{font-family:var(--f-display); font-size:40px; text-align:center; color:var(--accent); letter-spacing:.02em}
 .sub{text-align:center; color:var(--fg-muted)}
 </style>
+</head>
+<body>
 
 <div id="toast"></div>
 <button class="iconbtn" id="fs-corner" title="Vollbild" style="position:fixed; top:calc(env(safe-area-inset-top,0px) + 58px); right:max(10px,env(safe-area-inset-right,0px)); z-index:40; background:var(--surface); box-shadow:0 2px 10px rgba(0,0,0,.4)">⛶</button>
@@ -172,7 +183,13 @@ nav.tabs button[aria-current="true"]{color:var(--accent); background:var(--surfa
     <button class="btn block" id="auth-send">Anmeldelink senden</button>
   </div>
   <div class="card hidden" id="auth-sent">
-    <p>📬 Link geschickt an <b id="auth-sent-email"></b>. Mail öffnen und den Link antippen – dieses Fenster meldet dich danach automatisch an.</p>
+    <p>📬 Mail geschickt an <b id="auth-sent-email"></b>. Gib den <b>Code</b> aus der Mail hier ein:</p>
+    <div class="field">
+      <label for="auth-code">Code aus der Mail</label>
+      <input id="auth-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" style="letter-spacing:4px;font-size:20px;text-align:center">
+    </div>
+    <button class="btn block" id="auth-verify">Anmelden</button>
+    <p class="small muted">Du kannst stattdessen auch den Link in der Mail antippen – das klappt aber nur im Browser, nicht in der App vom Home-Bildschirm.</p>
     <button class="btn secondary block" id="auth-again">Andere E-Mail-Adresse</button>
   </div>
 </div>
@@ -346,23 +363,35 @@ nav.tabs button[aria-current="true"]{color:var(--accent); background:var(--surfa
   <div class="card" style="width:100%;max-width:520px;border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))">
     <div class="spread"><h2 style="font-size:17px;color:var(--fg)">Kurzbefehl einrichten</h2><button class="btn ghost" id="howto-close" style="padding:6px 10px">✕</button></div>
     <ol class="small" style="padding-left:20px; display:flex; flex-direction:column; gap:10px; color:var(--fg)">
-      <li>App <b>Kurzbefehle</b> öffnen → <b>+</b> für einen neuen Kurzbefehl.</li>
-      <li>Aktion <b>"Datum"</b> hinzufügen, Format <b>Benutzerdefiniert</b> → <code class="mono">yyyy-MM-dd</code> (das wird das Feld "Datum").</li>
-      <li>Je eine Aktion <b>"Health-Beispiel abrufen"</b> (bzw. "Gesundheitsstichprobe") für <b>Schritte</b>, <b>Aktive Energie</b>, <b>Trainingszeit</b> und <b>Schlafanalyse</b> hinzufügen, Zeitraum jeweils <b>heute</b>.</li>
-      <li>Aktion <b>"Text"</b> hinzufügen und folgendes JSON eintragen, die Platzhalter durch die Variablen aus Schritt 2–3 ersetzen (lange auf ein Feld tippen → Variable einfügen):
-        <div class="codebox" style="margin-top:6px"><code class="mono" style="white-space:pre-wrap">{"p_token":"DEIN_GERÄTECODE","p_date":"DATUM","p_steps":SCHRITTE,"p_active_energy_kcal":KCAL,"p_workout_minutes":MINUTEN,"p_sleep_hours":SCHLAF}</code></div>
+      <li>App <b>Kurzbefehle</b> öffnen → <b>+</b>.</li>
+      <li><b>„Health-Messungen suchen“</b>: Typ <b>Schritte</b>, Startdatum <b>ist heute</b>. Darunter <b>„Statistik berechnen“ → Summe</b> und <b>„Zahl runden“</b>.</li>
+      <li>Dasselbe für <b>Aktivitätsenergie</b> und <b>Trainingsminuten</b> (je „Health-Messungen suchen“ + „Statistik berechnen → Summe“).</li>
+      <li><b>„Datum formatieren“</b>: Datum = <b>Aktuelles Datum</b>, Format <b>Eigenes</b>: <code class="mono">yyyy-MM-dd</code>.</li>
+      <li><b>„Inhalte von URL abrufen“</b> mit der Adresse oben, Methode <b>POST</b>, Header <code class="mono">apikey</code> = <code class="mono">sb_publishable_ETTbcormpZjj5FACAXfV1Q_013dVmAA</code>, Haupttext <b>JSON</b> mit den Feldern:
+        <div class="codebox" style="margin-top:6px"><code class="mono" style="white-space:pre-wrap">p_token (Text) = dein Gerätecode
+p_date (Text) = Formatiertes Datum
+p_steps (Zahl) = Gerundete Zahl
+p_active_energy_kcal (Zahl) = Summe Aktivitätsenergie
+p_workout_minutes (Zahl) = Summe Trainingsminuten</code></div>
       </li>
-      <li>Aktion <b>"Inhalt von URL abrufen"</b> hinzufügen:
-        <div class="stack" style="margin-top:6px">
-          <span>Methode: <b>POST</b></span>
-          <span>URL: siehe Feld "Adresse" oben</span>
-          <span>Kopfzeilen: <code class="mono">Content-Type: application/json</code> und <code class="mono">apikey: DEIN_ANON_KEY</code></span>
-          <span>Text/Body: Text aus Schritt 4, Anfrage-Textkörper <b>JSON</b></span>
-        </div>
-      </li>
-      <li>Im Kurzbefehl oben auf <b>ⓘ</b> → <b>Automatisch ausführen</b> → <b>Neue Automation</b> → <b>Uhrzeit</b>, z. B. 7:00 Uhr täglich, "Ohne Nachfrage ausführen" aktivieren.</li>
+      <li>Tab <b>Automation</b> → <b>+</b> → <b>Tageszeit</b>, täglich, <b>Sofort ausführen</b>. Am besten mehrmals: z. B. <b>12:00</b>, <b>18:00</b> und <b>23:55</b> – dann ist der Avatar tagsüber aktuell und der volle Tag zählt.</li>
     </ol>
-    <p class="small muted" style="margin-top:4px">Den anon key findest du oben unter "Verbindung" in den Einstellungen.</p>
+    <p class="small muted" style="margin-top:4px">Leere Werte (z. B. keine Trainingsminuten ohne Apple Watch) sind kein Problem, sie zählen als 0.</p>
+  </div>
+</div>
+
+<!-- ============ Modal: Als App installieren (iPhone) ============ -->
+<div id="modal-install" class="hidden" style="position:fixed;inset:0;z-index:50;background:rgba(5,7,14,.72);display:flex;align-items:flex-end;justify-content:center">
+  <div class="card" style="width:100%;max-width:520px;border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))">
+    <div class="spread"><h2 style="font-size:17px;color:var(--fg)">Vollbild: LvlMe als App</h2><button class="btn ghost" id="install-close" style="padding:6px 10px">✕</button></div>
+    <p class="small muted">Auf dem iPhone erlaubt Apple Webseiten kein echtes Vollbild. Als App auf dem Home-Bildschirm läuft LvlMe aber ohne Browser-Leiste.</p>
+    <p class="small hidden" id="install-inapp" style="color:var(--warn)">⚠️ Du bist gerade in einem App-Browser (z. B. aus der Mail-App). Öffne die Seite zuerst in <b>Safari</b>: unten auf ⋯ bzw. das Kompass-Symbol → „In Safari öffnen“.</p>
+    <ol class="small" style="padding-left:20px; display:flex; flex-direction:column; gap:10px; color:var(--fg)">
+      <li>In Safari unten auf <b>⋯</b> und dann auf <b>Teilen</b> tippen (das Quadrat mit Pfeil nach oben).</li>
+      <li>Etwas nach unten scrollen und <b>„Zum Home-Bildschirm“</b> wählen.</li>
+      <li><b>„Als Web-App öffnen“</b> anlassen und auf <b>Hinzufügen</b> tippen.</li>
+      <li>LvlMe ab jetzt über das neue Icon starten. Beim ersten Start einmal mit E-Mail und <b>Code</b> anmelden.</li>
+    </ol>
   </div>
 </div>
 
@@ -649,21 +678,24 @@ function toPublic(name,p,d,opts){
 }
 const newProgress=()=>({level:1,xp:0,stats:{str:10,end:10,rec:10,dis:10},streak:0,restDays:[],booked:[]});
 
-function recomputeProgress(allMetrics, startProgress){
-  const sorted=[...allMetrics].sort((a,b)=>a.date.localeCompare(b.date));
-  let prog=startProgress || newProgress();
-  let lastScore=null;
+/* Fortschritt wird jedes Mal komplett aus den Tageswerten neu berechnet.
+   Gebucht (XP, Stats, Serie) werden nur ABGESCHLOSSENE Tage – der heutige Tag ist noch
+   in Bewegung (der Kurzbefehl schickt mehrmals am Tag neue Werte) und wird nur live angezeigt.
+   So zählt am Ende immer der vollständige Tageswert, und Safari und Home-Bildschirm-App
+   zeigen denselben Stand. */
+function recomputeProgress(allMetrics){
+  const today=localToday();
+  const sorted=[...allMetrics].filter(m=>m.date<=today).sort((a,b)=>a.date.localeCompare(b.date));
+  let prog=newProgress();
+  let todayScore=null;
   for(let i=0;i<sorted.length;i++){
     const m=sorted[i];
     const prior=sorted.slice(Math.max(0,i-7), i);
-    const base=baselineFrom(prior);
-    const d=scoreDay(m, base);
-    lastScore=d;
-    if(!prog.booked.includes(m.date)){
-      prog=bookDay(prog, m, d).progress;
-    }
+    const d=scoreDay(m, baselineFrom(prior));
+    if(m.date===today){ todayScore=d; continue; }
+    prog=bookDay(prog, m, d).progress;
   }
-  return {progress:prog, lastScore};
+  return {progress:prog, lastScore:todayScore};
 }
 
 /* =========================================================================
@@ -683,8 +715,15 @@ function lsSetJSON(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch
 
 let sb=null, session=null, myProfile=null, myProgress=null, myMetrics=[], shareMood=false;
 
-function supaUrl(){ return lsGet('lvlme_url')||''; }
-function supaKey(){ return lsGet('lvlme_key')||''; }
+const DEFAULT_URL='https://xvinbohxqofkwlrmrwao.supabase.co';
+const DEFAULT_KEY='sb_publishable_ETTbcormpZjj5FACAXfV1Q_013dVmAA';
+function supaUrl(){ return lsGet('lvlme_url')||DEFAULT_URL; }
+function supaKey(){ return lsGet('lvlme_key')||DEFAULT_KEY; }
+/* Lokales Datum (yyyy-mm-dd), nicht UTC */
+function localToday(){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const isStandalone = ()=> window.navigator.standalone===true || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches;
+const isInAppBrowser = ()=> isIOS && !/Safari\//.test(navigator.userAgent) || /FBAN|FBAV|Instagram|WEBDE|GMX|Line\//i.test(navigator.userAgent);
 
 function initSupabase(){
   const url=supaUrl(), key=supaKey();
@@ -747,8 +786,7 @@ async function finishOnboarding(){
 
 async function refreshAll(){
   const uid=session.user.id;
-  myProgress = lsGetJSON('lvlme_progress_'+uid, null) || newProgress();
-  const { data: metrics, error } = await sb.rpc('get_health_metrics', { p_days: 60 });
+  const { data: metrics, error } = await sb.rpc('get_health_metrics', { p_days: 3650 });
   if(error){ toast('Werte konnten nicht geladen werden: '+error.message); myMetrics=[]; }
   else {
     myMetrics = (metrics||[]).map(r=>({
@@ -757,7 +795,7 @@ async function refreshAll(){
       hrvMs:r.hrv_ms==null?null:Number(r.hrv_ms), restingHr:r.resting_hr==null?null:Number(r.resting_hr), source:r.source
     }));
   }
-  const { progress, lastScore } = recomputeProgress(myMetrics, myProgress);
+  const { progress, lastScore } = recomputeProgress(myMetrics);
   myProgress = progress;
   lsSetJSON('lvlme_progress_'+uid, myProgress);
 
@@ -792,8 +830,9 @@ function renderHome(today){
   $('st-streak').textContent = myProgress.streak;
   $('st-stage').textContent = stage.n;
   if(today){
-    $('home-today-summary').textContent = `Erholung ${today.recovery}%, Belastung ${today.strain}, Schlaf ${today.sleep}% des Ziels.`+(today.overtraining? ' Achtung: Übertraining – heute lieber ruhiger.' : '');
-    $('home-datasource').textContent = myMetrics.length && myMetrics[myMetrics.length-1].source==='shortcut' ? 'Kurzbefehl' : 'Manuell';
+    $('home-today-summary').textContent = `Erholung ${today.recovery}%, Belastung ${today.strain}, Schlaf ${today.sleep}% des Ziels.`+(today.overtraining? ' Achtung: Übertraining – heute lieber ruhiger.' : '') + ' Die XP für heute werden nach Mitternacht gutgeschrieben, dann zählt der ganze Tag.';
+    const tm = myMetrics.find(x=>x.date===localToday());
+    $('home-datasource').textContent = tm && tm.source==='shortcut' ? 'Kurzbefehl' : 'Manuell';
   } else {
     $('home-today-summary').textContent = 'Noch keine Werte für heute.';
     $('home-datasource').textContent = '–';
@@ -873,6 +912,22 @@ document.addEventListener('DOMContentLoaded', ()=>{
     hide($('auth-form')); show($('auth-sent'));
   });
   $('auth-again').addEventListener('click', ()=>{ show($('auth-form')); hide($('auth-sent')); });
+  $('auth-verify').addEventListener('click', async ()=>{
+    const email=$('auth-sent-email').textContent.trim();
+    const token=$('auth-code').value.replace(/\s/g,'');
+    if(!token){ toast('Bitte den Code aus der Mail eingeben.'); return; }
+    $('auth-verify').disabled=true;
+    const { data, error } = await sb.auth.verifyOtp({ email, token, type:'email' });
+    $('auth-verify').disabled=false;
+    if(error){ toast('Code stimmt nicht oder ist abgelaufen: '+error.message); return; }
+    session=data.session;
+    await enterApp();
+  });
+
+  /* Beim Zurückkehren in die App (z. B. vom Home-Bildschirm) neue Werte holen */
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible' && session && !$('view-app').classList.contains('hidden')) refreshAll();
+  });
 
   $('ob-save').addEventListener('click', finishOnboarding);
 
@@ -985,13 +1040,20 @@ document.addEventListener('DOMContentLoaded', ()=>{
         const req = el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
         await req.call(el);
       } else {
-        toast('Vollbild geht hier nicht direkt. Auf dem iPhone: Teilen → „Zum Home-Bildschirm" – dann startet LvlMe ohne Browser-Leiste, wie eine eigene App.');
+        openInstall();
       }
     }catch(e){
-      toast('Vollbild geht hier nicht direkt. Auf dem iPhone: Teilen → „Zum Home-Bildschirm" – dann startet LvlMe ohne Browser-Leiste, wie eine eigene App.');
+      openInstall();
     }
   }
-  $('fs-corner').addEventListener('click', toggleFullscreen);
+  function openInstall(){
+    $('install-inapp').classList.toggle('hidden', !isInAppBrowser());
+    show($('modal-install'));
+  }
+  $('install-close').addEventListener('click', ()=> hide($('modal-install')));
+  // Als Home-Bildschirm-App gibt es keine Browser-Leiste mehr – Knopf ausblenden
+  if(isStandalone()) hide($('fs-corner'));
+  $('fs-corner').addEventListener('click', ()=>{ if(isIOS) openInstall(); else toggleFullscreen(); });
   document.addEventListener('fullscreenchange', updateFsIcon);
   document.addEventListener('webkitfullscreenchange', updateFsIcon);
 });
@@ -1016,3 +1078,5 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 })();
 </script>
+</body>
+</html>
