@@ -753,12 +753,13 @@ const LOOK_OPTIONS={
     green:{n:'Grün', c:['#2fa463','#1f7244']}, purple:{n:'Lila', c:['#7a52d1','#553896']}, black:{n:'Schwarz', c:['#2b2f45','#1a1d2e']},
     grey:{n:'Grau', c:['#8c93a8','#646b80']}, white:{n:'Weiß', c:['#f1f2f6','#c8ccd8']} }},
   bottom:{ label:'Hose', items:{ navy:{n:'Dunkelblau', c:['#272b45','#1a1d31']}, black:{n:'Schwarz', c:['#1c1d24','#101116']}, grey:{n:'Grau', c:['#6b7083','#4d5163']}, blue:{n:'Blau', c:['#2f5fa8','#1f4278']} }},
+  style:{ label:'Zeichenstil', items:{ real:{n:'Realistisch'}, anime:{n:'Anime'} }},
   scene:{ label:'Trainingsort', items:{ mountains:{n:'Berge'}, gym:{n:'Fitnessstudio'}, football:{n:'Fußballplatz'}, track:{n:'Laufbahn'}, court:{n:'Basketball'} }},
   band:{ label:'Stirnband', items:{
     red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
     black:{n:'Schwarz', c:['#2a2f4c','#151a2c']}, white:{n:'Weiß', c:['#f2f0ea','#c9c5b8']}, none:{n:'Keins'} }}
 };
-const DEFAULT_LOOK={skin:'fair',hairStyle:'sidepart',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy',scene:'gym'};
+const DEFAULT_LOOK={skin:'fair',hairStyle:'sidepart',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy',scene:'gym',style:'real'};
 /* Schieberegler (0–10). Gespeichert als Buchstabe a–k, weil der geteilte Avatar nur
    kurze Wörter erlaubt. Rein optisch: Muskeln und Körperfett ändern nur die Figur,
    nie XP oder Level – und es werden keine Prozentwerte angezeigt oder geteilt. */
@@ -801,7 +802,7 @@ function publicLook(l){ if(!l) return null; const o={...l}; delete o.heightCm; d
 function ffmi(cm,kg,kfa){ const h=cm/100, ffm=kg*(1-kfa/100); return ffm/(h*h) + 6.1*(1.8-h); }
 function ffmiLabel(v){ return v<17?'wenig Muskeln':v<19?'durchschnittlich':v<21?'sportlich':v<23?'trainiert':v<25?'sehr muskulös':'extrem muskulös'; }
 function heightScale(cm){ return Math.max(.88, Math.min(1.07, 1+(cm-178)*.0029)); }
-const LOOK_GROUPS=[['Körper',['#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Ort',['scene']],['Extras',['glasses','band']]];
+const LOOK_GROUPS=[['Körper',['#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Ort',['scene']],['Extras',['style','glasses','band']]];
 const FACES={
   oval:{p:'M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z', ex:0},
   round:{p:'M76 94 C76 64 96 52 120 52 C144 52 164 64 164 94 C164 116 154 132 138 137 C130 140 126 141 120 141 C114 141 110 140 102 137 C86 132 76 116 76 94Z', ex:-2},
@@ -987,7 +988,8 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     }
   }
   const bob=m==='charged'?'bob fast':(m==='tired'||m==='lazy')?'bob slow':'bob';
-  const PK={leg:1.32, torso:1.06, head:.78}; PK.dLeg=(272-204)*(PK.leg-1); // Chibi wäre leg 1, torso 1, head 1
+  const REAL = L.style!=='anime';
+  const PK = REAL? {leg:1.46, torso:1.1, head:.66} : {leg:1.32, torso:1.06, head:.78}; PK.dLeg=(272-204)*(PK.leg-1);
   const neckTop=(128-204)*PK.torso+204-PK.dLeg, HDY=(neckTop+8)-139;
   const headT=`translate(0 ${HDY}) translate(120 139) scale(${PK.head}) translate(-120 -139) `+(m==='tired'?'rotate(6 120 132) translate(2 4)':m==='lazy'?'rotate(-7 120 132) translate(-2 5)':m==='proud'?'rotate(-3 120 132)':'')+` translate(120 0) scale(${HK} 1) translate(-120 0)`;
   const slump=(m==='tired'||m==='lazy')?4:0;
@@ -1124,14 +1126,24 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   s+=`<path d="${F.p}" fill="${SK}" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
   if(FA>=8) s+=`<path d="M108 141 Q120 147 132 141" stroke="${SK3}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/>`;
   s+=`<path d="M152 92 C153 110 146 124 134 132 C128 136 124 137 121 138 C134 126 146 112 147 94Z" fill="${SK2}"/>`;
-  s+=`<path d="M82 86 Q120 74 158 86 L158 92 Q120 82 82 92Z" fill="${SK2}" opacity=".7"/>`;
+  if(L.style==='anime') s+=`<path d="M82 86 Q120 74 158 86 L158 92 Q120 82 82 92Z" fill="${SK2}" opacity=".7"/>`;
   const BR={
     charged:['M88 88 L110 95','M152 88 L130 95'], awake:['M90 90 Q99 85 110 89','M150 90 Q141 85 130 89'],
     tired:['M90 92 Q100 89 110 90','M150 92 Q140 89 130 90'], proud:['M90 86 Q100 80 110 85','M150 86 Q140 80 130 85'],
     lazy:['M90 91 L110 91','M130 91 L150 90']
   }[m];
   const ek={charged:'fierce',awake:'open',tired:'half',proud:'happy',lazy:'side'}[m];
-  s+=eye(102,106,ek,-1,id,st)+eye(138,106,ek,1,id,st);
+  if(REAL){
+    const ew=(cx)=>`translate(${cx} 106) scale(.8 .58) translate(${-cx} -106)`;
+    s+=`<g transform="${ew(102)}">${eye(102,106,ek,-1,id,st)}</g><g transform="${ew(138)}">${eye(138,106,ek,1,id,st)}</g>`;
+    // Lidfalte, Wangenknochen, Nasenschatten, Kinn – realistischere Gesichtszüge
+    if(ek!=='happy') s+=`<path d="M92 99 Q102 95 112 99 M128 99 Q138 95 148 99" stroke="${OL}" stroke-width="1.6" fill="none" opacity=".55" stroke-linecap="round"/>`;
+    s+=`<path d="M90 114 Q95 121 99 127 M150 114 Q145 121 141 127" stroke="${SK3}" stroke-width="1.6" fill="none" opacity=".45" stroke-linecap="round"/>`;
+    s+=`<path d="M117 98 L115 115" stroke="${SK3}" stroke-width="1.6" opacity=".55" stroke-linecap="round"/>`;
+    s+=`<path d="M112 136 Q120 139 128 136" stroke="${SK3}" stroke-width="1.6" fill="none" opacity=".7" stroke-linecap="round"/>`;
+  } else {
+    s+=eye(102,106,ek,-1,id,st)+eye(138,106,ek,1,id,st);
+  }
   if(m==='tired') s+=`<path d="M92 120 Q101 124 111 120 M129 120 Q139 124 148 120" stroke="#a7737f" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/>`;
   if(L.nose==='round') s+=`<path d="M116 117 Q120 122 124 117" stroke="${SK3}" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="120" cy="116" r="2.6" fill="${SK2}"/>`;
   else if(L.nose==='long') s+=`<path d="M121 106 L117.5 120 L123 120" stroke="${SK3}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -1174,7 +1186,7 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<rect x="113" y="61" width="14" height="9" rx="2" fill="#f2f0ea" stroke="${OL}" stroke-width="1.6" transform="rotate(-1 120 66)"/>`;
   }
   const BW={thin:2.6,normal:3.8,bushy:5.6}[L.brows]||3.8;
-  s+=`<g transform="translate(0 2)"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="${BW+2.8}" stroke-linecap="round" fill="none"/>`;
+  s+=`<g transform="translate(0 ${REAL?6:2})"><path d="${BR[0]} ${BR[1]}" stroke="${SK}" stroke-width="${BW+2.8}" stroke-linecap="round" fill="none"/>`;
   s+=`<path d="${BR[0]} ${BR[1]}" stroke="${L.brows==='bushy'?st.hair[0]:OL}" stroke-width="${BW}" stroke-linecap="round" fill="none"/></g>`;
   if(L.glasses==='yes'){
     s+=`<g fill="#bfe6ff" fill-opacity=".14" stroke="${OL}" stroke-width="2.8"><rect x="87" y="94" width="30" height="25" rx="9"/><rect x="123" y="94" width="30" height="25" rx="9"/></g>`;
@@ -1964,7 +1976,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         `<button class="tile" data-k="scene" data-v="${v}" aria-pressed="${draftLook.scene===v}" aria-label="${it.n}">${sceneSvg(v,'awake','t'+v)}<span>${it.n}</span></button>`).join('')+`</div></div>`;
     }
     // Bild-Auswahl: kleine Vorschau statt Text
-    const CROP={hairStyle:'48 -6 144 150', face:'58 38 124 112', beard:'66 70 108 90', glasses:'66 66 108 80', ears:'58 60 124 80', outfit:'40 128 160 152'};
+    const CROP={style:'30 -10 180 200', hairStyle:'48 -6 144 150', face:'58 38 124 112', beard:'66 70 108 90', glasses:'66 66 108 80', ears:'58 60 124 80', outfit:'40 128 160 152'};
     if(CROP[key]){
       return `<div class="optgrp"><b>${grp.label}</b><div class="tilegrid">`+
         Object.entries(grp.items).map(([v,it])=>{
