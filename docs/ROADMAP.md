@@ -27,7 +27,7 @@ Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Sc
 
 ### Phase 1b – Charakter-Editor („sieht aus wie ich“)
 - [x] **A5** Web: Editor für Hautton, Frisur (6), Haarfarbe, Augen, Bart, Brille, Stirnband; Live-Vorschau; wird als `avatar.look` geteilt, Freunde sehen es. Migration 0008. *(A)*
-- [x] **A6** Web: Gesichtsform, Ohren, Augenbrauen, Nase, Mund, Sommersprossen, Größe (klein/mittel/groß) und Statur (schlank/athletisch/muskulös/kräftig). Migration 0009 (erlaubt beliebige kurze Auswahl-Schlüssel). *(A)*
+- [x] **A6** Web: Gesichtsform, Ohren, Augenbrauen, Nase, Mund, Sommersprossen, Größe (klein/mittel/groß), Schieberegler Muskeln und Körperfett (0–10, rein optisch, ohne Prozentwerte, kein Einfluss auf XP/Kampfkraft; gespeichert als Buchstabe a–k). Migration 0009 (erlaubt beliebige kurze Auswahl-Schlüssel). *(A)*
 - [ ] **B5** iPhone-App: dieselben Optionen in `src/avatar/` (Pfade/Farben aus `docs/web/index.html` → `LOOK_OPTIONS`, `HAIR` übernehmen) und Editor-Screen. **Wichtig:** Beim Hochladen des Avatar-Zustands `look` mitschicken bzw. erhalten, sonst wird es überschrieben.
 
 ### Phase 2 – Wochen-Duell (statt Zufallskampf)
