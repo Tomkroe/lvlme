@@ -723,7 +723,9 @@ const LOOK_OPTIONS={
     brown:{n:'Braun', c:['#9a6440','#7f4f30','#663c22']},
     dark:{n:'Dunkel', c:['#6b4128','#55321e','#432616']} }},
   hairStyle:{ label:'Frisur', items:{
-    spiky:{n:'Stachelig'}, short:{n:'Kurz'}, buzz:{n:'Raspel'}, curly:{n:'Locken'}, long:{n:'Lang'}, bald:{n:'Glatze'} }},
+    sidepart:{n:'Seitenscheitel'}, undercut:{n:'Undercut'}, quiff:{n:'Tolle'}, crew:{n:'Kurz klassisch'}, buzz:{n:'Raspel'},
+    middle:{n:'Mittelscheitel'}, curly:{n:'Locken'}, afro:{n:'Afro'}, dreads:{n:'Dreadlocks'}, bun:{n:'Dutt'},
+    ponytail:{n:'Zopf'}, bob:{n:'Bob'}, long:{n:'Lang'}, bald:{n:'Glatze'}, short:{n:'Anime kurz'}, spiky:{n:'Anime-Stachel'} }},
   hair:{ label:'Haarfarbe', items:{
     black:{n:'Schwarz', c:['#1f2238','#4a5590']},
     darkbrown:{n:'Dunkelbraun', c:['#2e1d14','#6b4630']},
@@ -756,7 +758,7 @@ const LOOK_OPTIONS={
     red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
     black:{n:'Schwarz', c:['#2a2f4c','#151a2c']}, white:{n:'Weiß', c:['#f2f0ea','#c9c5b8']}, none:{n:'Keins'} }}
 };
-const DEFAULT_LOOK={skin:'fair',hairStyle:'spiky',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy',scene:'gym'};
+const DEFAULT_LOOK={skin:'fair',hairStyle:'sidepart',hair:'black',eyes:'brown',face:'oval',ears:'normal',brows:'normal',nose:'small',mouth:'normal',freckles:'none',beard:'none',glasses:'none',band:'red',outfit:'gi',top:'black',bottom:'navy',scene:'gym'};
 /* Schieberegler (0–10). Gespeichert als Buchstabe a–k, weil der geteilte Avatar nur
    kurze Wörter erlaubt. Rein optisch: Muskeln und Körperfett ändern nur die Figur,
    nie XP oder Level – und es werden keine Prozentwerte angezeigt oder geteilt. */
@@ -829,7 +831,41 @@ const HAIR={
           backShade:'M150 120 L152 168 Q162 176 172 168 L160 94 Q160 112 150 120Z', streaks:'M78 120 L74 160 M164 120 L168 160',
           front:'M77 96 C74 60 96 44 120 44 C146 44 166 60 163 96 C156 84 146 74 134 68 C126 80 108 90 86 92 Z',
           frontShade:'M134 68 C146 74 156 84 163 96 C164 78 158 62 146 54 Q144 62 134 68Z', shine:'M94 58 Q106 50 120 50' },
-  bald:{ back:'', backShade:'', streaks:'', front:'', frontShade:'', shine:'' }
+  bald:{ back:'', backShade:'', streaks:'', front:'', frontShade:'', shine:'' },
+  /* ---- echte Frisuren ---- */
+  sidepart:{ back:'M74 104 C68 60 94 40 120 40 C146 40 172 60 166 104 Z', backShade:'', streaks:'',
+    front:'M78 92 C75 62 94 45 118 44 C147 43 167 60 164 94 C160 79 150 68 136 64 C122 61 106 65 95 71 C88 76 82 83 78 92Z',
+    frontShade:'M136 64 C150 68 160 79 164 94 C165 76 158 60 144 52 Q146 58 136 64Z', shine:'M108 52 Q124 48 142 54',
+    lines:'M101 46 Q106 56 97 70 M112 50 Q126 52 138 60 M116 56 Q130 58 142 66' },
+  undercut:{ back:'', backShade:'', streaks:'', sides:'${SIDES}',
+    front:'M86 72 C82 50 98 34 122 34 C147 34 160 50 156 72 C146 63 133 60 120 62 C107 60 95 63 86 72Z',
+    frontShade:'M140 38 C152 44 159 56 156 72 C150 67 144 64 138 63 Q144 50 140 38Z', shine:'M98 46 Q112 38 128 40',
+    lines:'M100 44 Q118 40 140 50 M96 54 Q116 48 146 58' },
+  quiff:{ back:'', backShade:'', streaks:'', sides:'${SIDES}',
+    front:'M84 74 C80 54 90 32 116 27 C134 24 152 30 158 48 C161 58 159 66 156 74 C146 65 132 61 118 61 C104 61 93 65 84 74Z',
+    frontShade:'M142 30 C154 36 160 46 158 58 C157 64 156 70 156 74 C150 68 144 64 138 63 Q150 46 142 30Z', shine:'M96 44 Q108 30 128 30',
+    lines:'M100 40 Q114 30 136 32 M96 52 Q118 40 146 44' },
+  crew:{ back:'M78 100 C72 62 96 44 120 44 C144 44 168 62 162 100 Z', backShade:'', streaks:'',
+    front:'M79 86 C79 60 98 47 120 47 C142 47 161 60 161 86 C153 78 147 74 141 72 L136 76 L132 70 L124 74 L120 68 L114 74 L108 70 L102 76 L98 72 C92 74 85 79 79 86Z',
+    frontShade:'M141 52 C153 60 161 72 161 86 C155 80 149 76 143 73 Q148 62 141 52Z', shine:'M98 56 Q110 50 124 51' },
+  middle:{ back:'M72 114 C64 60 94 40 120 40 C146 40 176 60 168 114 L158 114 C158 94 152 82 146 76 L94 76 C88 82 82 94 82 114 Z', backShade:'', streaks:'',
+    front:'M120 46 C99 46 84 56 79 76 C77 87 79 98 84 106 C86 91 93 79 104 71 C112 65 118 57 120 46 Z M120 46 C141 46 156 56 161 76 C163 87 161 98 156 106 C154 91 147 79 136 71 C128 65 122 57 120 46Z',
+    frontShade:'', shine:'M100 56 Q108 52 114 52 M126 52 Q134 52 140 56', cap:'M80 78 C82 56 98 44 120 44 C142 44 158 56 160 78 Q140 60 120 56 Q100 60 80 78Z' },
+  afro:{ back:'M58 102 C44 40 88 12 120 12 C152 12 196 40 182 102 C178 120 166 130 156 122 L84 122 C74 130 62 120 58 102Z', backShade:'', streaks:'',
+    front:'M78 86 C80 63 98 54 120 54 C142 54 160 63 162 86 C150 74 136 70 120 70 C104 70 90 74 78 86Z', frontShade:'', shine:'',
+    dots:true },
+  dreads:{ back:'M74 100 C68 58 94 40 120 40 C146 40 172 58 166 100 Z', backShade:'', streaks:'',
+    strands:[[80,80,70,150],[88,72,82,158],[152,72,158,158],[160,80,170,150],[96,66,94,120],[144,66,146,120]],
+    front:'M78 88 C76 60 96 45 120 45 C144 45 164 60 162 88 C152 74 138 68 120 68 C102 68 88 74 78 88Z', frontShade:'', shine:'',
+    lines:'M92 58 L90 70 M104 52 L102 66 M116 50 L116 66 M128 50 L130 66 M140 54 L142 68 M150 60 L152 72' },
+  bun:{ back:'M76 100 C70 60 96 44 120 44 C144 44 170 60 164 100 Z', backShade:'', streaks:'', bunAt:[120,30,16],
+    front:'M78 90 C76 60 96 46 120 46 C144 46 164 60 162 90 C152 72 138 64 120 64 C102 64 88 72 78 90Z', frontShade:'', shine:'M100 54 Q112 48 128 50',
+    lines:'M92 62 Q108 50 120 48 M148 62 Q132 50 120 48 M100 72 Q112 60 120 56' },
+  ponytail:{ back:'M76 100 C70 60 96 44 120 44 C144 44 170 60 164 100 Z M150 58 C182 62 192 104 176 150 C170 128 168 106 156 84Z', backShade:'', streaks:'',
+    front:'M78 92 C76 60 96 45 120 45 C144 45 164 60 162 92 C154 74 140 64 120 63 C102 64 88 74 78 92Z', frontShade:'', shine:'M100 54 Q112 48 128 50',
+    lines:'M94 64 Q110 52 124 50 M146 64 Q132 54 124 50' },
+  bob:{ back:'M68 132 C58 60 92 38 120 38 C148 38 182 60 172 132 L152 132 L152 100 L88 100 L88 132Z', backShade:'', streaks:'',
+    front:'M78 94 C75 60 96 43 120 43 C144 43 165 60 162 94 C160 86 156 82 150 80 C138 76 128 78 120 80 C110 76 98 76 90 80 C84 84 80 88 78 94Z', frontShade:'', shine:'M98 52 Q112 46 130 48' }
 };
 const lerp=(a,b,t)=>a+(b-a)*t;
 function limb(d,col,w,shade){
@@ -965,6 +1001,11 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
   if(H.back) s+=`<path d="${H.back}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.8" stroke-linejoin="round"/>`;
   if(H.backShade) s+=`<path d="${H.backShade}" fill="#000" opacity=".22"/>`;
   if(H.streaks) s+=`<path d="${H.streaks}" stroke="${st.hair[1]}" stroke-width="3" stroke-linecap="round" fill="none" opacity=".85"/>`;
+  if(H.dots){ let d=''; for(let i=0;i<70;i++){ const a=i*2.39996, r=Math.sqrt(i/70); const x=120+Math.cos(a)*r*56, y=66+Math.sin(a)*r*48; d+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2"/>`; }
+    s+=`<g fill="${st.hair[1]}" opacity=".4">${d}</g>`; }
+  if(H.bunAt){ const [bx_,by_,br_]=H.bunAt; s+=`<circle cx="${bx_}" cy="${by_}" r="${br_}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.6"/><path d="M${bx_-9} ${by_-4} Q${bx_} ${by_-12} ${bx_+9} ${by_-4} M${bx_-10} ${by_+4} Q${bx_} ${by_-4} ${bx_+10} ${by_+4}" stroke="${st.hair[1]}" stroke-width="2" fill="none" opacity=".8"/>`; }
+  if(H.strands) H.strands.forEach(([x1,y1,x2,y2])=>{ const d=`M${x1} ${y1} Q${(x1+x2)/2+(x2>120?4:-4)} ${(y1+y2)/2} ${x2} ${y2}`;
+    s+=`<path d="${d}" stroke="${OL}" stroke-width="13" stroke-linecap="round" fill="none"/><path d="${d}" stroke="${st.hair[0]}" stroke-width="8.6" stroke-linecap="round" fill="none"/><path d="${d}" stroke="${st.hair[1]}" stroke-width="2" stroke-dasharray="3 5" stroke-linecap="round" fill="none" opacity=".8"/>`; });
   s+=`</g>`;
   // Proportionen: menschlicher als Chibi – längerer Körper, kleinerer Kopf
   s+=`<g transform="translate(0 272) scale(1 ${PK.leg}) translate(0 -272)">`;
@@ -1118,7 +1159,11 @@ function avatarSvg(stageIndex,moodKey,uniqueId,opts){
     s+=`<path d="M90 118 l3 -3 M95 118 l3 -3 M142 118 l3 -3 M147 118 l3 -3" stroke="#e05a6a" stroke-width="1.4" stroke-linecap="round"/>`;
   }else{ s+=`<path d="M112 127 Q116 125 120 127 Q124 129 128 126" stroke="${OL}" stroke-width="2.3" fill="none" stroke-linecap="round"/>`; }
   s+=`</g>`;
+  if(H.sides) s+=`<path d="${H.sides}" fill="${st.hair[0]}" opacity=".42"/>`;
+  if(H.cap) s+=`<path d="${H.cap}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.4" stroke-linejoin="round"/>`;
   if(H.front) s+=`<path d="${H.front}" fill="url(#hg${id})" stroke="${OL}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  if(H.lines) s+=`<path d="${H.lines}" stroke="${st.hair[1]}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".75"/>`;
+
   if(H.frontShade) s+=`<path d="${H.frontShade}" fill="#000" opacity=".2"/>`;
   if(H.shine) s+=`<path d="${H.shine}" stroke="${st.hair[1]}" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".9"/>`;
   if(L.hairStyle==='bald') s+=`<path d="M96 60 Q108 54 120 54" stroke="#fff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/>`;
