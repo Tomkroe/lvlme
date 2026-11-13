@@ -270,7 +270,13 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .lookprev::after{content:""; position:absolute; left:22%; right:22%; bottom:10px; height:22px; border-radius:50%; background:#4a3c58; box-shadow:inset 0 7px 0 #5cb36a}
 .lookprev .av-wrap{position:absolute; left:50%; bottom:16px; width:190px; transform:translateX(-50%); z-index:1}
 .lookprev svg{width:100%; height:auto; display:block; overflow:visible}
-.lookmoods{display:flex; gap:6px; justify-content:center; flex-wrap:wrap}
+.lookmoods{position:absolute; top:8px; right:8px; z-index:4; display:flex; flex-direction:column; gap:4px}
+.lookmoods button{padding:4px 7px !important; font-size:15px !important; background:rgba(9,13,30,.45) !important; border-color:rgba(255,255,255,.25) !important}
+.lookprog{display:grid; grid-auto-flow:column; gap:4px}
+.lookprog i{height:5px; border-radius:3px; background:rgba(255,255,255,.12)}
+.lookprog i.done{background:var(--ki)} .lookprog i.now{background:var(--ki2)}
+.numin{display:flex; align-items:center; gap:4px; font-size:13px}
+.numin input{width:64px; padding:6px 8px; text-align:right}
 .lookmoods button,.optrow button{background:var(--surface2); border:1.5px solid var(--line); color:var(--fg); border-radius:12px; padding:6px 10px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px}
 .lookmoods button[aria-pressed="true"],.optrow button[aria-pressed="true"]{border-color:var(--ki); background:rgba(255,138,31,.15)}
 .optgrp{display:grid; gap:6px; margin-top:6px}
@@ -278,6 +284,12 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .slrow input[type=range]{width:100%; accent-color:var(--ki)}
 .slrow{grid-template-columns:auto 1fr auto}
 .musclebox{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 10px; border-radius:12px; background:rgba(255,255,255,.04)}
+.looktabs{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; position:sticky; top:236px; z-index:3; background:var(--surface); padding:6px 0; margin-top:4px}
+.looktabs button{background:var(--surface2); border:1.5px solid var(--line); color:var(--fg-muted); border-radius:12px; padding:6px 2px; font-size:18px; font-weight:800; display:grid; justify-items:center; gap:1px}
+.looktabs button span{font-size:10.5px}
+.looktabs button[aria-selected="true"]{border-color:var(--ki); color:var(--ki2); background:rgba(255,138,31,.15)}
+#look-opts{min-height:260px}
+#modal-look .card>*{flex-shrink:0}
 .lookh{font-family:var(--f-display); font-weight:400; font-size:20px; letter-spacing:.04em; margin:14px 0 0; color:var(--ki2)}
 .optgrp>b{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-muted)}
 .optrow{display:flex; gap:6px; flex-wrap:wrap}
@@ -499,6 +511,7 @@ nav.tabs button[aria-current="true"]{color:var(--ki); background:transparent}
         <h2>Dein Kämpfer</h2>
         <p class="small muted">Gestalte deinen Avatar so, dass er aussieht wie du: Größe, Gewicht, KFA, Hautton, Gesicht, Frisur, Bart, Brille.</p>
         <button class="btn block" data-openlook>✏️ Aussehen anpassen</button>
+        <button class="btn ghost block" data-openwizard>Fragestrecke nochmal starten</button>
       </div>
       <div class="card">
         <h2>Konto</h2>
@@ -609,12 +622,15 @@ p_workout_minutes (Zahl) = Summe Trainingsminuten</code></div>
 <!-- ============ Modal: Charakter-Editor ============ -->
 <div id="modal-look" class="hidden" style="position:fixed;inset:0;z-index:40;background:rgba(5,7,14,.8);display:flex;align-items:flex-end;justify-content:center">
   <div class="card" style="width:100%;max-width:560px;border-radius:20px 20px 0 0;max-height:94vh;overflow-y:auto;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))">
-    <div class="spread"><h2 style="font-size:24px;color:var(--fg);font-family:var(--f-display);letter-spacing:.04em;text-transform:none;font-weight:400">Dein Kämpfer</h2><button class="btn ghost" id="look-close" style="padding:6px 10px">✕</button></div>
-    <div class="lookprev" id="look-preview" style="flex:none"></div>
-    <div class="lookmoods" id="look-moods"></div>
+    <div class="lookprog hidden" id="look-progress"></div>
+    <div class="spread"><h2 id="look-title" style="font-size:24px;color:var(--fg);font-family:var(--f-display);letter-spacing:.04em;text-transform:none;font-weight:400;margin:0">Dein Kämpfer</h2><button class="btn ghost" id="look-close" style="padding:6px 10px">✕</button></div>
+    <p class="small muted hidden" id="look-sub" style="margin:-4px 0 0"></p>
+    <div class="lookprev" id="look-preview" style="flex:none"><div id="look-av"></div><div class="lookmoods" id="look-moods"></div></div>
+    <div class="looktabs" id="look-tabs" role="tablist"></div>
     <div id="look-opts"></div>
-    <p class="small muted">Ab der Verwandlung „Aufgestiegen“ färbt die Verwandlung Haare und Augen – das ist der Effekt. Der Kampfanzug wechselt außerdem mit jeder Verwandlung die Farbe; bei Sport-Outfits wählst du die Farbe selbst. Freunde sehen deinen Kämpfer so, wie du ihn hier gestaltest.</p>
-    <div class="row"><button class="btn secondary" id="look-reset" style="flex:1">Zurücksetzen</button><button class="btn" id="look-save" style="flex:2">Speichern</button></div>
+    <p class="small muted hidden" id="look-note">Größe, Gewicht und KFA bleiben auf deinem Gerät. Freunde sehen nur die Figur – nichts davon beeinflusst XP oder Level.</p>
+    <div class="row" id="look-edit-actions"><button class="btn secondary" id="look-reset" style="flex:1">Zurücksetzen</button><button class="btn" id="look-save" style="flex:2">Speichern</button></div>
+    <div class="row hidden" id="look-wiz-actions"><button class="btn secondary" id="look-back" style="flex:1">Zurück</button><button class="btn" id="look-next" style="flex:2">Weiter</button></div>
   </div>
 </div>
 
@@ -1357,6 +1373,7 @@ async function enterApp(){
   }
   show($('view-app'));
   await refreshAll();
+  if(!myLook && !lsGet('lvlme_wizard_'+uid) && window.openLookWizard) window.openLookWizard();
 }
 
 async function finishOnboarding(){
@@ -1370,6 +1387,7 @@ async function finishOnboarding(){
   hide($('view-onboarding'));
   show($('view-app'));
   await refreshAll();
+  if(window.openLookWizard) window.openLookWizard();
 }
 
 async function refreshAll(){
@@ -1709,69 +1727,100 @@ document.addEventListener('DOMContentLoaded', ()=>{
     await refreshAll();
   });
 
-  /* ---------- Charakter-Editor ---------- */
-  let draftLook=null, previewMood='charged';
-  function renderLookEditor(){
+  /* ---------- Charakter-Editor & Fragestrecke ---------- */
+  const WIZ=[
+    {t:'Wie groß bist du?', sub:'Die genaue Zahl bleibt auf deinem Gerät.', keys:['#height']},
+    {t:'Wie viel wiegst du?', sub:'Bleibt auf deinem Gerät – nur für die Figur.', keys:['#weight']},
+    {t:'Wie hoch ist dein Körperfettanteil?', sub:'Ungefähr reicht. Daraus und aus Größe und Gewicht ergeben sich deine Muskeln.', keys:['#kfa','#muscle']},
+    {t:'Welcher Hautton passt zu dir?', keys:['skin']},
+    {t:'Wie sehen deine Haare aus?', keys:['hairStyle','hair']},
+    {t:'Dein Gesicht', keys:['face','eyes','brows']},
+    {t:'Bart oder Brille?', keys:['beard','glasses']},
+    {t:'Was trägst du beim Sport?', keys:['outfit','top','bottom']}
+  ];
+  const ICON={'Körper':'💪','Gesicht':'🙂','Haare':'💇','Outfit':'👕','Extras':'🕶️'};
+  let draftLook=null, previewMood='charged', lookTab='Körper', wizStep=null;
+  const q=sel=>document.querySelector('#look-opts '+sel);
+  function drawPreview(){
     const si=Math.min(stageFor(myProgress.level),2);
-    $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
-    $('look-moods').innerHTML=['charged','awake','proud','tired','lazy'].map(k=>`<button data-pm="${k}" aria-pressed="${k===previewMood}">${MOODS[k].l}</button>`).join('');
-    $('look-opts').innerHTML=LOOK_GROUPS.map(([title,keys])=>`<h3 class="lookh">${title}</h3>`+keys.map(key=>{
-      if(key==='#height'){ return `<div class="optgrp"><b>Größe</b><div class="slrow"><input type="range" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hcm aria-label="Größe in cm"><span style="display:flex;align-items:center;gap:4px"><input type="number" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hnum inputmode="numeric" style="width:64px;padding:6px 8px;text-align:right"> cm</span></div><small class="small muted">Freunde sehen nur, wie groß dein Kämpfer ist – nicht die genaue Zahl.</small></div>`; }
-      if(key==='#weight'){ const w=draftLook.weightKg||''; return `<div class="optgrp"><b>Gewicht</b><div class="slrow"><input type="range" min="40" max="160" step="1" value="${w||78}" data-wkg aria-label="Gewicht in kg"><span style="display:flex;align-items:center;gap:4px"><input type="number" min="35" max="200" step="1" value="${w}" placeholder="78" data-wnum inputmode="numeric" style="width:58px;padding:6px 8px;text-align:right"> kg</span></div></div>`; }
-      if(key==='#muscle'){ const has=!!draftLook.weightKg; const v=has? ffmi(draftLook.heightCm,draftLook.weightKg,draftLook.bodyFatPct):null;
-        return `<div class="optgrp"><b>Muskeln</b><div class="musclebox" id="look-muscle">${has? `<span class="pill">${ffmiLabel(v)}</span><span class="small muted">FFMI ${v.toFixed(1).replace('.',',')} · ergibt sich aus Größe, Gewicht und KFA</span>` : `<span class="small muted">Trag dein Gewicht ein – dann ergeben sich die Muskeln automatisch aus Größe, Gewicht und KFA.</span>`}</div>
-          <small class="small muted">Größe, Gewicht und KFA bleiben auf deinem Gerät. Freunde sehen nur die Figur, und nichts davon beeinflusst XP oder Level.</small></div>`; }
-      if(key==='#kfa'){ return `<div class="optgrp"><b>Körperfettanteil (KFA)</b><div class="slrow"><input type="range" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfa aria-label="Körperfettanteil in Prozent"><span style="display:flex;align-items:center;gap:4px"><input type="number" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfanum inputmode="numeric" style="width:58px;padding:6px 8px;text-align:right"> %</span></div></div>`; }
-      if(key[0]==='@'){ const k=key.slice(1), def=LOOK_SLIDERS[k]; const v=ch2sl(draftLook[k]);
-        return `<div class="optgrp"><b>${def.label}</b><div class="slrow"><span>${def.lo}</span><input type="range" min="0" max="10" step="1" value="${v}" data-sl="${k}" aria-label="${def.label}"><span>${def.hi}</span></div></div>`; }
-      const grp=LOOK_OPTIONS[key];
-      return `<div class="optgrp"><b>${grp.label}</b><div class="optrow">`+
-      Object.entries(grp.items).map(([v,it])=>`<button data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}">${it.c?`<i class="sw" style="background:${key==='skin'?it.c[0]:it.c[key==='band'?0:1]}"></i>`:''}${it.n}</button>`).join('')+`</div></div>`; }).join('')).join('');
+    $('look-av').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
+  }
+  function fieldHtml(key){
+    if(key==='#height') return `<div class="optgrp"><b>Größe</b><div class="slrow"><input type="range" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hcm aria-label="Größe in cm"><span class="numin"><input type="number" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hnum inputmode="numeric"> cm</span></div></div>`;
+    if(key==='#weight'){ const w=draftLook.weightKg||''; return `<div class="optgrp"><b>Gewicht</b><div class="slrow"><input type="range" min="40" max="160" step="1" value="${w||78}" data-wkg aria-label="Gewicht in kg"><span class="numin"><input type="number" min="35" max="200" step="1" value="${w}" placeholder="78" data-wnum inputmode="numeric"> kg</span></div></div>`; }
+    if(key==='#kfa') return `<div class="optgrp"><b>Körperfettanteil (KFA)</b><div class="slrow"><input type="range" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfa aria-label="Körperfettanteil in Prozent"><span class="numin"><input type="number" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfanum inputmode="numeric"> %</span></div></div>`;
+    if(key==='#muscle') return `<div class="optgrp"><b>Muskeln</b><div class="musclebox" id="look-muscle">${muscleHtml()}</div></div>`;
+    const grp=LOOK_OPTIONS[key];
+    return `<div class="optgrp"><b>${grp.label}</b><div class="optrow">`+
+      Object.entries(grp.items).map(([v,it])=>`<button data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}">${it.c?`<i class="sw" style="background:${key==='skin'?it.c[0]:it.c[key==='band'?0:1]}"></i>`:''}${it.n}</button>`).join('')+`</div></div>`;
+  }
+  function muscleHtml(){
+    if(!draftLook.weightKg) return `<span class="small muted">Ergibt sich aus Größe, Gewicht und KFA – trag dafür dein Gewicht ein.</span>`;
+    const v=ffmi(draftLook.heightCm,draftLook.weightKg,draftLook.bodyFatPct);
+    return `<span class="pill">${ffmiLabel(v)}</span><span class="small muted">FFMI ${v.toFixed(1).replace('.',',')}</span>`;
+  }
+  function bindNum(rangeSel,numSel,min,max,def,apply){
+    const r=q(rangeSel), n=q(numSel); if(!r||!n) return;
+    const set=(v,from)=>{ v=Math.max(min,Math.min(max,Math.round(+v||def))); apply(v); draftLook=normLook(draftLook);
+      if(from!=='r') r.value=v; if(from!=='n') n.value=v;
+      const mb=$('look-muscle'); if(mb) mb.innerHTML=muscleHtml(); drawPreview(); };
+    r.oninput=()=>set(r.value,'r'); n.onchange=()=>set(n.value,'n');
+  }
+  function renderLookEditor(){
+    const wiz = wizStep!=null;
+    drawPreview();
+    $('look-moods').innerHTML=['charged','awake','proud','tired','lazy'].map(k=>`<button data-pm="${k}" aria-pressed="${k===previewMood}" title="${MOODS[k].l}">${{charged:'⚡',awake:'🙂',proud:'💪',tired:'😴',lazy:'🛋️'}[k]}</button>`).join('');
+    $('look-title').textContent = wiz? WIZ[wizStep].t : 'Dein Kämpfer';
+    $('look-sub').textContent = wiz? (WIZ[wizStep].sub||'') : '';
+    $('look-sub').classList.toggle('hidden', !wiz || !WIZ[wizStep].sub);
+    $('look-progress').classList.toggle('hidden', !wiz);
+    if(wiz) $('look-progress').innerHTML = WIZ.map((_,i)=>`<i class="${i<wizStep?'done':i===wizStep?'now':''}"></i>`).join('');
+    $('look-tabs').classList.toggle('hidden', wiz);
+    if(!wiz){
+      $('look-tabs').innerHTML=LOOK_GROUPS.map(([t])=>`<button role="tab" data-lt="${t}" aria-selected="${t===lookTab}">${ICON[t]||''}<span>${t}</span></button>`).join('');
+      document.querySelectorAll('#look-tabs [data-lt]').forEach(b=>b.onclick=()=>{ lookTab=b.dataset.lt; renderLookEditor(); });
+    }
+    const keys = wiz? WIZ[wizStep].keys : (LOOK_GROUPS.find(([t])=>t===lookTab)||LOOK_GROUPS[0])[1];
+    $('look-opts').innerHTML = keys.map(fieldHtml).join('');
+    $('look-note').classList.toggle('hidden', wiz || lookTab!=='Körper');
+    $('look-edit-actions').classList.toggle('hidden', wiz);
+    $('look-wiz-actions').classList.toggle('hidden', !wiz);
+    if(wiz){ $('look-back').textContent = wizStep===0? 'Später' : 'Zurück'; $('look-next').textContent = wizStep===WIZ.length-1? 'Fertig ✓' : 'Weiter'; }
+    $('look-close').classList.toggle('hidden', wiz);
     document.querySelectorAll('#look-moods [data-pm]').forEach(b=>b.onclick=()=>{ previewMood=b.dataset.pm; renderLookEditor(); });
     document.querySelectorAll('#look-opts [data-k]').forEach(b=>b.onclick=()=>{ draftLook[b.dataset.k]=b.dataset.v; renderLookEditor(); });
-    const refreshBody=()=>{ draftLook=normLook(draftLook); const mb=$('look-muscle'); if(mb && draftLook.weightKg){ const v=ffmi(draftLook.heightCm,draftLook.weightKg,draftLook.bodyFatPct);
-        mb.innerHTML=`<span class="pill">${ffmiLabel(v)}</span><span class="small muted">FFMI ${v.toFixed(1).replace('.',',')} · ergibt sich aus Größe, Gewicht und KFA</span>`; } };
-    const setW=(v,from)=>{ v=Math.max(35,Math.min(200,Math.round(+v||78))); draftLook.weightKg=v;
-      if(from!=='r') document.querySelector('#look-opts [data-wkg]').value=v; if(from!=='n') document.querySelector('#look-opts [data-wnum]').value=v;
-      const had=!!$('look-muscle').querySelector('.pill'); refreshBody(); if(!had){ renderLookEditor(); return; }
-      const si=Math.min(stageFor(myProgress.level),2);
-      $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`; };
-    document.querySelector('#look-opts [data-wkg]').oninput=e=>setW(e.target.value,'r');
-    document.querySelector('#look-opts [data-wnum]').onchange=e=>setW(e.target.value,'n');
-    const setH=(v,from)=>{ v=Math.max(140,Math.min(210,Math.round(+v||178))); draftLook.heightCm=v; draftLook.size=String.fromCharCode(97+Math.round((v-140)/3)); refreshBody();
-      if(from!=='r') document.querySelector('#look-opts [data-hcm]').value=v; if(from!=='n') document.querySelector('#look-opts [data-hnum]').value=v;
-      const si=Math.min(stageFor(myProgress.level),2);
-      $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`; };
-    document.querySelector('#look-opts [data-hcm]').oninput=e=>setH(e.target.value,'r');
-    const setK=(v,from)=>{ v=Math.max(4,Math.min(45,Math.round(+v||20))); draftLook.bodyFatPct=v; draftLook.fat=sl2ch((v-8)/3); refreshBody();
-      if(from!=='r') document.querySelector('#look-opts [data-kfa]').value=v; if(from!=='n') document.querySelector('#look-opts [data-kfanum]').value=v;
-      const si=Math.min(stageFor(myProgress.level),2);
-      $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`; };
-    document.querySelector('#look-opts [data-kfa]').oninput=e=>setK(e.target.value,'r');
-    document.querySelector('#look-opts [data-kfanum]').onchange=e=>setK(e.target.value,'n');
-    document.querySelector('#look-opts [data-hnum]').onchange=e=>setH(e.target.value,'n');
-    document.querySelectorAll('#look-opts [data-sl]').forEach(r=>r.oninput=()=>{
-      draftLook[r.dataset.sl]=sl2ch(+r.value);
-      const si=Math.min(stageFor(myProgress.level),2);
-      $('look-preview').innerHTML=`<div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
-    });
+    bindNum('[data-hcm]','[data-hnum]',140,210,178,v=>{ draftLook.heightCm=v; });
+    bindNum('[data-wkg]','[data-wnum]',35,200,78,v=>{ draftLook.weightKg=v; });
+    bindNum('[data-kfa]','[data-kfanum]',4,45,20,v=>{ draftLook.bodyFatPct=v; });
   }
-  function openLook(){ draftLook=normLook(myLook); renderLookEditor(); show($('modal-look')); }
-  document.addEventListener('click', e=>{ if(e.target.closest('[data-openlook]')) openLook(); });
+  function openLook(){ wizStep=null; draftLook=normLook(myLook); renderLookEditor(); show($('modal-look')); }
+  function openWizard(){ wizStep=0; draftLook=normLook(myLook); if(!draftLook.weightKg) draftLook.weightKg=78; draftLook=normLook(draftLook); renderLookEditor(); show($('modal-look')); }
+  window.openLookWizard = openWizard;
+  document.addEventListener('click', e=>{ if(e.target.closest('[data-openlook]')) openLook(); if(e.target.closest('[data-openwizard]')) openWizard(); });
   $('look-close').addEventListener('click', ()=>hide($('modal-look')));
   $('look-reset').addEventListener('click', ()=>{ draftLook=normLook(null); renderLookEditor(); });
-  $('look-save').addEventListener('click', async ()=>{
+  $('look-back').addEventListener('click', ()=>{
+    if(wizStep===0){ lsSet('lvlme_wizard_'+session.user.id,'later'); hide($('modal-look')); return; }
+    wizStep--; renderLookEditor(); $('modal-look').querySelector('.card').scrollTop=0;
+  });
+  $('look-next').addEventListener('click', ()=>{
+    if(wizStep<WIZ.length-1){ wizStep++; renderLookEditor(); $('modal-look').querySelector('.card').scrollTop=0; return; }
+    saveLook(true);
+  });
+  async function saveLook(fromWizard){
     myLook={...draftLook};
     lsSet('lvlme_look_'+session.user.id, JSON.stringify(myLook));
-    $('look-save').disabled=true;
+    if(fromWizard) lsSet('lvlme_wizard_'+session.user.id,'done');
+    $('look-save').disabled=true; $('look-next').disabled=true;
     const pub = toPublic(myProfile.display_name, myProgress, lastTodayScore, { shareMood, look: myLook });
     const { error } = await sb.from('profiles').update({ avatar: pub }).eq('id', session.user.id);
-    $('look-save').disabled=false;
-    hide($('modal-look'));
+    $('look-save').disabled=false; $('look-next').disabled=false;
+    hide($('modal-look')); wizStep=null;
     if(error){ toast('Gespeichert auf diesem Gerät. Damit Freunde es sehen: Migration 0009 in Supabase ausführen.'); pushPublicAvatar(lastTodayScore); }
-    else { myProfile.avatar=pub; toast('Dein Kämpfer ist gespeichert ✓'); }
+    else { myProfile.avatar=pub; toast(fromWizard? 'Dein Kämpfer ist bereit! Ändern kannst du alles unter Profil → Aussehen.' : 'Dein Kämpfer ist gespeichert ✓'); }
     lastSkyKey=''; renderHome(lastTodayScore); renderProfile(lastTodayScore);
-  });
+  }
+  $('look-save').addEventListener('click', ()=>saveLook(false));
 
   $('fr-create').addEventListener('click', async ()=>{
     const { data, error } = await sb.rpc('create_invite');
