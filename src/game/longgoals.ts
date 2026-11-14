@@ -1,12 +1,14 @@
 /**
  * Langzeitziele: größere, selbst gewählte Ziele mit einmaliger XP-Belohnung. Zuständig: game-balance.
  * Reine Funktionen. Automatisch gemessen werden Schritte insgesamt, Trainingstage und Serie; „eigene“
- * Ziele (z. B. Bankdrücken 100 kg) trägst du selbst nach. Regeln aus CLAUDE.md: kein Gewichts-/KFA-Ziel
- * (keine Belohnung fürs Hungern), nichts wird bestraft, nicht erreichte Ziele kosten nichts.
+ * Ziele (z. B. Bankdrücken 100 kg) trägst du selbst nach. „Gewichtsverlust“ misst das Gewicht aus den Körperwerten.
+ * Regeln aus CLAUDE.md: nichts wird bestraft, nicht erreichte Ziele kosten nichts. Gewichtsverlust hat bewusst
+ * keine Frist (kein Tempo-Druck), gibt XP nur einmal beim Erreichen (nicht je kg) und endet spätestens bei BMI 20
+ * (siehe maxWeightLossKg). Kein KFA-Ziel.
  */
 import type { Progress } from '../types.ts';
 
-export type LongGoalKind = 'steps_total' | 'workout_days' | 'streak' | 'custom';
+export type LongGoalKind = 'steps_total' | 'workout_days' | 'streak' | 'weight_loss' | 'custom';
 
 export interface LongGoal {
   id: string;
@@ -38,6 +40,7 @@ export const LONG_GOAL_KINDS: readonly LongGoalKindDef[] = [
   { kind: 'steps_total', label: 'Schritte insgesamt', unit: 'Schritte', min: 50_000, max: 2_000_000, step: 50_000, def: 300_000 },
   { kind: 'workout_days', label: 'Trainingstage', unit: 'Tage', min: 5, max: 200, step: 5, def: 30 },
   { kind: 'streak', label: 'Serie (Tage in Folge)', unit: 'Tage', min: 7, max: 100, step: 1, def: 14 },
+  { kind: 'weight_loss', label: 'Gewichtsverlust', unit: 'kg', min: 1, max: 30, step: 1, def: 5 },
   { kind: 'custom', label: 'Eigenes Ziel', unit: '', min: 1, max: 100_000, step: 1, def: 100 },
 ];
 
@@ -58,26 +61,31 @@ export function rewardXp(g: Pick<LongGoal, 'kind' | 'target'>): number {
     case 'steps_total': return clamp(Math.round(g.target / 2000), 20, 300);
     case 'workout_days': return clamp(g.target * 6, 30, 300);
     case 'streak': return clamp(g.target * 5, 35, 300);
+    case 'weight_loss': return clamp(g.target * 8, 20, 200);
     case 'custom': return CUSTOM_XP;
   }
 }
 
+/** Zusätzliche Messwerte, die einzelne Ziele brauchen (Gewicht bleibt auf dem Gerät) */
+export interface GoalContext { weightKg?: number }
+
 /** Aktueller Stand eines Ziels */
-export function longGoalValue(g: LongGoal, p: Progress): number {
+export function longGoalValue(g: LongGoal, p: Progress, ctx: GoalContext = {}): number {
   switch (g.kind) {
     case 'steps_total': return Math.max(0, (p.totalSteps ?? 0) - g.start);
     case 'workout_days': return Math.max(0, (p.workoutDays ?? 0) - g.start);
     case 'streak': return p.streak;
+    case 'weight_loss': return ctx.weightKg == null ? 0 : Math.max(0, Math.round((g.start - ctx.weightKg) * 10) / 10);
     case 'custom': return g.current;
   }
 }
 
-export function longGoalFrac(g: LongGoal, p: Progress): number {
-  return g.target > 0 ? clamp(longGoalValue(g, p) / g.target, 0, 1) : 0;
+export function longGoalFrac(g: LongGoal, p: Progress, ctx: GoalContext = {}): number {
+  return g.target > 0 ? clamp(longGoalValue(g, p, ctx) / g.target, 0, 1) : 0;
 }
 
 /** Neues Ziel anlegen (Zählerstand wird festgehalten, damit nur ab jetzt gezählt wird) */
-export function newLongGoal(kind: LongGoalKind, target: number, p: Progress, today: string, title = '', unit = '', current = 0): LongGoal {
+export function newLongGoal(kind: LongGoalKind, target: number, p: Progress, today: string, title = '', unit = '', current = 0, ctx: GoalContext = {}): LongGoal {
   const d = kindDef(kind);
   const t = clamp(Math.round(target), d.min, d.max);
   return {
@@ -86,7 +94,7 @@ export function newLongGoal(kind: LongGoalKind, target: number, p: Progress, tod
     title: kind === 'custom' ? title.trim().slice(0, 40) || 'Eigenes Ziel' : d.label,
     target: t,
     unit: kind === 'custom' ? unit.trim().slice(0, 12) : d.unit,
-    start: kind === 'steps_total' ? (p.totalSteps ?? 0) : kind === 'workout_days' ? (p.workoutDays ?? 0) : 0,
+    start: kind === 'steps_total' ? (p.totalSteps ?? 0) : kind === 'workout_days' ? (p.workoutDays ?? 0) : kind === 'weight_loss' ? (ctx.weightKg ?? 0) : 0,
     current: kind === 'custom' ? Math.max(0, current) : 0,
     createdAt: today,
   };
@@ -138,12 +146,13 @@ export interface LongGoalCheck {
  * Jedes Ziel gibt nur einmal XP. Eigene Ziele geben nur XP, wenn in den letzten
  * CUSTOM_XP_COOLDOWN_DAYS Tagen kein anderes eigenes Ziel XP gegeben hat; sonst zählt es als erreicht, ohne XP.
  */
-export function checkLongGoals(goals: LongGoal[], p: Progress, today: string): LongGoalCheck {
+export function checkLongGoals(goals: LongGoal[], p: Progress, today: string, ctx: GoalContext = {}): LongGoalCheck {
   let xp = 0;
   const completed: LongGoal[] = [];
   const next = goals.map(g => ({ ...g }));
   for (const g of next) {
-    if (g.doneAt || longGoalValue(g, p) < g.target) continue;
+    if (g.doneAt || longGoalValue(g, p, ctx) < g.target) continue;
+    if (g.kind === 'weight_loss' && ctx.weightKg == null) continue;
     let gain = rewardXp(g);
     if (g.kind === 'custom') {
       const recent = next.some(o => o !== g && o.kind === 'custom' && o.doneAt && (o.xp ?? 0) > 0 && daysBetween(o.doneAt, today) < CUSTOM_XP_COOLDOWN_DAYS);

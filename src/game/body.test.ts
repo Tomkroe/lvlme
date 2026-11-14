@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bmi, clampStats, ffmi, suggestBody, BODY_LIMITS } from './body.ts';
+import { bmi, clampStats, ffmi, suggestBody, maxWeightLossKg, BODY_LIMITS, STOCKY_FROM_BODY_FAT } from './body.ts';
 
 const s = (heightCm: number, weightKg: number, bodyFatPct: number) => ({ heightCm, weightKg, bodyFatPct });
 
@@ -24,6 +24,19 @@ test('Körpertyp-Vorschlag', () => {
   assert.equal(suggestBody(s(182, 62, 12)).id, 2);   // schlank
   assert.equal(suggestBody(s(178, 70, 11)).id, 1);   // definiert
   assert.equal(suggestBody(s(178, 78, 18)).id, 0);   // athletisch
+});
+
+test('Körperfett macht den Körper ab der Grenze stämmiger', () => {
+  assert.notEqual(suggestBody(s(178, 80, STOCKY_FROM_BODY_FAT - 1)).id, 4);
+  assert.equal(suggestBody(s(178, 80, STOCKY_FROM_BODY_FAT)).id, 4);
+  assert.equal(suggestBody(s(178, 80, 35)).id, 4);
+});
+
+test('Gewichtsverlust-Ziel: höchstens bis BMI 20', () => {
+  assert.equal(maxWeightLossKg(s(180, 70, 15)), 5);   // 20 * 1.8² = 64.8 → 5 kg
+  assert.equal(maxWeightLossKg(s(180, 64, 15)), 0);
+  assert.equal(maxWeightLossKg(s(180, 55, 15)), 0);
+  assert.equal(maxWeightLossKg(s(170, 160, 40)), 30); // gedeckelt
 });
 
 test('Vorschlag liefert immer eine gültige Körpertyp-Id (0–4)', () => {

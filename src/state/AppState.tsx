@@ -15,7 +15,7 @@ import { Platform } from 'react-native';
 import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.ts';
 import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
 import { NEW_PROGRESS, awardXp, baselineFrom, bookDay, scoreDay, stageFor, toPublic } from '../game/rules.ts';
-import { clampStats, type BodyStats } from '../game/body.ts';
+import { clampStats, maxWeightLossKg, suggestBody, type BodyStats } from '../game/body.ts';
 import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
 import { MAX_LONG_GOALS, checkLongGoals, newLongGoal, sanitizeLongGoals, type LongGoal, type LongGoalKind } from '../game/longgoals.ts';
 import { getHealthProvider } from '../health/index.ts';
@@ -40,6 +40,8 @@ interface Profile {
   body: BodyId;
   /** Größe, Gewicht, KFA: nur lokal, wird nie veröffentlicht oder synchronisiert */
   bodyStats?: BodyStats;
+  /** Körpertyp automatisch aus den Körperwerten (nur mit Einwilligung; Freunde sehen dann die abgeleitete Figur) */
+  autoBody?: boolean;
   /** Selbst gewählte Tagesziele (lokal); fehlt das Feld, gelten die Standardziele */
   goals?: Goals;
   /** Langzeitziele (lokal); die XP daraus stecken im Fortschritt */
@@ -59,12 +61,14 @@ export interface AppState {
   body: BodyId;
   cloudSync: boolean;
   bodyStats: BodyStats | null;
+  autoBody: boolean;
+  setAutoBody: (on: boolean) => Promise<void>;
   goals: Goals;
   longGoals: LongGoal[];
   /** Neu erreichte Langzeitziele, die noch nicht angezeigt wurden */
   goalEvents: LongGoal[];
   dismissGoalEvent: () => void;
-  addLongGoal: (kind: LongGoalKind, target: number, title?: string, unit?: string, current?: number) => Promise<boolean>;
+  addLongGoal: (kind: LongGoalKind, target: number, title?: string, unit?: string, current?: number) => Promise<'ok' | 'limit' | 'weight'>;
   removeLongGoal: (id: string) => Promise<void>;
   setLongGoalValue: (id: string, value: number) => Promise<void>;
   /** Heutige Rohwerte – nur zur Anzeige des Ziel-Fortschritts, werden nicht gespeichert */
@@ -146,13 +150,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { profileRef.current = profile; }, [profile]);
   useEffect(() => { meRef.current = me; }, [me]);
 
+  /** Körpertyp, der gezeigt und veröffentlicht wird: bei „automatisch“ aus den Körperwerten, sonst die Wahl. Outfits haben Vorrang. */
+  const effectiveBody = (prof: Profile): BodyId => {
+    const chosen = prof.body ?? DEFAULT_BODY;
+    if (prof.autoBody === true && prof.bodyStats && chosen <= 4) return suggestBody(clampStats(prof.bodyStats)).id;
+    return chosen;
+  };
+
   /** Öffentlichen Avatar veröffentlichen. Ohne Backend oder Anmeldung: nichts tun. */
   const publish = useCallback(async () => {
     if (!social.isConfigured() || !meRef.current) return;
     const prof = profileRef.current;
     const name = prof.name || meRef.current.displayName;
     // Ältere gespeicherte Profile haben noch kein hair/body → Standard
-    const appearance = { hair: prof.hair ?? DEFAULT_HAIR, body: prof.body ?? DEFAULT_BODY };
+    const appearance = { hair: prof.hair ?? DEFAULT_HAIR, body: effectiveBody(prof) };
     await social.publishAvatar(toPublic(name, progressRef.current, todayRef.current, { shareMood: prof.shareMood === true }, appearance));
   }, []);
 
@@ -188,7 +199,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   /** Langzeitziele prüfen, XP gutschreiben, Fortschritt und Ziele speichern. Liefert den neuen Fortschritt. */
   const applyLongGoals = useCallback(async (p: Progress, today: string, goalsIn?: LongGoal[]): Promise<{ progress: Progress; events: LevelEvent[] }> => {
     const list = goalsIn ?? sanitizeLongGoals(profileRef.current.longGoals);
-    const check = checkLongGoals(list, p, today);
+    const ws = profileRef.current.bodyStats;
+    const check = checkLongGoals(list, p, today, { weightKg: ws ? clampStats(ws).weightKg : undefined });
     if (check.completed.length === 0) return { progress: p, events: [] };
     const next = { ...profileRef.current, longGoals: check.goals };
     setProfile(next); profileRef.current = next;
@@ -350,13 +362,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
   }, [publish]);
 
-  /** Körperwerte nur lokal speichern, nichts wird veröffentlicht */
-  const setBodyStats = useCallback(async (stats: BodyStats) => {
-    const next = { ...profileRef.current, bodyStats: clampStats(stats) };
-    setProfile(next); profileRef.current = next;
-    await writeJson(K_PROFILE, next);
-  }, []);
-
   const localDate = () => {
     const d = new Date();
     const z = (n: number) => String(n).padStart(2, '0');
@@ -373,17 +378,38 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     publish().catch(() => { /* offline */ });
   }, [publish, syncAllowed]);
 
-  const addLongGoal = useCallback(async (kind: LongGoalKind, target: number, title = '', unit = '', current = 0): Promise<boolean> => {
+  /** Körperwerte lokal speichern. Die Zahlen werden nie veröffentlicht; nur bei „automatisch“ geht der daraus abgeleitete Körpertyp an Freunde. */
+  const setBodyStats = useCallback(async (stats: BodyStats) => {
+    const next = { ...profileRef.current, bodyStats: clampStats(stats) };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    // Gewichtsverlust-Ziele prüfen; bei „automatisch“ hat sich evtl. auch die Figur geändert
+    const r = await applyLongGoals(progressRef.current, localDate());
+    await commitProgress(r.progress, r.events);
+    if (next.autoBody === true) { try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ } }
+  }, [applyLongGoals, commitProgress, publish]);
+
+  const setAutoBody = useCallback(async (on: boolean) => {
+    const next = { ...profileRef.current, autoBody: on };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
+  }, [publish]);
+
+  const addLongGoal = useCallback(async (kind: LongGoalKind, target: number, title = '', unit = '', current = 0): Promise<'ok' | 'limit' | 'weight'> => {
     const open = sanitizeLongGoals(profileRef.current.longGoals).filter(g => !g.doneAt);
-    if (open.length >= MAX_LONG_GOALS) return false;
-    const g = newLongGoal(kind, target, progressRef.current, localDate(), title, unit, current);
+    if (open.length >= MAX_LONG_GOALS) return 'limit';
+    const ws = profileRef.current.bodyStats ? clampStats(profileRef.current.bodyStats) : null;
+    // Gewichtsverlust: braucht gespeicherte Körperwerte und endet spätestens bei BMI 20
+    if (kind === 'weight_loss' && (!ws || target > maxWeightLossKg(ws) || open.some(o => o.kind === 'weight_loss'))) return 'weight';
+    const g = newLongGoal(kind, target, progressRef.current, localDate(), title, unit, current, { weightKg: ws?.weightKg });
     const list = [...sanitizeLongGoals(profileRef.current.longGoals), g];
     const next = { ...profileRef.current, longGoals: list };
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);
     const r = await applyLongGoals(progressRef.current, localDate(), list);
     await commitProgress(r.progress, r.events);
-    return true;
+    return 'ok';
   }, [applyLongGoals, commitProgress]);
 
   const removeLongGoal = useCallback(async (id: string) => {
@@ -461,9 +487,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     onboarded: profile.onboarded,
     shareMood: profile.shareMood === true,
     hair: profile.hair ?? DEFAULT_HAIR,
-    body: profile.body ?? DEFAULT_BODY,
+    body: effectiveBody(profile),
     cloudSync: profile.cloudSync === true,
     bodyStats: profile.bodyStats ? clampStats(profile.bodyStats) : null,
+    autoBody: profile.autoBody === true && !!profile.bodyStats,
+    setAutoBody,
     goals: profile.goals !== undefined ? sanitizeGoals(profile.goals) : DEFAULT_GOALS,
     longGoals: sanitizeLongGoals(profile.longGoals),
     goalEvents, dismissGoalEvent, addLongGoal, removeLongGoal, setLongGoalValue,

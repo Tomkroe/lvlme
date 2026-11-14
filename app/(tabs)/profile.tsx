@@ -15,7 +15,7 @@ import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
 import { Slider } from '../../src/ui/Slider.tsx';
 import { ALL_GOALS_BONUS, GOAL_DEFS, goalDef, type GoalId } from '../../src/game/goals.ts';
 import { LONG_GOAL_KINDS, MAX_LONG_GOALS, kindDef, longGoalFrac, longGoalValue, rewardXp, type LongGoalKind } from '../../src/game/longgoals.ts';
-import { BODY_LIMITS, DEFAULT_BODY_STATS, bmi, clampStats, ffmi, suggestBody, type BodyStats } from '../../src/game/body.ts';
+import { BODY_LIMITS, DEFAULT_BODY_STATS, DEFINED_UP_TO_BODY_FAT, MIN_GOAL_BMI, STOCKY_FROM_BODY_FAT, bmi, clampStats, ffmi, maxWeightLossKg, suggestBody, type BodyStats } from '../../src/game/body.ts';
 import { C, F, PRIVACY_URL } from '../../src/ui/theme.ts';
 
 const SOURCE: Record<string, string> = { healthkit: 'Apple Health', whoop: 'WHOOP', cloud: 'Dein Konto (vom iPhone)', demo: 'Beispieldaten' };
@@ -33,6 +33,18 @@ export default function Profile() {
   const save = (k: keyof BodyStats) => (v: number) => { app.setBodyStats(clampStats({ ...stats, [k]: v })); };
   const sugg = suggestBody(stats);
   const suggName = BODIES.find(b => b.id === sugg.id)?.name ?? '';
+  const toggleAuto = async (on: boolean) => {
+    if (on) {
+      const ok = await confirm('Körpertyp automatisch?',
+        'Dein Avatar-Körper richtet sich dann nach Größe, Gewicht und Körperfettanteil. Freunde sehen die Figur, nie die Zahlen. Wer deinen Körpertyp kennt, kann aber grob auf deinen Körperfettanteil schließen. Du kannst das jederzeit ausschalten.',
+        'Einverstanden', false);
+      if (!ok) return;
+      await app.setBodyStats(stats);
+    }
+    await app.setAutoBody(on);
+  };
+  const goalCtx = { weightKg: app.bodyStats?.weightKg };
+  const maxLoss = maxWeightLossKg(stats);
 
   const toggleGoal = (id: GoalId, on: boolean) => {
     const g = { ...app.goals };
@@ -53,8 +65,11 @@ export default function Profile() {
   const addLong = async () => {
     const target = lgKind === 'custom' ? num(lgTargetText) : lgTarget;
     if (lgKind === 'custom' && (!lgTitle.trim() || target <= 0)) { notify('Eigenes Ziel', 'Gib dem Ziel einen Namen und eine Zielmarke größer als 0.'); return; }
-    const ok = await app.addLongGoal(lgKind, target, lgTitle, lgUnit, num(lgCurrent));
-    if (!ok) { notify('Zu viele Ziele', `Du kannst höchstens ${MAX_LONG_GOALS} offene Langzeitziele haben. Schließe eins ab oder entferne es.`); return; }
+    // Gewichtsverlust startet beim aktuell eingestellten Gewicht: Körperwerte vorher speichern
+    if (lgKind === 'weight_loss') await app.setBodyStats(stats);
+    const res = await app.addLongGoal(lgKind, target, lgTitle, lgUnit, num(lgCurrent));
+    if (res === 'limit') { notify('Zu viele Ziele', `Du kannst höchstens ${MAX_LONG_GOALS} offene Langzeitziele haben. Schließe eins ab oder entferne es.`); return; }
+    if (res === 'weight') { notify('Gewichtsverlust', 'Ein Gewichtsverlust-Ziel geht nur einmal gleichzeitig und höchstens bis BMI ' + MIN_GOAL_BMI + '. Mit deinen Körperwerten ist gerade kein Ziel möglich oder das Ziel ist zu hoch.'); return; }
     setLgTitle(''); setLgUnit(''); setLgCurrent(''); setLgTargetText('');
   };
   const removeLong = async (id: string, title: string) => {
@@ -152,7 +167,7 @@ export default function Profile() {
               {BODIES.filter(b => b.kind === kind).map(b => {
                 const on = b.id === app.body;
                 return (
-                  <Pressable key={b.id} onPress={() => { app.setBody(b.id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                  <Pressable key={b.id} onPress={() => { if (app.autoBody && b.kind === 'type') app.setAutoBody(false); app.setBody(b.id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
                     accessibilityLabel={`${label} ${b.name}`} style={[st.hairOpt, on && st.hairOn]}>
                     <Avatar stage={app.stage} mood="awake" hair={app.hair} body={b.id} size={52} still id={`body${b.id}`} />
                     <Text style={[st.hairName, on && { color: C.ki }]} numberOfLines={1}>{b.name}</Text>
@@ -174,11 +189,14 @@ export default function Profile() {
           <Text style={st.meta}>BMI <Text style={[{ color: C.ink }, F.num]}>{bmi(stats).toFixed(1)}</Text></Text>
           <Text style={st.meta}>FFMI <Text style={[{ color: C.ink }, F.num]}>{ffmi(stats).toFixed(1)}</Text></Text>
         </View>
-        {app.body <= 4 && app.body !== sugg.id && (
-          <Button title={`Körpertyp „${suggName}“ übernehmen`} kind="ghost" onPress={() => { app.setBody(sugg.id); }}
-            accessibilityHint={`Passt zu deinen Werten: ${sugg.why}`} />
-        )}
-        <P style={{ fontSize: 12 }}>Größe, Gewicht und KFA bleiben auf diesem Gerät. Sie werden weder mit Freunden geteilt noch synchronisiert und ändern weder XP noch Level. Freunde sehen nur den Körpertyp, den du oben wählst. Die Werte sind nur ein Vorschlag für die Figur.</P>
+        <View style={st.switchRow}>
+          <Text style={[st.label, { flex: 1 }]}>Körpertyp automatisch{app.autoBody ? ` (${suggName})` : ''}</Text>
+          <Switch value={app.autoBody} onValueChange={toggleAuto} trackColor={{ true: C.ki, false: C.line }} ios_backgroundColor={C.line}
+            accessibilityLabel="Körpertyp automatisch aus den Körperwerten"
+            accessibilityHint="Der Körper deines Avatars richtet sich nach Größe, Gewicht und Körperfettanteil" />
+        </View>
+        <P style={{ fontSize: 12 }}>Automatisch: Ab {STOCKY_FROM_BODY_FAT} % Körperfett wird der Körper stämmiger, bis {DEFINED_UP_TO_BODY_FAT} % definierter; dazwischen entscheidet die Muskelmasse (Athletisch, Kraftsport, Schlank). Ohne „automatisch“ wählst du den Körpertyp selbst. Outfits haben Vorrang.</P>
+        <P style={{ fontSize: 12 }}>Größe, Gewicht und KFA bleiben auf diesem Gerät, werden nicht synchronisiert und ändern weder XP noch Level. Freunde sehen nur den Körpertyp – den du wählst oder, wenn „automatisch“ an ist, den abgeleiteten.</P>
       </Card>
 
       <Card>
@@ -203,22 +221,22 @@ export default function Profile() {
             </View>
           );
         })}
-        <P style={{ fontSize: 12 }}>Es gibt bewusst kein Ziel für Gewicht oder Körperfett, und das Schlafziel beginnt bei 6 Stunden: LvlMe belohnt weder Hungern noch Schlafentzug.</P>
+        <P style={{ fontSize: 12 }}>Es gibt kein Tagesziel für Gewicht oder Körperfett, und das Schlafziel beginnt bei 6 Stunden: LvlMe belohnt weder Hungern noch Schlafentzug. Gewichtsverlust findest du unter Langzeitziele, ohne Frist.</P>
       </Card>
 
       <Card>
         <H>Langzeitziele</H>
-        <P>Größere Ziele mit einmaliger XP-Belohnung. Schritte, Trainingstage (ab {20} Min.) und Serie zählt LvlMe ab dem Anlegen automatisch. Eigene Ziele, zum Beispiel Bankdrücken oder ein Lauf, trägst du selbst nach. Nichts wird bestraft, wenn es länger dauert.</P>
+        <P>Größere Ziele mit einmaliger XP-Belohnung. Schritte, Trainingstage (ab {20} Min.) und Serie zählt LvlMe ab dem Anlegen automatisch, Gewichtsverlust aus deinen Körperwerten. Eigene Ziele, zum Beispiel Bankdrücken oder ein Lauf, trägst du selbst nach. Nichts wird bestraft, wenn es länger dauert.</P>
         {app.longGoals.map(g => {
           const done = !!g.doneAt;
-          const val = longGoalValue(g, app.progress);
+          const val = longGoalValue(g, app.progress, goalCtx);
           return (
             <View key={g.id} style={{ gap: 4 }}>
               <View style={st.row}>
                 <Text style={{ color: done ? C.good : C.ink, fontWeight: '700', fontSize: 14, flexShrink: 1 }} numberOfLines={1}>{done ? '✓ ' : ''}{g.title}</Text>
                 <Pressable onPress={() => removeLong(g.id, g.title)} accessibilityRole="button" accessibilityLabel={`Ziel ${g.title} entfernen`} hitSlop={10}><Text style={{ color: C.mute, fontSize: 16 }}>✕</Text></Pressable>
               </View>
-              <Bar frac={done ? 1 : longGoalFrac(g, app.progress)} color={done ? C.good : C.violet} height={8} />
+              <Bar frac={done ? 1 : longGoalFrac(g, app.progress, goalCtx)} color={done ? C.good : C.violet} height={8} />
               <Text style={st.meta}>{Math.round(val).toLocaleString('de-DE')} / {g.target.toLocaleString('de-DE')} {g.unit} · {done ? ((g.xp ?? 0) > 0 ? `+${g.xp} XP erhalten` : 'erreicht, ohne XP (eigene Ziele: höchstens einmal pro Woche)') : `+${rewardXp(g)} XP bei Erfolg`}</Text>
               {!done && g.kind === 'custom' && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -249,8 +267,17 @@ export default function Profile() {
               <TextInput value={lgUnit} onChangeText={setLgUnit} placeholder="Einheit, z. B. kg" placeholderTextColor={C.mute} maxLength={12} style={[st.textInput, { flex: 1 }]} accessibilityLabel="Einheit" />
             </View>
             <TextInput value={lgCurrent} onChangeText={setLgCurrent} placeholder="Aktueller Stand (optional)" placeholderTextColor={C.mute} keyboardType="decimal-pad" style={st.textInput} accessibilityLabel="Aktueller Stand" />
-            <P style={{ fontSize: 12 }}>Gewichts- oder Körperfettziele gibt es bewusst nicht: LvlMe belohnt weder Hungern noch Schlafentzug. Eigene Ziele geben {100} XP, höchstens einmal pro Woche.</P>
+            <P style={{ fontSize: 12 }}>Eigene Ziele geben {100} XP, höchstens einmal pro Woche.</P>
           </View>
+        ) : lgKind === 'weight_loss' ? (
+          maxLoss < 1 ? (
+            <P style={{ fontSize: 12 }}>Mit deinen Körperwerten ist kein Gewichtsverlust-Ziel sinnvoll: Ziele enden spätestens bei BMI {MIN_GOAL_BMI}. Stell oben Größe und Gewicht ein.</P>
+          ) : (
+            <View style={{ gap: 8 }}>
+              <Slider label="Abnehmen um" unit="kg" value={Math.min(lgTarget, maxLoss)} min={1} max={maxLoss} step={1} onChange={setLgTarget} />
+              <P style={{ fontSize: 12 }}>Startgewicht ist das Gewicht aus „Körperwerte“ ({stats.weightKg} kg). Trag dort später dein neues Gewicht ein. Keine Frist, kein Tempo-Druck: Du bekommst die XP einmal, wenn du dein Ziel erreichst. Zunahme kostet nichts. Maximal bis BMI {MIN_GOAL_BMI} ({maxLoss} kg bei deinen Werten).</P>
+            </View>
+          )
         ) : (
           <Slider label="Zielmarke" unit={kindDef(lgKind).unit} value={lgTarget} min={kindDef(lgKind).min} max={kindDef(lgKind).max} step={kindDef(lgKind).step}
             format={v => v.toLocaleString('de-DE')} onChange={setLgTarget} />

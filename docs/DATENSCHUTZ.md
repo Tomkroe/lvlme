@@ -30,7 +30,7 @@ Mit deiner Einwilligung liest LvlMe aus Apple Health: Schritte, Training (Workou
 
 ### 3.2 Lokal gespeicherte Spieldaten
 
-Auf deinem iPhone speichert LvlMe deinen Kämpfernamen, Level, XP, Stats, Serie, die bereits verbuchten Tage, das gewählte Aussehen deines Avatars (Frisur und Körper), deine optional eingegebenen Körperwerte (Größe, Gewicht, Körperfettanteil; sie verlassen das Gerät nie) und deine Einstellungen (z. B. „Tagesform mit Freunden teilen“). Diese Daten löschst du im Profil mit „Fortschritt zurücksetzen“ oder indem du die App löschst.
+Auf deinem iPhone speichert LvlMe deinen Kämpfernamen, Level, XP, Stats, Serie, die bereits verbuchten Tage, das gewählte Aussehen deines Avatars (Frisur und Körper), deine optional eingegebenen Körperwerte (Größe, Gewicht, Körperfettanteil; die Zahlen verlassen das Gerät nie) und Langzeitziele wie Gewichtsverlust und deine Einstellungen (z. B. „Tagesform mit Freunden teilen“). Diese Daten löschst du im Profil mit „Fortschritt zurücksetzen“ oder indem du die App löschst.
 
 ### 3.3 Konto und Freunde (optional, Server in Frankfurt)
 
@@ -38,7 +38,7 @@ Nur wenn du dich anmeldest (mit Apple oder mit E-Mail und Passwort), verarbeiten
 
 - **Konto:** eine von Apple bereitgestellte Kennung und ggf. die von Apple übermittelte E-Mail-Adresse (ggf. eine anonyme Weiterleitungsadresse). [mit social-backend prüfen, was genau in Supabase Auth gespeichert wird]
 - **Kämpfername:** der Name, den du in LvlMe eingibst (nicht dein Apple-Name).
-- **Öffentlicher Avatar:** Level, Stufe, Serie, Zeitpunkt der letzten Aktualisierung, das gewählte Aussehen (Frisur und Körper bzw. Outfit, keine Gesundheitsdaten) und – nur wenn du „Tagesform mit Freunden teilen“ einschaltest – deine Tagesform (z. B. „aufgeladen“ oder „müde“). Hinweis: Aus der Tagesform lassen sich Rückschlüsse auf Schlaf und Erholung ziehen. Die Einstellung ist standardmäßig aus und jederzeit abschaltbar.
+- **Öffentlicher Avatar:** Level, Stufe, Serie, Zeitpunkt der letzten Aktualisierung, das gewählte Aussehen (Frisur und Körper bzw. Outfit; keine Zahlen. Schaltest du „Körpertyp automatisch“ ein, ist der Körper aus deinen Körperwerten abgeleitet, daraus lässt sich grob auf deinen Körperfettanteil schließen – nur mit deiner Einwilligung, jederzeit abschaltbar) und – nur wenn du „Tagesform mit Freunden teilen“ einschaltest – deine Tagesform (z. B. „aufgeladen“ oder „müde“). Hinweis: Aus der Tagesform lassen sich Rückschlüsse auf Schlaf und Erholung ziehen. Die Einstellung ist standardmäßig aus und jederzeit abschaltbar.
 - **Freundschaften und Einladungen:** wer mit wem befreundet ist und offene Einladungscodes.
 
 Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) für Konto und Freunde; Einwilligung (Art. 6 Abs. 1 lit. a / Art. 9 Abs. 2 lit. a DSGVO) für das Teilen der Tagesform. [prüfen]

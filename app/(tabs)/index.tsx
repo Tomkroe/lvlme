@@ -40,6 +40,7 @@ export default function Home() {
   const warn = app.today?.overtraining ?? false;
   const nextStage = STAGES[app.stage + 1];
   const openLong = app.longGoals.filter(g => !g.doneAt).slice(0, 3);
+  const goalCtx = { weightKg: app.bodyStats?.weightKg };
   const doneGoal = app.goalEvents[0];
   const goalRows = app.todayMetrics ? goalStatus(app.todayMetrics, app.goals) : [];
   const goalBonus = app.todayMetrics ? goalXp(app.todayMetrics, app.goals).xp : 0;
@@ -155,12 +156,12 @@ export default function Home() {
           <Card>
             <Text style={st.xpTitle}>Langzeitziele</Text>
             {openLong.map(g => (
-              <View key={g.id} style={{ gap: 4 }} accessible accessibilityLabel={`${g.title}: ${Math.round(longGoalValue(g, app.progress))} von ${g.target} ${g.unit}`}>
+              <View key={g.id} style={{ gap: 4 }} accessible accessibilityLabel={`${g.title}: ${Math.round(longGoalValue(g, app.progress, goalCtx))} von ${g.target} ${g.unit}`}>
                 <View style={st.row}>
                   <Text style={{ color: C.ink, fontWeight: '700', fontSize: 14, flexShrink: 1 }} numberOfLines={1}>{g.title}</Text>
-                  <Text style={[st.xpNums, F.num]}>{Math.round(longGoalValue(g, app.progress)).toLocaleString('de-DE')} / {g.target.toLocaleString('de-DE')} {g.unit} · +{rewardXp(g)} XP</Text>
+                  <Text style={[st.xpNums, F.num]}>{Math.round(longGoalValue(g, app.progress, goalCtx)).toLocaleString('de-DE')} / {g.target.toLocaleString('de-DE')} {g.unit} · +{rewardXp(g)} XP</Text>
                 </View>
-                <Bar frac={longGoalFrac(g, app.progress)} color={C.violet} height={8} />
+                <Bar frac={longGoalFrac(g, app.progress, goalCtx)} color={C.violet} height={8} />
               </View>
             ))}
           </Card>

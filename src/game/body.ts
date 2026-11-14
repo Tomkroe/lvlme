@@ -1,8 +1,8 @@
 /**
  * Körperwerte (Größe, Gewicht, KFA) → Vorschlag für den Körpertyp. Zuständig: game-balance.
  * Reine Funktionen, rein optisch: nichts davon beeinflusst XP, Level oder Stats.
- * Datenschutz: Größe, Gewicht und KFA bleiben auf dem Gerät. Nur der vom Nutzer bestätigte
- * Körpertyp (BodyId) geht in PublicAvatar.
+ * Datenschutz: Größe, Gewicht und KFA bleiben auf dem Gerät. In PublicAvatar geht nur der Körpertyp (BodyId):
+ * der selbst gewählte, oder – nur wenn der Nutzer „automatisch“ eingeschaltet hat – der aus den Werten abgeleitete.
  */
 import type { BodyId } from '../types.ts';
 
@@ -51,6 +51,19 @@ export function ffmi(s: BodyStats): number {
   return ffm / (h * h) + 6.1 * (1.8 - h);
 }
 
+/** Ab diesem Körperfettanteil (in %) wird der Körpertyp „Stämmig“ */
+export const STOCKY_FROM_BODY_FAT = 22;
+/** Bis zu diesem Körperfettanteil (in %) wird der Körpertyp „Definiert“ (bei normaler Muskelmasse) */
+export const DEFINED_UP_TO_BODY_FAT = 12;
+/** Gewichtsverlust-Ziele enden spätestens bei diesem BMI: kein Anreiz, untergewichtig zu werden */
+export const MIN_GOAL_BMI = 20;
+
+/** Wie viele kg man höchstens als Ziel abnehmen darf (0 = kein Gewichtsverlust-Ziel sinnvoll), ganze kg */
+export function maxWeightLossKg(s: BodyStats): number {
+  const h = s.heightCm / 100;
+  return Math.max(0, Math.min(30, Math.floor(s.weightKg - MIN_GOAL_BMI * h * h)));
+}
+
 export interface BodySuggestion {
   id: BodyId;
   /** kurze Begründung für die Anzeige */
@@ -63,9 +76,9 @@ export interface BodySuggestion {
  */
 export function suggestBody(s: BodyStats): BodySuggestion {
   const f = ffmi(s);
-  if (s.bodyFatPct >= 25) return { id: 4, why: 'viel Körperfett' };
+  if (s.bodyFatPct >= STOCKY_FROM_BODY_FAT) return { id: 4, why: 'höherer Körperfettanteil' };
   if (f >= 22 && s.bodyFatPct <= 18) return { id: 3, why: 'viel Muskelmasse' };
   if (f < 18 && s.bodyFatPct <= 18) return { id: 2, why: 'schlank, wenig Muskelmasse' };
-  if (s.bodyFatPct <= 12) return { id: 1, why: 'wenig Körperfett, gut sichtbare Muskeln' };
+  if (s.bodyFatPct <= DEFINED_UP_TO_BODY_FAT) return { id: 1, why: 'wenig Körperfett, gut sichtbare Muskeln' };
   return { id: 0, why: 'ausgewogen und sportlich' };
 }

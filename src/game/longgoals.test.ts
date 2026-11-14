@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkLongGoals, longGoalFrac, longGoalValue, newLongGoal, rewardXp, sanitizeLongGoals, CUSTOM_XP } from './longgoals.ts';
+import { checkLongGoals, longGoalValue as lgv, longGoalFrac, longGoalValue, newLongGoal, rewardXp, sanitizeLongGoals, CUSTOM_XP } from './longgoals.ts';
 import { NEW_PROGRESS, awardXp, bookDay, scoreDay } from './rules.ts';
 import type { DailyMetrics, Progress } from '../types.ts';
 
@@ -45,6 +45,19 @@ test('Eigene Ziele: XP nur einmal pro Woche', () => {
   assert.equal(c.completed.length, 2);
   assert.equal(c.xp, CUSTOM_XP);
   assert.equal(c.goals.filter(g => g.xp === 0).length, 1);
+});
+
+test('Gewichtsverlust: zählt ab dem Startgewicht, ohne Frist, XP einmal beim Erreichen', () => {
+  const g = newLongGoal('weight_loss', 5, NEW_PROGRESS, '2026-11-01', '', '', 0, { weightKg: 85 });
+  assert.equal(g.start, 85);
+  assert.equal(lgv(g, NEW_PROGRESS, { weightKg: 82 }), 3);
+  assert.equal(lgv(g, NEW_PROGRESS, { weightKg: 90 }), 0);          // Zunahme kostet nichts
+  assert.equal(checkLongGoals([g], NEW_PROGRESS, '2027-06-01', { weightKg: 82 }).completed.length, 0);
+  const c = checkLongGoals([g], NEW_PROGRESS, '2027-06-01', { weightKg: 80 }); // viel später: kein Verfall
+  assert.equal(c.completed.length, 1);
+  assert.equal(c.xp, rewardXp(g));
+  assert.equal(checkLongGoals(c.goals, NEW_PROGRESS, '2027-06-02', { weightKg: 79 }).xp, 0);
+  assert.equal(checkLongGoals([g], NEW_PROGRESS, '2027-06-01').completed.length, 0); // ohne Gewicht nichts
 });
 
 test('awardXp steigt im Level auf und ändert bei 0 nichts', () => {
