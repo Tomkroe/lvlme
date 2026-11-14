@@ -15,6 +15,7 @@ import { confirm, notify } from '../../src/ui/confirm.ts';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
 import { Slider } from '../../src/ui/Slider.tsx';
 import { ALL_GOALS_BONUS, GOAL_DEFS, goalDef, type GoalId } from '../../src/game/goals.ts';
+import { isOwned, shopItem } from '../../src/game/shop.ts';
 import { LONG_GOAL_KINDS, MAX_LONG_GOALS, kindDef, longGoalFrac, longGoalValue, rewardXp, type LongGoalKind } from '../../src/game/longgoals.ts';
 import { BODY_LIMITS, DEFAULT_BODY_STATS, DEFINED_UP_TO_BODY_FAT, MIN_GOAL_BMI, STOCKY_FROM_BODY_FAT, bmi, clampStats, ffmi, maxWeightLossKg, suggestBody, type BodyStats } from '../../src/game/body.ts';
 import { C, F, PRIVACY_URL } from '../../src/ui/theme.ts';
@@ -184,10 +185,10 @@ export default function Profile() {
               {BODIES.filter(b => b.kind === kind).map(b => {
                 const on = b.id === app.body;
                 return (
-                  <Pressable key={b.id} onPress={() => { if (app.autoBody && b.kind === 'type') app.setAutoBody(false); app.setBody(b.id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                  <Pressable key={b.id} onPress={() => { if (!isOwned(app.progress, b.id)) { router.push('/shop'); return; } if (app.autoBody && b.kind === 'type') app.setAutoBody(false); app.setBody(b.id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
                     accessibilityLabel={`${label} ${b.name}`} style={[st.hairOpt, on && st.hairOn]}>
                     <Avatar stage={app.stage} mood="awake" hair={app.hair} body={b.id} size={52} still id={`body${b.id}`} />
-                    <Text style={[st.hairName, on && { color: C.ki }]} numberOfLines={1}>{b.name}</Text>
+                    <Text style={[st.hairName, on && { color: C.ki }]} numberOfLines={1}>{isOwned(app.progress, b.id) ? b.name : `${shopItem(b.id)?.price} Münzen`}</Text>
                   </Pressable>
                 );
               })}

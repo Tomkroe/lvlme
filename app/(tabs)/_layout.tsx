@@ -5,7 +5,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { useApp } from '../../src/state/AppState.tsx';
 import { C } from '../../src/ui/theme.ts';
 
-const icon = (kind: 'home' | 'friends' | 'profile') => ({ color }: { color: ColorValue }) => (
+const icon = (kind: 'home' | 'friends' | 'shop' | 'profile') => ({ color }: { color: ColorValue }) => (
   <Svg width={26} height={26} viewBox="0 0 26 26" fill="none" stroke={color} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
     {kind === 'home' && (<>
       <Path d="M13 3.5 L10 7 L7 5.5 L8 9.5" /><Circle cx={13} cy={11} r={4.5} />
@@ -14,6 +14,9 @@ const icon = (kind: 'home' | 'friends' | 'profile') => ({ color }: { color: Colo
     {kind === 'friends' && (<>
       <Circle cx={9.5} cy={9} r={3.6} /><Circle cx={18} cy={10} r={3} />
       <Path d="M2.5 21.5 C3 16.8 5.8 15 9.5 15 C13.2 15 16 16.8 16.5 21.5" /><Path d="M16.5 15.2 C20 15 23 16.5 23.5 20.5" />
+    </>)}
+    {kind === 'shop' && (<>
+      <Path d="M5 9 H21 L19.8 22 H6.2 Z" /><Path d="M9.5 9 C9.5 4.5 16.5 4.5 16.5 9" /><Path d="M10 14 C10 17.5 16 17.5 16 14" />
     </>)}
     {kind === 'profile' && (<>
       <Path d="M5 22 V14" /><Path d="M11 22 V8" /><Path d="M17 22 V11" /><Path d="M23 22 V4" /><Path d="M3 22 H24" />
@@ -39,6 +42,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Avatar', tabBarIcon: icon('home') }} />
       <Tabs.Screen name="friends" options={{ title: 'Freunde', tabBarIcon: icon('friends') }} />
+      <Tabs.Screen name="shop" options={{ title: 'Shop', tabBarIcon: icon('shop') }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil', tabBarIcon: icon('profile') }} />
     </Tabs>
   );

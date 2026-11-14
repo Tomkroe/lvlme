@@ -5,6 +5,7 @@
  * Gewichts-/Körperfettziel, und das Schlafziel hat eine Untergrenze von 6 Stunden.
  */
 import type { DailyMetrics } from '../types.ts';
+import { goalCoins } from './shop.ts';
 
 export type GoalId = 'steps' | 'workout' | 'sleep' | 'kcal';
 
@@ -81,10 +82,10 @@ export function goalStatus(m: DailyMetrics, goals: Goals): GoalStatus[] {
 }
 
 /** Bonus-XP, die ein abgeschlossener Tag durch erreichte Ziele bringt */
-export function goalXp(m: DailyMetrics, goals: Goals): { xp: number; hit: GoalId[] } {
+export function goalXp(m: DailyMetrics, goals: Goals): { xp: number; hit: GoalId[]; coins: number } {
   const st = goalStatus(m, goals);
   const hit = st.filter(s => s.hit).map(s => s.id);
   let xp = hit.reduce((sum, id) => sum + goalDef(id).xp, 0);
   if (st.length >= 2 && hit.length === st.length) xp += ALL_GOALS_BONUS;
-  return { xp, hit };
+  return { xp, hit, coins: goalCoins(hit.length, st.length >= 2 && hit.length === st.length) };
 }

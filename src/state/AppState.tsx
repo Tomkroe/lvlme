@@ -17,6 +17,7 @@ import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
 import { NEW_PROGRESS, awardXp, baselineFrom, bookDay, scoreDay, stageFor, toPublic } from '../game/rules.ts';
 import { clampStats, maxWeightLossKg, suggestBody, type BodyStats } from '../game/body.ts';
 import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
+import { buyItem as buyShopItem, coinsOf, isOwned, longGoalCoins, shopItem } from '../game/shop.ts';
 import { MAX_LONG_GOALS, checkLongGoals, newLongGoal, sanitizeLongGoals, type LongGoal, type LongGoalKind } from '../game/longgoals.ts';
 import { getHealthProvider } from '../health/index.ts';
 import * as social from '../social/api.ts';
@@ -90,6 +91,9 @@ export interface AppState {
   setHair: (hair: HairId) => Promise<void>;
   setBody: (body: BodyId) => Promise<void>;
   setBodyStats: (stats: BodyStats) => Promise<void>;
+  /** Münzen und Shop */
+  coins: number;
+  buyOutfit: (id: number) => Promise<'ok' | 'owned' | 'poor' | 'unknown'>;
   setGoals: (goals: Goals) => Promise<void>;
   setCloudSync: (on: boolean) => Promise<void>;
   setMe: (me: Me | null) => void;
@@ -206,7 +210,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);
     setGoalEvents(ev => [...ev, ...check.completed]);
-    const r = awardXp(p, check.xp);
+    const r = awardXp(p, check.xp, longGoalCoins(check.xp));
     const events: LevelEvent[] = r.levelsGained > 0
       ? [{ id: `goal-${today}-${r.progress.level}`, kind: r.stageAfter > r.stageBefore ? 'stage' : 'level', level: r.progress.level, stage: r.stageAfter }]
       : [];
@@ -237,8 +241,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       bookable.forEach((m, i) => {
         const prior = past.slice(0, i);
         const base = baselineFrom(prior.length >= 3 ? prior : past);
-        const bonus = goalXp(m, profileRef.current.goals !== undefined ? sanitizeGoals(profileRef.current.goals) : DEFAULT_GOALS).xp;
-        const r = bookDay(p, m, scoreDay(m, base), bonus);
+        const gx = goalXp(m, profileRef.current.goals !== undefined ? sanitizeGoals(profileRef.current.goals) : DEFAULT_GOALS);
+        const r = bookDay(p, m, scoreDay(m, base), gx.xp, gx.coins);
         if (r.levelsGained > 0) {
           newEvents.push({
             id: `${m.date}-${r.progress.level}`,
@@ -295,8 +299,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         readJson<Progress>(K_PROGRESS, NEW_PROGRESS),
       ]);
       if (!alive) return;
+      // Bestehende Spieler behalten ihr gewähltes Outfit, auch wenn es jetzt im Shop Münzen kostet
+      let prog2 = prog;
+      const eq = prof.body ?? DEFAULT_BODY;
+      if (eq >= 5 && !isOwned(prog, eq) && shopItem(eq)) { prog2 = { ...prog, owned: [...(prog.owned ?? []), eq] }; await writeJson(K_PROGRESS, prog2); }
       setProfile(prof); profileRef.current = prof;
-      setProgress(prog); progressRef.current = prog;
+      setProgress(prog2); progressRef.current = prog2;
       if (social.isConfigured()) {
         try {
           const m = await social.getMe();
@@ -355,6 +363,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [publish]);
 
   const setBody = useCallback(async (body: BodyId) => {
+    if (!isOwned(progressRef.current, body)) return; // nicht gekaufte Outfits lassen sich nicht anziehen
     const next = { ...profileRef.current, body };
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);
@@ -428,6 +437,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     await commitProgress(r.progress, r.events);
   }, [applyLongGoals, commitProgress]);
 
+  /** Outfit kaufen. Liefert 'ok' oder den Grund, warum es nicht ging. */
+  const buyOutfit = useCallback(async (id: number): Promise<'ok' | 'owned' | 'poor' | 'unknown'> => {
+    const r = buyShopItem(progressRef.current, id);
+    if (!r.ok) return r.reason;
+    await commitProgress(r.progress, []);
+    return 'ok';
+  }, [commitProgress]);
+
   const dismissGoalEvent = useCallback(() => setGoalEvents(ev => ev.slice(1)), []);
 
   /** Tagesziele speichern (nur lokal) */
@@ -491,6 +508,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     cloudSync: profile.cloudSync === true,
     bodyStats: profile.bodyStats ? clampStats(profile.bodyStats) : null,
     autoBody: profile.autoBody === true && !!profile.bodyStats,
+    coins: coinsOf(progress), buyOutfit,
     setAutoBody,
     goals: profile.goals !== undefined ? sanitizeGoals(profile.goals) : DEFAULT_GOALS,
     longGoals: sanitizeLongGoals(profile.longGoals),
@@ -500,7 +518,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, addLongGoal, removeLongGoal, setLongGoalValue, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
+  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, buyOutfit, addLongGoal, removeLongGoal, setLongGoalValue, setAutoBody, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

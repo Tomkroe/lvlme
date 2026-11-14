@@ -2,6 +2,7 @@
  * Spielregeln: reine Funktionen ohne Abhängigkeiten. Zuständig: Agent game-balance.
  * Startwerte aus der Demo; vor dem Launch mit echten Daten nachjustieren.
  */
+import { dayCoins, levelCoins } from './shop.ts';
 import type { Appearance, Baseline, DailyMetrics, DayScore, Mood, Progress, PublicAvatar, Stats } from '../types.ts';
 
 export const STAGES = [
@@ -113,14 +114,17 @@ export interface BookResult {
 }
 
 /** Gibt einmalig XP (z. B. für ein Langzeitziel) und steigt bei Bedarf im Level auf. */
-export function awardXp(p: Progress, xpGain: number): BookResult {
+export function awardXp(p: Progress, xpGain: number, bonusCoins = 0): BookResult {
   const stageBefore = stageFor(p.level);
   const gain = Math.max(0, Math.round(xpGain));
-  if (gain === 0) return { progress: p, levelsGained: 0, stageBefore, stageAfter: stageBefore };
+  const coinGain = Math.max(0, Math.round(bonusCoins));
+  if (gain === 0 && coinGain === 0) return { progress: p, levelsGained: 0, stageBefore, stageAfter: stageBefore };
   let level = p.level;
   let xp = p.xp + gain;
   while (xp >= xpNeeded(level)) { xp -= xpNeeded(level); level++; }
-  return { progress: { ...p, level, xp }, levelsGained: level - p.level, stageBefore, stageAfter: stageFor(level) };
+  const stageAfter = stageFor(level);
+  const coins = Math.max(0, Math.floor(p.coins ?? 0)) + coinGain + levelCoins(level - p.level, stageBefore, stageAfter);
+  return { progress: { ...p, level, xp, coins }, levelsGained: level - p.level, stageBefore, stageAfter };
 }
 
 /** Tage zwischen zwei YYYY-MM-DD-Daten (b - a). Unlesbare Daten gelten als gleicher Tag (zählen also ins Fenster). */
@@ -147,7 +151,7 @@ export function nextStreak(p: Progress, date: string, active: boolean): { streak
 }
 
 /** Verbucht einen abgeschlossenen Tag (optional mit Bonus-XP aus erreichten Zielen). Bereits verbuchte Tage ändern nichts. */
-export function bookDay(p: Progress, m: DailyMetrics, d: DayScore, bonusXp = 0): BookResult {
+export function bookDay(p: Progress, m: DailyMetrics, d: DayScore, bonusXp = 0, bonusCoins = 0): BookResult {
   const stageBefore = stageFor(p.level);
   if (p.booked.includes(d.date)) return { progress: p, levelsGained: 0, stageBefore, stageAfter: stageBefore };
   const stats: Stats = { ...p.stats };
@@ -163,8 +167,10 @@ export function bookDay(p: Progress, m: DailyMetrics, d: DayScore, bonusXp = 0):
   const booked = [...p.booked, d.date].slice(-60);
   const totalSteps = (p.totalSteps ?? 0) + Math.max(0, Math.round(m.steps));
   const workoutDays = (p.workoutDays ?? 0) + (m.workoutMinutes >= WORKOUT_DAY_MINUTES ? 1 : 0);
-  const progress: Progress = { level, xp, stats, streak, restDays, booked, totalSteps, workoutDays };
-  return { progress, levelsGained: level - p.level, stageBefore, stageAfter: stageFor(level) };
+  const stageAfter = stageFor(level);
+  const coins = Math.max(0, Math.floor(p.coins ?? 0)) + dayCoins(active) + levelCoins(level - p.level, stageBefore, stageAfter) + Math.max(0, Math.round(bonusCoins));
+  const progress: Progress = { level, xp, stats, streak, restDays, booked, totalSteps, workoutDays, coins, owned: p.owned };
+  return { progress, levelsGained: level - p.level, stageBefore, stageAfter };
 }
 
 export interface PublicOptions {

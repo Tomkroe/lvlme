@@ -77,6 +77,10 @@ export default function Home() {
                 <Chip text={STAGES[app.stage].name.toUpperCase()} />
               </View>
             </View>
+            <View style={[st.glass, st.coins]} accessible accessibilityLabel={`${app.coins} Münzen`}>
+              <Text style={st.coinsLabel}>MÜNZEN</Text>
+              <Text style={[st.coinsVal, F.num]}>{app.coins.toLocaleString('de-DE')}</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -182,6 +186,9 @@ const st = StyleSheet.create({
   hud: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   glass: { backgroundColor: 'rgba(9,13,30,0.55)', borderColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderRadius: 20 },
   who: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 5, paddingRight: 12, flexShrink: 1 },
+  coins: { paddingHorizontal: 13, paddingVertical: 7, alignItems: 'flex-end' },
+  coinsLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 9.5, letterSpacing: 1.6, fontWeight: '700' },
+  coinsVal: { color: C.warn, fontSize: 22 },
   name: { color: '#fff', fontWeight: '800', fontSize: 15, maxWidth: 140 },
   sheet: { marginTop: -24, backgroundColor: C.sheet, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 10, gap: 16 },
   rings: { flexDirection: 'row', justifyContent: 'space-around' },

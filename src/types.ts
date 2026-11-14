@@ -77,6 +77,10 @@ export interface Progress {
   totalSteps?: number;
   /** Anzahl verbuchter Tage mit mindestens WORKOUT_DAY_MINUTES Training (fehlt bei altem Fortschritt = 0) */
   workoutDays?: number;
+  /** Münzen (Shop-Währung); fehlt bei altem Fortschritt = 0 */
+  coins?: number;
+  /** Gekaufte Outfits (BodyId); fehlt = nur die kostenlosen */
+  owned?: BodyId[];
 }
 
 /** Frisur: Index in HAIRSTYLES (src/avatar/assets.ts); 0 = Originalkopf */
