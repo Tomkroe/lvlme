@@ -30,7 +30,7 @@ Mit deiner Einwilligung liest LvlMe aus Apple Health: Schritte, Training (Workou
 
 ### 3.2 Lokal gespeicherte Spieldaten
 
-Auf deinem iPhone speichert LvlMe deinen Kämpfernamen, Level, XP, Stats, Serie, die bereits verbuchten Tage und deine Einstellungen (z. B. „Tagesform mit Freunden teilen“). Diese Daten löschst du im Profil mit „Fortschritt zurücksetzen“ oder indem du die App löschst.
+Auf deinem iPhone speichert LvlMe deinen Kämpfernamen, Level, XP, Stats, Serie, die bereits verbuchten Tage, das gewählte Aussehen deines Avatars (Frisur und Körper) und deine Einstellungen (z. B. „Tagesform mit Freunden teilen“). Diese Daten löschst du im Profil mit „Fortschritt zurücksetzen“ oder indem du die App löschst.
 
 ### 3.3 Konto und Freunde (optional, Server in Frankfurt)
 

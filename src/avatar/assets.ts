@@ -55,6 +55,9 @@ export function hairstyle(id: number | undefined): Hairstyle {
  * Körper: Körpertypen (verschiedene Statur, Sportshorts) und Outfits (athletische Statur, andere Kleidung).
  * Weil jedes Bild ein ganzer Körper ist, schließen sich Körpertyp und Outfit gegenseitig aus.
  * Später soll der Körpertyp aus den Stats kommen; bis dahin ist er frei wählbar.
+ * Datenschutz: `body` geht als Teil von PublicAvatar an Freunde. Das ist nur zulässig, solange der Nutzer
+ * den Körper selbst wählt. Ein aus Stats (= Gesundheitsdaten) abgeleiteter Körper darf nicht ohne eigenen
+ * Opt-in veröffentlicht werden und braucht vorher eine neue privacy-review-Prüfung.
  */
 export interface BodyOption {
   id: BodyId;
