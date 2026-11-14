@@ -91,7 +91,7 @@ export default function Friends() {
       {configured && !app.me && (
         <Card>
           <P style={{ color: C.ink, fontWeight: '700' }}>Melde dich an, um Freunde hinzuzufügen</P>
-          <P>Freunde sehen Level, Stufe, Kampfkraft und – wenn du es erlaubst – deine Tagesform. Schlaf, Puls oder Schritte sehen sie nie.</P>
+          <P>Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Schlaf, Puls oder Schritte sehen sie nie.</P>
           <AppleSignIn />
         </Card>
       )}
@@ -127,7 +127,7 @@ export default function Friends() {
               <View key={f.userId} style={st.friend}>
                 <View style={st.mini} accessibilityElementsHidden={priv} importantForAccessibility={priv ? 'no-hide-descendants' : 'auto'}>
                   <View style={StyleSheet.absoluteFill}><SvgXml xml={miniSkySvg(shownMood, `ms${f.userId.slice(0, 8)}`)} width="100%" height="100%" /></View>
-                  <Avatar stage={f.stage} mood={shownMood} size={74} still id={`f${f.userId.slice(0, 8)}`} />
+                  <Avatar stage={f.stage} mood={shownMood} hair={f.hair} body={f.body} size={74} still id={`f${f.userId.slice(0, 8)}`} />
                 </View>
                 <View style={{ flex: 1, gap: 4 }}>
                   <Text style={st.fname} numberOfLines={1}>{f.displayName}</Text>

@@ -14,7 +14,7 @@ E-Mail: [Kontakt-E-Mail]
 ## 2. Kurz gesagt
 
 - Deine Gesundheitsdaten aus Apple Health werden **nur auf deinem iPhone** ausgewertet. Sie werden nicht gespeichert, nicht an uns gesendet und nicht geloggt.
-- Wenn du ein Konto anlegst, um mit Freunden zu spielen, speichern wir auf einem Server in der EU (Frankfurt) nur deinen Kämpfernamen und deinen öffentlichen Avatar (Level, Stufe, Kampfkraft, Serie und – nur wenn du es erlaubst – deine Tagesform).
+- Wenn du ein Konto anlegst, um mit Freunden zu spielen, speichern wir auf einem Server in der EU (Frankfurt) nur deinen Kämpfernamen und deinen öffentlichen Avatar (Level, Stufe, Kampfkraft, Serie, Frisur und Körper deines Avatars und – nur wenn du es erlaubst – deine Tagesform).
 - Ohne Konto bleibt alles auf deinem iPhone.
 
 ## 3. Welche Daten LvlMe verarbeitet
@@ -38,7 +38,7 @@ Nur wenn du dich mit Apple anmeldest, verarbeiten wir bei unserem Dienstleister 
 
 - **Konto:** eine von Apple bereitgestellte Kennung und ggf. die von Apple übermittelte E-Mail-Adresse (ggf. eine anonyme Weiterleitungsadresse). [mit social-backend prüfen, was genau in Supabase Auth gespeichert wird]
 - **Kämpfername:** der Name, den du in LvlMe eingibst (nicht dein Apple-Name).
-- **Öffentlicher Avatar:** Level, Stufe, Kampfkraft, Serie, Zeitpunkt der letzten Aktualisierung und – nur wenn du „Tagesform mit Freunden teilen“ einschaltest – deine Tagesform (z. B. „aufgeladen“ oder „müde“). Hinweis: Aus der Tagesform lassen sich Rückschlüsse auf Schlaf und Erholung ziehen. Die Einstellung ist standardmäßig aus und jederzeit abschaltbar.
+- **Öffentlicher Avatar:** Level, Stufe, Kampfkraft, Serie, Zeitpunkt der letzten Aktualisierung, das gewählte Aussehen (Frisur und Körper bzw. Outfit, keine Gesundheitsdaten) und – nur wenn du „Tagesform mit Freunden teilen“ einschaltest – deine Tagesform (z. B. „aufgeladen“ oder „müde“). Hinweis: Aus der Tagesform lassen sich Rückschlüsse auf Schlaf und Erholung ziehen. Die Einstellung ist standardmäßig aus und jederzeit abschaltbar.
 - **Freundschaften und Einladungen:** wer mit wem befreundet ist und offene Einladungscodes.
 
 Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) für Konto und Freunde; Einwilligung (Art. 6 Abs. 1 lit. a / Art. 9 Abs. 2 lit. a DSGVO) für das Teilen der Tagesform. [prüfen]

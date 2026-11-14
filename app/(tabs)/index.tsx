@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../../src/state/AppState.tsx';
 import { MOOD_TEXT, STAGES, xpNeeded } from '../../src/game/rules.ts';
-import { Avatar, AVATAR_RATIO } from '../../src/avatar/Avatar.tsx';
+import { Avatar, AVATAR_FEET, AVATAR_RATIO } from '../../src/avatar/Avatar.tsx';
 import { Scene } from '../../src/ui/Scene.tsx';
 import { Bar, Button, Card, Chip, LevelRing, P, Ring } from '../../src/ui/components.tsx';
 import { C, F, energyColor, fmt } from '../../src/ui/theme.ts';
@@ -27,7 +27,7 @@ export default function Home() {
   const avH = avSize * AVATAR_RATIO;
   const avLeft = offX + 222 * k - avSize / 2;
   const grassTop = sceneH - (452 - 398) * k;
-  const avTop = grassTop - avH * (270 / 280);
+  const avTop = grassTop - avH * AVATAR_FEET;
 
   const need = xpNeeded(app.progress.level);
   const name = app.name || 'Du';
@@ -54,7 +54,7 @@ export default function Home() {
         <View ref={cardRef} collapsable={false} style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: C.bg }]}>
           <Scene mood={mood} id="home" />
           <View style={{ position: 'absolute', left: avLeft, top: avTop }}>
-            <Avatar stage={app.stage} mood={mood} size={avSize} id="me" />
+            <Avatar stage={app.stage} mood={mood} hair={app.hair} body={app.body} size={avSize} id="me" />
           </View>
 
           <View style={[st.hud, { top: insets.top + 8 }]}>

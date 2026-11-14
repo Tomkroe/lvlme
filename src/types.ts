@@ -72,6 +72,22 @@ export interface Progress {
   booked: string[];
 }
 
+/** Frisur: Index in HAIRSTYLES (src/avatar/assets.ts); 0 = Originalkopf */
+export type HairId = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/** Körper (Körpertyp oder Outfit): Index in BODIES (src/avatar/assets.ts); 0 = Originalkörper */
+export type BodyId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+/**
+ * Aussehen des Avatars. Wird lokal im Profil gespeichert und als hair/body in PublicAvatar
+ * veröffentlicht, damit Freunde Frisur und Körper sehen (reine Aussehensdaten, keine Gesundheitsdaten;
+ * serverseitig von is_public_avatar geprüft, Migration 0004).
+ */
+export interface Appearance {
+  hair: HairId;
+  body: BodyId;
+}
+
 /** Öffentlicher Avatarzustand. Das ist ALLES, was an das Backend und an Freunde geht – keine Rohdaten. */
 export interface PublicAvatar {
   displayName: string;
@@ -83,4 +99,8 @@ export interface PublicAvatar {
   power: number;
   streak: number;
   updatedAt: string;
+  /** Frisur; fehlt bei älteren Avataren (dann Standard) */
+  hair?: HairId;
+  /** Körpertyp/Outfit; fehlt bei älteren Avataren (dann Standard) */
+  body?: BodyId;
 }

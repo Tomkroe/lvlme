@@ -13,7 +13,8 @@ Konzept: siehe Konzeptdokument „LvlMe – Konzept“ (claude.ai). Klickbare De
 
 ## Ordner
 - `src/types.ts` gemeinsame Typen · `src/game/` Spielregeln (reine Funktionen + Tests)
-- `src/health/` Apple Health · `src/avatar/` Avatar-Zeichnung · `src/social/` Konto & Freunde · `src/share/` Teilen
+- `src/health/` Apple Health · `src/avatar/` Avatar (Bild-Ebenen aus `assets/avatar/`, Aura als SVG) · `src/social/` Konto & Freunde · `src/share/` Teilen
+- `assets/avatar/` Körper- (`body*.png`, `outfit-*.png`) und Kopf-PNGs (`head-*.png`), freigestellt, Hals und Füße auf gleicher Höhe, daher frei kombinierbar; Quellen in `raw/`, Prompts in `docs/Avatar-Design-Prompts.md`
 - `app/` Screens (Expo Router) · `supabase/migrations/` Datenbankschema
 - Prüfen: `npm run typecheck`, `npm test`; CI auf GitHub macht beides plus Prebuild-Probe
 
