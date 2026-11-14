@@ -11,20 +11,25 @@ interface Props {
   max: number;
   onChange: (v: number) => void;
   onDone?: (v: number) => void;
+  /** Schrittweite (Standard 1) */
+  step?: number;
+  /** Anzeige des Werts (Standard: Zahl) */
+  format?: (v: number) => string;
 }
 
-export function Slider({ label, unit, value, min, max, onChange, onDone }: Props) {
+export function Slider({ label, unit, value, min, max, onChange, onDone, step: stepSize = 1, format }: Props) {
   const [w, setW] = useState(0);
   const wRef = useRef(0);
   const live = useRef(value);
   live.current = value;
-  const props = useRef({ min, max, onChange, onDone });
-  props.current = { min, max, onChange, onDone };
+  const props = useRef({ min, max, onChange, onDone, stepSize });
+  props.current = { min, max, onChange, onDone, stepSize };
 
   const at = (x: number) => {
     const { min: lo, max: hi } = props.current;
     const f = Math.max(0, Math.min(1, x / Math.max(1, wRef.current)));
-    return Math.round(lo + f * (hi - lo));
+    const { stepSize: sz } = props.current;
+    return Math.max(lo, Math.min(hi, lo + Math.round((f * (hi - lo)) / sz) * sz));
   };
   const pan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -35,8 +40,9 @@ export function Slider({ label, unit, value, min, max, onChange, onDone }: Props
     onPanResponderRelease: () => props.current.onDone?.(live.current),
   })).current;
 
+  const fmt = (v: number) => (format ? format(v) : String(v));
   const step = (d: number) => {
-    const v = Math.max(min, Math.min(max, value + d));
+    const v = Math.max(min, Math.min(max, Math.round((value + d * stepSize) * 1000) / 1000));
     onChange(v); onDone?.(v);
   };
   const frac = (value - min) / (max - min);
@@ -47,12 +53,12 @@ export function Slider({ label, unit, value, min, max, onChange, onDone }: Props
         <Text style={s.label}>{label}</Text>
         <View style={s.valRow}>
           <Pressable onPress={() => step(-1)} style={s.btn} accessibilityRole="button" accessibilityLabel={`${label} verringern`}><Text style={s.btnT}>−</Text></Pressable>
-          <Text style={[s.val, F.num]} accessibilityLabel={`${label} ${value} ${unit}`}>{value} {unit}</Text>
+          <Text style={[s.val, F.num]} accessibilityLabel={`${label} ${fmt(value)} ${unit}`}>{fmt(value)} {unit}</Text>
           <Pressable onPress={() => step(1)} style={s.btn} accessibilityRole="button" accessibilityLabel={`${label} erhöhen`}><Text style={s.btnT}>+</Text></Pressable>
         </View>
       </View>
       <View style={s.touch} onLayout={e => { wRef.current = e.nativeEvent.layout.width; setW(e.nativeEvent.layout.width); }} {...pan.panHandlers}
-        accessible accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ min, max, now: value, text: `${value} ${unit}` }}
+        accessible accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ min, max, now: value, text: `${fmt(value)} ${unit}` }}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={e => step(e.nativeEvent.actionName === 'increment' ? 1 : -1)}>
         <View style={s.track}><View style={[s.fill, { width: frac * w }]} /></View>

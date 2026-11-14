@@ -11,6 +11,7 @@ import { Bar, Button, Card, Chip, LevelRing, P, Ring } from '../../src/ui/compon
 import { C, F, energyColor, fmt } from '../../src/ui/theme.ts';
 import { shareCard } from '../../src/share/index.ts';
 import { useScreenSize } from '../../src/ui/layout.ts';
+import { ALL_GOALS_BONUS, goalDef, goalStatus, goalXp } from '../../src/game/goals.ts';
 
 export default function Home() {
   const app = useApp();
@@ -38,6 +39,9 @@ export default function Home() {
   const name = app.name || 'Du';
   const warn = app.today?.overtraining ?? false;
   const nextStage = STAGES[app.stage + 1];
+  const goalRows = app.todayMetrics ? goalStatus(app.todayMetrics, app.goals) : [];
+  const goalBonus = app.todayMetrics ? goalXp(app.todayMetrics, app.goals).xp : 0;
+  const fmtGoal = (id: string, v: number | null) => (v == null ? '–' : id === 'sleep' ? v.toLocaleString('de-DE', { maximumFractionDigits: 1 }) : Math.round(v).toLocaleString('de-DE'));
 
   const onShare = async () => {
     setShareErr(null);
@@ -126,6 +130,27 @@ export default function Home() {
             {!warn && app.today.recovery >= 67 && <Chip text="+25 % Erholungsbonus" color={C.good} bg="rgba(79,224,138,0.14)" />}
             {warn && <Chip text="Kein Bonus heute" color={C.warn} bg="rgba(255,204,61,0.14)" />}
           </View>
+        )}
+        {goalRows.length > 0 && (
+          <Card>
+            <View style={st.row}>
+              <Text style={st.xpTitle}>Tagesziele</Text>
+              <Text style={[st.xpNums, F.num]}>{goalBonus > 0 ? `+${goalBonus} XP` : 'Bonus-XP'}</Text>
+            </View>
+            {goalRows.map(g => {
+              const d = goalDef(g.id);
+              return (
+                <View key={g.id} style={{ gap: 4 }} accessible accessibilityLabel={`${d.label}: ${fmtGoal(g.id, g.value)} von ${fmtGoal(g.id, g.target)} ${d.unit}${g.hit ? ', erreicht' : ''}`}>
+                  <View style={st.row}>
+                    <Text style={{ color: g.hit ? C.good : C.ink, fontWeight: '700', fontSize: 14 }}>{g.hit ? '✓ ' : ''}{d.label}</Text>
+                    <Text style={[st.xpNums, F.num]}>{fmtGoal(g.id, g.value)} / {fmtGoal(g.id, g.target)} {d.unit} · +{d.xp} XP</Text>
+                  </View>
+                  <Bar frac={g.frac} color={g.hit ? C.good : C.sky} height={8} />
+                </View>
+              );
+            })}
+            {goalRows.length >= 2 && <P style={{ fontSize: 12 }}>Alle Ziele an einem Tag: +{ALL_GOALS_BONUS} XP extra. Verfehlte Ziele kosten nichts, Ruhetage sind in Ordnung. Ziele änderst du im Profil.</P>}
+          </Card>
         )}
         {nextStage && (
           <P>Nächste Verwandlung: <Text style={{ color: C.ink, fontWeight: '800' }}>{nextStage.name}</Text> ab Level {nextStage.level}</P>

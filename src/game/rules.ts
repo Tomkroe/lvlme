@@ -139,8 +139,8 @@ export function nextStreak(p: Progress, date: string, active: boolean): { streak
   return { streak: 0, restDays: [] };
 }
 
-/** Verbucht einen abgeschlossenen Tag. Bereits verbuchte Tage ändern nichts. */
-export function bookDay(p: Progress, m: DailyMetrics, d: DayScore): BookResult {
+/** Verbucht einen abgeschlossenen Tag (optional mit Bonus-XP aus erreichten Zielen). Bereits verbuchte Tage ändern nichts. */
+export function bookDay(p: Progress, m: DailyMetrics, d: DayScore, bonusXp = 0): BookResult {
   const stageBefore = stageFor(p.level);
   if (p.booked.includes(d.date)) return { progress: p, levelsGained: 0, stageBefore, stageAfter: stageBefore };
   const stats: Stats = { ...p.stats };
@@ -151,7 +151,7 @@ export function bookDay(p: Progress, m: DailyMetrics, d: DayScore): BookResult {
   const { streak, restDays } = nextStreak(p, d.date, active);
   if (active) stats.dis += streak >= 7 ? 2 : 1;
   let level = p.level;
-  let xp = p.xp + d.xp;
+  let xp = p.xp + d.xp + Math.max(0, Math.round(bonusXp));
   while (xp >= xpNeeded(level)) { xp -= xpNeeded(level); level++; }
   const booked = [...p.booked, d.date].slice(-60);
   const progress: Progress = { level, xp, stats, streak, restDays, booked };

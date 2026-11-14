@@ -13,6 +13,7 @@ import { SignIn } from '../../src/ui/SignIn.tsx';
 import { confirm, notify } from '../../src/ui/confirm.ts';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
 import { Slider } from '../../src/ui/Slider.tsx';
+import { ALL_GOALS_BONUS, GOAL_DEFS, goalDef, type GoalId } from '../../src/game/goals.ts';
 import { BODY_LIMITS, DEFAULT_BODY_STATS, bmi, clampStats, ffmi, suggestBody, type BodyStats } from '../../src/game/body.ts';
 import { C, F, PRIVACY_URL, fmt } from '../../src/ui/theme.ts';
 
@@ -31,6 +32,13 @@ export default function Profile() {
   const save = (k: keyof BodyStats) => (v: number) => { app.setBodyStats(clampStats({ ...stats, [k]: v })); };
   const sugg = suggestBody(stats);
   const suggName = BODIES.find(b => b.id === sugg.id)?.name ?? '';
+
+  const toggleGoal = (id: GoalId, on: boolean) => {
+    const g = { ...app.goals };
+    if (on) g[id] = goalDef(id).def; else delete g[id];
+    app.setGoals(g);
+  };
+  const [goalDraft, setGoalDraft] = useState<Record<string, number>>({});
 
   const s = app.progress.stats;
   const max = Math.max(100, s.str, s.end, s.rec, s.dis);
@@ -151,6 +159,31 @@ export default function Profile() {
             accessibilityHint={`Passt zu deinen Werten: ${sugg.why}`} />
         )}
         <P style={{ fontSize: 12 }}>Größe, Gewicht und KFA bleiben auf diesem Gerät. Sie werden weder mit Freunden geteilt noch synchronisiert und ändern weder XP noch Level. Freunde sehen nur den Körpertyp, den du oben wählst. Die Werte sind nur ein Vorschlag für die Figur.</P>
+      </Card>
+
+      <Card>
+        <H>Tagesziele</H>
+        <P>Wähle, was du jeden Tag schaffen willst. Wer ein Ziel erreicht, bekommt Bonus-XP, wenn der Tag verbucht wird. Verfehlte Ziele kosten nichts. Alle gesetzten Ziele an einem Tag: +{ALL_GOALS_BONUS} XP extra.</P>
+        {GOAL_DEFS.map(d => {
+          const on = app.goals[d.id] !== undefined;
+          const val = goalDraft[d.id] ?? app.goals[d.id] ?? d.def;
+          return (
+            <View key={d.id} style={{ gap: 4 }}>
+              <View style={st.switchRow}>
+                <Text style={[st.label, { flex: 1 }]}>{d.label} <Text style={st.meta}>(+{d.xp} XP)</Text></Text>
+                <Switch value={on} onValueChange={v => toggleGoal(d.id, v)} trackColor={{ true: C.ki, false: C.line }} ios_backgroundColor={C.line}
+                  accessibilityLabel={`Ziel ${d.label}`} />
+              </View>
+              {on && (
+                <Slider label="Ziel pro Tag" unit={d.unit} value={val} min={d.min} max={d.max} step={d.step}
+                  format={v => v.toLocaleString('de-DE', { maximumFractionDigits: 1 })}
+                  onChange={v => setGoalDraft(o => ({ ...o, [d.id]: v }))}
+                  onDone={v => { app.setGoals({ ...app.goals, [d.id]: v }); setGoalDraft(o => { const n = { ...o }; delete n[d.id]; return n; }); }} />
+              )}
+            </View>
+          );
+        })}
+        <P style={{ fontSize: 12 }}>Es gibt bewusst kein Ziel für Gewicht oder Körperfett, und das Schlafziel beginnt bei 6 Stunden: LvlMe belohnt weder Hungern noch Schlafentzug.</P>
       </Card>
 
       <Card>

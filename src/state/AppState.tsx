@@ -16,6 +16,7 @@ import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.
 import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
 import { NEW_PROGRESS, baselineFrom, bookDay, power as powerOf, scoreDay, stageFor, toPublic } from '../game/rules.ts';
 import { clampStats, type BodyStats } from '../game/body.ts';
+import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
 import { getHealthProvider } from '../health/index.ts';
 import * as social from '../social/api.ts';
 import type { Me } from '../social/api.ts';
@@ -38,6 +39,8 @@ interface Profile {
   body: BodyId;
   /** Größe, Gewicht, KFA: nur lokal, wird nie veröffentlicht oder synchronisiert */
   bodyStats?: BodyStats;
+  /** Selbst gewählte Tagesziele (lokal); fehlt das Feld, gelten die Standardziele */
+  goals?: Goals;
   /** iPhone: Tageswerte und Fortschritt ins eigene Konto laden, damit der PC dasselbe zeigt. Standard: aus. */
   cloudSync: boolean;
 }
@@ -53,6 +56,9 @@ export interface AppState {
   body: BodyId;
   cloudSync: boolean;
   bodyStats: BodyStats | null;
+  goals: Goals;
+  /** Heutige Rohwerte – nur zur Anzeige des Ziel-Fortschritts, werden nicht gespeichert */
+  todayMetrics: DailyMetrics | null;
   signInMethod: 'apple' | 'email' | null;
   source: DailyMetrics['source'] | null;
   progress: Progress;
@@ -71,6 +77,7 @@ export interface AppState {
   setHair: (hair: HairId) => Promise<void>;
   setBody: (body: BodyId) => Promise<void>;
   setBodyStats: (stats: BodyStats) => Promise<void>;
+  setGoals: (goals: Goals) => Promise<void>;
   setCloudSync: (on: boolean) => Promise<void>;
   setMe: (me: Me | null) => void;
   signOut: () => Promise<void>;
@@ -112,6 +119,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<Progress>(NEW_PROGRESS);
   const [today, setToday] = useState<DayScore | null>(null);
   const [stepsToday, setStepsToday] = useState(0);
+  const [todayMetrics, setTodayMetrics] = useState<DailyMetrics | null>(null);
   const [source, setSource] = useState<DailyMetrics['source'] | null>(null);
   const [me, setMeState] = useState<Me | null>(null);
   const [signInMethod, setSignInMethod] = useState<'apple' | 'email' | null>(null);
@@ -175,7 +183,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try {
       await syncProgress().catch(() => { /* offline: beim nächsten Mal */ });
       const days = await getHealthProvider().readDays(8);
-      if (days.length === 0) { setToday(null); setSource('cloud'); return; }
+      if (days.length === 0) { setToday(null); setTodayMetrics(null); setSource('cloud'); return; }
       // iPhone mit Einwilligung: Tageswerte fürs PC ins eigene Konto laden
       if (IS_IOS && syncAllowed()) {
         uploadRef.current = social.uploadHealthDays(days).catch(() => { /* offline: beim nächsten Mal */ });
@@ -191,7 +199,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       bookable.forEach((m, i) => {
         const prior = past.slice(0, i);
         const base = baselineFrom(prior.length >= 3 ? prior : past);
-        const r = bookDay(p, m, scoreDay(m, base));
+        const bonus = goalXp(m, profileRef.current.goals !== undefined ? sanitizeGoals(profileRef.current.goals) : DEFAULT_GOALS).xp;
+        const r = bookDay(p, m, scoreDay(m, base), bonus);
         if (r.levelsGained > 0) {
           newEvents.push({
             id: `${m.date}-${r.progress.level}`,
@@ -207,6 +216,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       todayRef.current = score;
       setToday(score);
       setStepsToday(todayM.steps);
+      setTodayMetrics(todayM);
       setSource(todayM.source);
       if (p !== progressRef.current) {
         progressRef.current = p;
@@ -315,6 +325,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     await writeJson(K_PROFILE, next);
   }, []);
 
+  /** Tagesziele speichern (nur lokal) */
+  const setGoals = useCallback(async (goals: Goals) => {
+    const next = { ...profileRef.current, goals: sanitizeGoals(goals) };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+  }, []);
+
   /**
    * Einwilligung für den Sync setzen. Die Rückfrage mit allen Infos zeigt der Profil-Screen vorher.
    * Ausschalten = Widerruf: Die hochgeladenen Daten werden im Konto gelöscht (wirft bei Fehler,
@@ -354,7 +371,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await AsyncStorage.multiRemove([K_PROGRESS, K_PROFILE]); } catch { /* egal */ }
     setProgress(NEW_PROGRESS); progressRef.current = NEW_PROGRESS;
     setProfile(DEFAULT_PROFILE); profileRef.current = DEFAULT_PROFILE;
-    setToday(null); todayRef.current = null; setEvents([]);
+    setToday(null); setTodayMetrics(null); todayRef.current = null; setEvents([]);
   }, []);
 
   const dismissEvent = useCallback(() => setEvents(ev => ev.slice(1)), []);
@@ -368,12 +385,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     body: profile.body ?? DEFAULT_BODY,
     cloudSync: profile.cloudSync === true,
     bodyStats: profile.bodyStats ? clampStats(profile.bodyStats) : null,
+    goals: profile.goals !== undefined ? sanitizeGoals(profile.goals) : DEFAULT_GOALS,
+    todayMetrics,
     signInMethod,
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     power: powerOf(progress, today?.energy ?? 60),
-    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setCloudSync, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setCloudSync, setMe, signOut, resetLocal]);
+    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal,
+  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

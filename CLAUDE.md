@@ -46,4 +46,5 @@ Gemeinsame Typen liegen in `src/types.ts`. Wer sie ändert, sagt es in der Über
 - Sprache in der App: Deutsch. Code und Bezeichner: Englisch.
 - Keine Figuren, Namen, Symbole, Frisuren oder Verwandlungsnamen aus Dragon Ball oder anderen geschützten Werken.
 - Ruhetage und schlechte Tage werden nie bestraft; keine Belohnung für wenig Essen oder Schlafentzug.
+- Tagesziele (`src/game/goals.ts`): selbst gewählt, lokal gespeichert, Bonus-XP beim Verbuchen des Tages; kein Gewichts-/KFA-Ziel, Schlafziel mindestens 6 Std. Größe/Gewicht/KFA (`src/game/body.ts`) bleiben nur auf dem Gerät.
 - Kleine, überprüfbare Schritte; jeder Agent beendet seine Arbeit mit einer kurzen Übergabe (was geändert, was offen, wer als Nächstes).
