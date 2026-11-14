@@ -112,6 +112,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [signInMethod, setSignInMethod] = useState<'apple' | 'email' | null>(null);
   const [events, setEvents] = useState<LevelEvent[]>([]);
   const busy = useRef(false);
+  /** Laufender Upload ans Konto – beim Ausschalten des Syncs abwarten, damit danach nichts mehr ankommt */
+  const uploadRef = useRef<Promise<void> | null>(null);
   const progressRef = useRef<Progress>(NEW_PROGRESS);
   const profileRef = useRef<Profile>(DEFAULT_PROFILE);
   const meRef = useRef<Me | null>(null);
@@ -170,7 +172,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       const days = await getHealthProvider().readDays(8);
       if (days.length === 0) { setToday(null); setSource('cloud'); return; }
       // iPhone mit Einwilligung: Tageswerte fürs PC ins eigene Konto laden
-      if (IS_IOS && syncAllowed()) social.uploadHealthDays(days).catch(() => { /* offline: beim nächsten Mal */ });
+      if (IS_IOS && syncAllowed()) {
+        uploadRef.current = social.uploadHealthDays(days).catch(() => { /* offline: beim nächsten Mal */ });
+      }
       const todayM = days[days.length - 1];
       const past = days.slice(0, -1);
 
@@ -305,7 +309,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
    * dann bleibt der Schalter an, damit nichts liegen bleibt, ohne dass der Nutzer es merkt).
    */
   const setCloudSync = useCallback(async (on: boolean) => {
-    if (!on && profileRef.current.cloudSync && meRef.current) await social.clearSyncedData();
+    if (!on && profileRef.current.cloudSync && meRef.current) {
+      if (uploadRef.current) await uploadRef.current;
+      await social.clearSyncedData();
+    }
     const next = { ...profileRef.current, cloudSync: on };
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);

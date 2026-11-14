@@ -106,6 +106,13 @@ begin
   if v_uid is null then
     raise exception 'Bitte melde dich zuerst an.' using errcode = '28000';
   end if;
+  -- Tage mit Ernährungswerten (0007) behalten, nur die Health-Werte entfernen
+  update public.health_metrics h
+     set steps = 0, active_energy_kcal = 0, workout_minutes = 0,
+         sleep_hours = null, hrv_ms = null, resting_hr = null,
+         source = 'manual', updated_at = now()
+   where h.user_id = v_uid and h.source = 'healthkit'
+     and (h.dietary_energy_kcal is not null or h.protein_g is not null or h.water_ml is not null);
   delete from public.health_metrics h where h.user_id = v_uid and h.source = 'healthkit';
   delete from public.user_progress up where up.user_id = v_uid;
 end;
