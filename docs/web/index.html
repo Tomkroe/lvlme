@@ -284,9 +284,9 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .slrow input[type=range]{width:100%; accent-color:var(--ki)}
 .slrow{grid-template-columns:auto 1fr auto}
 .musclebox{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:8px 10px; border-radius:12px; background:rgba(255,255,255,.04)}
-.looktabs{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; position:sticky; top:236px; z-index:3; background:var(--surface); padding:6px 0; margin-top:4px}
+.looktabs{display:grid; grid-template-columns:repeat(6,1fr); gap:4px; position:sticky; top:236px; z-index:3; background:var(--surface); padding:6px 0; margin-top:4px}
 .looktabs button{background:var(--surface2); border:1.5px solid var(--line); color:var(--fg-muted); border-radius:12px; padding:6px 2px; font-size:18px; font-weight:800; display:grid; justify-items:center; gap:1px}
-.looktabs button span{font-size:9.5px; white-space:nowrap}
+.looktabs button span{font-size:10.5px}
 .looktabs button[aria-selected="true"]{border-color:var(--ki); color:var(--ki2); background:rgba(255,138,31,.15)}
 #look-opts{min-height:260px}
 #modal-look .card>*{flex-shrink:0}
@@ -295,12 +295,6 @@ h1,h2,h3,.disp{letter-spacing:.03em}
 .tilegrid.scenes .tile span{width:100%}
 .lookprev .pvbg{position:absolute; inset:0; z-index:0}
 .lookprev .pvbg svg{width:100%; height:100%; display:block}
-.phpick{display:inline-block; width:auto; padding:10px 16px; cursor:pointer}
-.phsl{display:grid; grid-template-columns:96px 1fr; align-items:center; gap:10px; margin:6px 0}
-.phsl span{font-size:13px; color:var(--fg-muted); font-weight:700}
-.phsl input{width:100%; accent-color:var(--ki)}
-.phprompt{background:var(--surface2); border:1.5px dashed var(--line); border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.4; margin:6px 0 8px; user-select:text; -webkit-user-select:text}
-.optrow button:disabled{opacity:.45}
 .tilegrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:8px}
 .tile{background:linear-gradient(180deg,#3a7bd2,#93c6f4); border:2px solid var(--line); border-radius:14px; padding:4px 4px 0; display:grid; justify-items:center; gap:0; overflow:hidden; cursor:pointer}
 .tile svg{width:100%; height:auto; aspect-ratio:1/1; display:block}
@@ -759,7 +753,7 @@ const LOOK_OPTIONS={
     green:{n:'Grün', c:['#2fa463','#1f7244']}, purple:{n:'Lila', c:['#7a52d1','#553896']}, black:{n:'Schwarz', c:['#2b2f45','#1a1d2e']},
     grey:{n:'Grau', c:['#8c93a8','#646b80']}, white:{n:'Weiß', c:['#f1f2f6','#c8ccd8']} }},
   bottom:{ label:'Hose', items:{ navy:{n:'Dunkelblau', c:['#272b45','#1a1d31']}, black:{n:'Schwarz', c:['#1c1d24','#101116']}, grey:{n:'Grau', c:['#6b7083','#4d5163']}, blue:{n:'Blau', c:['#2f5fa8','#1f4278']} }},
-  style:{ label:'Zeichenstil', items:{ real:{n:'Realistisch'}, anime:{n:'Anime'}, photo:{n:'Eigenes Bild'} }},
+  style:{ label:'Zeichenstil', items:{ real:{n:'Realistisch'}, anime:{n:'Anime'} }},
   scene:{ label:'Trainingsort', items:{ mountains:{n:'Berge'}, gym:{n:'Fitnessstudio'}, football:{n:'Fußballplatz'}, track:{n:'Laufbahn'}, court:{n:'Basketball'} }},
   band:{ label:'Stirnband', items:{
     red:{n:'Rot', c:['#e0344f','#a81f37']}, blue:{n:'Blau', c:['#2f73c9','#1f4f92']},
@@ -783,8 +777,6 @@ function normLook(l){
   const mu=l?ch2sl(l.muscle):null, fa=l?ch2sl(l.fat):null;
   o.muscle=sl2ch(mu!=null?mu:pre[0]); o.fat=sl2ch(fa!=null?fa:pre[1]);
   delete o.build;
-  if(l && typeof l.img==='string' && /^[a-z]{4,12}$/.test(l.img)) o.img=l.img;
-  if(o.style==='photo' && !o.img) o.style='real';
   // Größe: genaue cm bleiben auf dem Gerät (heightCm), geteilt wird nur eine grobe Stufe (size a–x, 3-cm-Schritte)
   let cm = l && Number.isFinite(+l.heightCm) && +l.heightCm>0 ? +l.heightCm : null;
   if(cm==null && l && typeof l.size==='string' && /^[a-x]$/.test(l.size)) cm = 140 + (l.size.charCodeAt(0)-97)*3;
@@ -810,7 +802,7 @@ function publicLook(l){ if(!l) return null; const o={...l}; delete o.heightCm; d
 function ffmi(cm,kg,kfa){ const h=cm/100, ffm=kg*(1-kfa/100); return ffm/(h*h) + 6.1*(1.8-h); }
 function ffmiLabel(v){ return v<17?'wenig Muskeln':v<19?'durchschnittlich':v<21?'sportlich':v<23?'trainiert':v<25?'sehr muskulös':'extrem muskulös'; }
 function heightScale(cm){ return Math.max(.88, Math.min(1.07, 1+(cm-178)*.0029)); }
-const LOOK_GROUPS=[['Bild',['#photo']],['Körper',['#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Ort',['scene']],['Extras',['style','glasses','band']]];
+const LOOK_GROUPS=[['Körper',['#height','#weight','#kfa','#muscle','skin']],['Gesicht',['face','eyes','brows','nose','mouth','ears','freckles']],['Haare',['hairStyle','hair','beard']],['Outfit',['outfit','top','bottom']],['Ort',['scene']],['Extras',['style','glasses','band']]];
 const FACES={
   oval:{p:'M78 92 C78 64 96 52 120 52 C144 52 162 64 162 92 C162 110 154 124 140 132 C132 137 126 139 120 139 C114 139 108 137 100 132 C86 124 78 110 78 92Z', ex:0},
   round:{p:'M76 94 C76 64 96 52 120 52 C144 52 164 64 164 94 C164 116 154 132 138 137 C130 140 126 141 120 141 C114 141 110 140 102 137 C86 132 76 116 76 94Z', ex:-2},
@@ -1055,67 +1047,7 @@ function realFace(m,L,st,id,F){
   return s;
 }
 
-/* ---------- Eigenes Avatar-Bild (hochgeladen, z. B. aus ChatGPT) ----------
-   Das fertige Bild liegt im privaten Supabase-Speicher "avatars" unter <user-id>/<img>.png
-   (Migration 0010). Sehen dürfen es nur du und deine Freunde. Auf dem eigenen Gerät liegt
-   zusätzlich eine Kopie, damit es sofort und auch ohne Verbindung erscheint. */
-const PH_W=480, PH_H=600;                       // festes Bildformat (4:5), Figur unten stehend
-const PH_URL=new Map(), PH_BUSY=new Set(), PH_WAIT=new Map(); let phTok=0;
-function photoLocal(uid,img){ const o=lsGetJSON('lvlme_photo_'+uid,null); return o && o.img===img ? o.src : null; }
-function photoSrc(uid,img){
-  if(!uid||!img) return null;
-  if(session && uid===session.user.id){ const l=photoLocal(uid,img); if(l) return l; }
-  const k=uid+'/'+img; if(PH_URL.has(k)) return PH_URL.get(k);
-  if(!PH_BUSY.has(k) && sb){ PH_BUSY.add(k);
-    sb.storage.from('avatars').createSignedUrl(k+'.png', 60*60*24).then(({data,error})=>{
-      PH_URL.set(k, (!error && data && data.signedUrl) ? data.signedUrl : '');
-      phHydrate(k);
-    }).catch(()=>{ PH_URL.set(k,''); phHydrate(k); });
-  }
-  return null;
-}
-function phHydrate(k){
-  document.querySelectorAll(`svg[data-phkey="${CSS.escape(k)}"]`).forEach(el=>{
-    const a=PH_WAIT.get(el.dataset.phtok); PH_WAIT.delete(el.dataset.phtok);
-    if(a) el.outerHTML=avatarSvg(...a);
-  });
-}
-function photoSvg(src,stageIndex,m,opts){
-  const st=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
-  const gid='ph'+(++phTok);
-  const sat = m==='lazy'?.35 : m==='tired'?.6 : m==='charged'?1.12 : 1;
-  const bri = m==='lazy'||m==='tired' ? .85 : 1;
-  const bob=m==='charged'?'bob fast':(m==='tired'||m==='lazy')?'bob slow':'bob';
-  const tilt=m==='tired'?'rotate(3 120 272)':m==='lazy'?'rotate(-4 120 272)':'';
-  let s=`<svg class="av" viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar, ${MOODS[m].l}">`;
-  s+=`<defs><filter id="${gid}f"><feColorMatrix type="saturate" values="${sat}"/><feComponentTransfer><feFuncR type="linear" slope="${bri}"/><feFuncG type="linear" slope="${bri}"/><feFuncB type="linear" slope="${(bri*1.05).toFixed(3)}"/></feComponentTransfer></filter>`+
-     `<radialGradient id="${gid}g" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".45" stop-color="${st.aura||'#fff'}" stop-opacity=".55"/><stop offset="1" stop-color="${st.aura||'#fff'}" stop-opacity="0"/></radialGradient></defs>`;
-  if(opts.flip) s+=`<g transform="translate(240 0) scale(-1 1)">`;
-  if(st.aura && m!=='lazy') s+=`<ellipse class="aura" cx="120" cy="150" rx="${m==='tired'?80:106}" ry="${m==='tired'?108:140}" fill="url(#${gid}g)" opacity="${m==='tired'?.45:1}"/>`;
-  s+=`<ellipse cx="120" cy="270" rx="58" ry="8" fill="#000" opacity=".32"/>`;
-  s+=`<g class="${bob}"><g transform="${tilt}"><image href="${src}" x="16" y="17" width="208" height="260" preserveAspectRatio="xMidYMax meet" filter="url(#${gid}f)"/></g></g>`;
-  if(m==='tired') s+=`<g class="zzz" font-family="Baloo 2, Impact, sans-serif" fill="#e6ebff" stroke="${OL}" stroke-width="1.2" paint-order="stroke"><text x="172" y="40" font-size="24">Z</text><text x="192" y="22" font-size="16">z</text></g>`;
-  if(m==='proud') s+=`<path d="M186 70 q7 10 0 15 q-7 -5 0 -15Z M50 100 q6 9 0 13 q-6 -4 0 -13Z" fill="#a8e4ff" stroke="${OL}" stroke-width="1.6"/>`;
-  if(opts.flip) s+=`</g>`;
-  return s+`</svg>`;
-}
 function avatarSvg(stageIndex,moodKey,uniqueId,opts){
-  opts=opts||{};
-  const L=normLook(opts.look);
-  if((L.style==='photo' && L.img) || opts.photoSrc){
-    const m=MOODS[moodKey]?moodKey:'awake';
-    const uid=opts.uid||(session&&session.user.id);
-    const src=opts.photoSrc||photoSrc(uid,L.img);
-    if(src) return photoSvg(src,stageIndex,m,opts);
-    const fb=avatarSvgCore(stageIndex,moodKey,uniqueId,{...opts,look:{...L,style:'real'}});
-    const k=uid+'/'+L.img;
-    if(PH_URL.get(k)==='') return fb;             // nicht erreichbar → gezeichnete Figur
-    const tok='p'+(++phTok); PH_WAIT.set(tok,[stageIndex,moodKey,uniqueId,opts]);
-    return fb.replace('<svg class="av"',`<svg class="av" data-phkey="${escapeHtml(k)}" data-phtok="${tok}"`);
-  }
-  return avatarSvgCore(stageIndex,moodKey,uniqueId,opts);
-}
-function avatarSvgCore(stageIndex,moodKey,uniqueId,opts){
   opts=opts||{};
   const st0=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
   const L=normLook(opts.look);
@@ -1960,7 +1892,7 @@ function fight(f){
   closeOverlay();
   $('overlay').innerHTML=`<div class="ov fight" role="dialog" aria-label="Kampf gegen ${escapeHtml(f.name)}">
     <div class="half me"><div class="fav">${avatarSvg(si,'charged','fm',{look:myLook})}</div><div class="ftag">${escapeHtml(myProfile.display_name)}<b>${fmt(me)}</b></div></div>
-    <div class="half op"><div class="fav">${avatarSvg(f.stage,'charged','fo',{flip:true,look:f.look,uid:f.id})}</div><div class="ftag">${escapeHtml(f.name)}<b>${fmt(f.power)}</b></div></div>
+    <div class="half op"><div class="fav">${avatarSvg(f.stage,'charged','fo',{flip:true,look:f.look})}</div><div class="ftag">${escapeHtml(f.name)}<b>${fmt(f.power)}</b></div></div>
     <div class="vs" aria-hidden="true">VS</div>
     <div class="fres ${win?'win':'lose'}" id="fres" hidden><h3>${win?'Sieg!':'Niederlage'}</h3>
       <p>${win?`Du schlägst ${escapeHtml(f.name)}! Trainingskampf – zählt nur für die Ehre.`:`${escapeHtml(f.name)} war heute stärker. Guter Schlaf und ein aktiver Tag, dann klappt die Revanche.`}</p>
@@ -2006,7 +1938,7 @@ async function renderFriends(){
   if(!friends.length){ box.innerHTML='<p class="small muted">Noch keine Freunde. Lad jemanden ein!</p>'; return; }
   box.innerHTML = friends.map((f,i)=>`
     <div class="fcard">
-      <div class="mini2" style="background:${MINISKY[f.mood||'none']}"><div class="av-wrap">${avatarSvg(f.stage, f.mood||'awake', 'f'+i, {look:f.look, uid:f.id})}</div></div>
+      <div class="mini2" style="background:${MINISKY[f.mood||'none']}"><div class="av-wrap">${avatarSvg(f.stage, f.mood||'awake', 'f'+i, {look:f.look})}</div></div>
       <div class="finfo">
         <div><div class="spread"><div class="nm">${escapeHtml(f.name)}</div><button class="xbtn" data-remove="${f.id}" aria-label="${escapeHtml(f.name)} entfernen">✕</button></div>
           <div class="meta">Lv ${f.level} · <span class="chip" style="font-size:10px">${STAGES[Math.min(STAGES.length-1,f.stage)].n}</span> ${rankBadge(f.level)}</div>
@@ -2152,42 +2084,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
     {t:'Was trägst du beim Sport?', keys:['outfit','top','bottom']},
     {t:'Wo trainierst du am liebsten?', sub:'Das wird der Hintergrund deines Kämpfers.', keys:['scene']}
   ];
-  const ICON={'Bild':'📷','Körper':'💪','Gesicht':'🙂','Haare':'💇','Outfit':'👕','Ort':'🏟️','Extras':'🕶️'};
+  const ICON={'Körper':'💪','Gesicht':'🙂','Haare':'💇','Outfit':'👕','Ort':'🏟️','Extras':'🕶️'};
   let draftLook=null, previewMood='charged', lookTab='Körper', wizStep=null;
   const q=sel=>document.querySelector('#look-opts '+sel);
-  let PH=null;   // Bild-Bearbeitung in diesem Editor-Durchgang: {img, cut, bg, tol, zoom, dx, dy, baked}
   function drawPreview(){
     const si=Math.min(stageFor(myProgress.level),2);
-    $('look-av').innerHTML=`<div class="pvbg">${sceneSvg(draftLook.scene, previewMood, 'pv')}</div><div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook, ...(PH&&PH.baked&&draftLook.style==='photo'?{photoSrc:PH.baked}:{})})}</div>`;
+    $('look-av').innerHTML=`<div class="pvbg">${sceneSvg(draftLook.scene, previewMood, 'pv')}</div><div class="av-wrap">${avatarSvg(si, previewMood, 'lookpv', {look:draftLook})}</div>`;
   }
   function fieldHtml(key){
     if(key==='#height') return `<div class="optgrp"><b>Größe</b><div class="slrow"><input type="range" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hcm aria-label="Größe in cm"><span class="numin"><input type="number" min="140" max="210" step="1" value="${draftLook.heightCm}" data-hnum inputmode="numeric"> cm</span></div></div>`;
     if(key==='#weight'){ const w=draftLook.weightKg||''; return `<div class="optgrp"><b>Gewicht</b><div class="slrow"><input type="range" min="40" max="160" step="1" value="${w||78}" data-wkg aria-label="Gewicht in kg"><span class="numin"><input type="number" min="35" max="200" step="1" value="${w}" placeholder="78" data-wnum inputmode="numeric"> kg</span></div></div>`; }
     if(key==='#kfa') return `<div class="optgrp"><b>Körperfettanteil (KFA)</b><div class="slrow"><input type="range" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfa aria-label="Körperfettanteil in Prozent"><span class="numin"><input type="number" min="4" max="45" step="1" value="${draftLook.bodyFatPct}" data-kfanum inputmode="numeric"> %</span></div></div>`;
-    if(key==='#photo'){
-      const on=draftLook.style==='photo', has=!!(PH&&PH.baked) || !!draftLook.img;
-      let h=`<div class="optgrp"><b>Wie soll dein Kämpfer aussehen?</b><div class="optrow">
-        <button data-k="style" data-v="real" aria-pressed="${!on}">✏️ Gezeichnet</button>
-        <button data-phon aria-pressed="${on}" ${has?'':'disabled'}>📷 Eigenes Bild</button></div></div>
-        <div class="optgrp"><b>Bild hochladen</b>
-        <label class="btn ghost phpick">📁 Bild auswählen<input type="file" accept="image/*" data-phfile hidden></label>
-        <p class="small muted">Am besten eine Figur in ganzer Größe, freigestellt oder vor einfarbigem Hintergrund. Sehen können es nur du und deine Freunde.</p></div>`;
-      if(PH){
-        const sl=(lab,attr,min,max,step,val)=>`<div class="phsl"><span>${lab}</span><input type="range" ${attr} min="${min}" max="${max}" step="${step}" value="${val}"></div>`;
-        h+=`<div class="optgrp"><b>Anpassen</b>
-          <div class="optrow"><button data-phbg="1" aria-pressed="${PH.bg}">✂️ Hintergrund entfernen</button><button data-phbg="0" aria-pressed="${!PH.bg}">Hintergrund lassen</button></div>
-          ${PH.bg?sl('Stärke','data-phtol',6,80,1,PH.tol):''}
-          ${sl('Größe','data-phzoom',.5,1.6,.01,PH.zoom)}
-          ${sl('Links/Rechts','data-phdx',-180,180,1,PH.dx)}
-          ${sl('Hoch/Runter','data-phdy',-220,120,1,PH.dy)}
-          <div class="optrow"><button data-phflip aria-pressed="${!!PH.flip}">↔️ Spiegeln</button><button data-phreset>Zurücksetzen</button></div></div>`;
-      }
-      h+=`<div class="optgrp"><b>Tipp: Avatar aus deinem Foto</b>
-        <p class="small muted">Lade in ChatGPT oder Gemini ein Selfie hoch, füg diesen Text ein und lade das Ergebnis hier hoch.</p>
-        <div class="phprompt" id="ph-prompt">${escapeHtml(PH_PROMPT)}</div>
-        <button class="btn ghost" data-phcopy>📋 Text kopieren</button></div>`;
-      return h;
-    }
     if(key==='#muscle') return `<div class="optgrp"><b>Muskeln</b><div class="musclebox" id="look-muscle">${muscleHtml()}</div></div>`;
     const grp=LOOK_OPTIONS[key];
     if(key==='scene'){
@@ -2199,8 +2106,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if(CROP[key]){
       return `<div class="optgrp"><b>${grp.label}</b><div class="tilegrid">`+
         Object.entries(grp.items).map(([v,it])=>{
-          if(key==='style' && v==='photo') return '';
-          const svg=avatarSvg(0,'awake','th_'+key+'_'+v,{look:{...draftLook,style:draftLook.style==='anime'?'anime':'real',[key]:v, ...(key!=='glasses'&&key!=='outfit'?{band:'none'}:{})}})
+          const svg=avatarSvg(0,'awake','th_'+key+'_'+v,{look:{...draftLook,[key]:v, ...(key!=='glasses'&&key!=='outfit'?{band:'none'}:{})}})
             .replace('viewBox="0 0 240 280"',`viewBox="${CROP[key]}"`);
           return `<button class="tile" data-k="${key}" data-v="${v}" aria-pressed="${draftLook[key]===v}" aria-label="${it.n}">${svg}<span>${it.n}</span></button>`;
         }).join('')+`</div></div>`;
@@ -2243,88 +2149,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
     $('look-close').classList.toggle('hidden', wiz);
     document.querySelectorAll('#look-moods [data-pm]').forEach(b=>b.onclick=()=>{ previewMood=b.dataset.pm; renderLookEditor(); });
     document.querySelectorAll('#look-opts [data-k]').forEach(b=>b.onclick=()=>{ draftLook[b.dataset.k]=b.dataset.v; renderLookEditor(); });
-    // ---- Eigenes Bild ----
-    const pf=q('[data-phfile]'); if(pf) pf.onchange=()=>{ const f=pf.files&&pf.files[0]; if(f) phOpen(f); };
-    const pon=q('[data-phon]'); if(pon) pon.onclick=()=>{ draftLook.style='photo'; renderLookEditor(); };
-    document.querySelectorAll('#look-opts [data-phbg]').forEach(b=>b.onclick=()=>{ PH.bg=b.dataset.phbg==='1'; phCut(); phBake(); renderLookEditor(); });
-    const phset=(sel,fn,recut)=>{ const r=q(sel); if(!r) return; let t=null;
-      r.oninput=()=>{ fn(+r.value); if(recut){ clearTimeout(t); t=setTimeout(()=>{ phCut(); phBake(); drawPreview(); },120); } else { phBake(); drawPreview(); } }; };
-    phset('[data-phtol]',v=>PH.tol=v,true); phset('[data-phzoom]',v=>PH.zoom=v); phset('[data-phdx]',v=>PH.dx=v); phset('[data-phdy]',v=>PH.dy=v);
-    const pfl=q('[data-phflip]'); if(pfl) pfl.onclick=()=>{ PH.flip=!PH.flip; phBake(); renderLookEditor(); };
-    const prs=q('[data-phreset]'); if(prs) prs.onclick=()=>{ Object.assign(PH,{zoom:1,dx:0,dy:0,flip:false,tol:PH_TOL}); phCut(); phBake(); renderLookEditor(); };
-    const pcp=q('[data-phcopy]'); if(pcp) pcp.onclick=async()=>{ try{ await navigator.clipboard.writeText(PH_PROMPT); toast('Text kopiert ✓'); }
-      catch(e){ const r=document.createRange(); r.selectNodeContents($('ph-prompt')); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Text markiert – jetzt kopieren'); } };
     bindNum('[data-hcm]','[data-hnum]',140,210,178,v=>{ draftLook.heightCm=v; });
     bindNum('[data-wkg]','[data-wnum]',35,200,78,v=>{ draftLook.weightKg=v; });
     bindNum('[data-kfa]','[data-kfanum]',4,45,20,v=>{ draftLook.bodyFatPct=v; });
   }
-  /* ---- Bild laden, freistellen, zuschneiden ---- */
-  const PH_TOL=28;
-  const PH_PROMPT='Mach aus meinem Foto einen Ganzkörper-Avatar im Stil eines 3D-Cartoon-Avatars (wie eine freundliche Comic-Figur): gleiche Frisur, Haarfarbe, Bart und Gesichtszüge wie auf dem Foto, sportliche Kleidung, stehend, von Kopf bis Fuß sichtbar, Blick nach vorne. Hintergrund komplett transparent (PNG), kein Text, kein Logo.';
-  function phOpen(file){
-    const fr=new FileReader();
-    fr.onload=()=>{ const im=new Image(); im.onload=()=>{
-      const k=Math.min(1, 1000/Math.max(im.naturalWidth,im.naturalHeight));
-      const c=document.createElement('canvas'); c.width=Math.round(im.naturalWidth*k); c.height=Math.round(im.naturalHeight*k);
-      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-      const g=c.getContext('2d',{willReadFrequently:true}), d=g.getImageData(0,0,c.width,c.height).data;
-      // Schon freigestellt (durchsichtige Ecken)? Dann nichts entfernen.
-      const corner=i=>d[i*4+3]; const W=c.width,H=c.height;
-      const transparent=[0,W-1,(H-1)*W,(H-1)*W+W-1].every(i=>corner(i)<20);
-      PH={src:c, cut:null, bg:!transparent, tol:PH_TOL, zoom:1, dx:0, dy:0, flip:false, baked:null};
-      phCut(); phBake(); draftLook.style='photo'; renderLookEditor();
-    }; im.onerror=()=>toast('Das Bild konnte nicht gelesen werden.'); im.src=fr.result; };
-    fr.readAsDataURL(file);
-  }
-  // Hintergrund vom Rand her entfernen (ähnliche Farbe wie der Rand), dann auf die Figur zuschneiden
-  function phCut(){
-    const src=PH.src, W=src.width, H=src.height;
-    const c=document.createElement('canvas'); c.width=W; c.height=H;
-    const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(src,0,0);
-    const img=g.getImageData(0,0,W,H), px=img.data;
-    if(PH.bg){
-      // Randfarbe: Mittel der Randpixel
-      let r=0,gg=0,b=0,n=0; const add=i=>{ r+=px[i*4]; gg+=px[i*4+1]; b+=px[i*4+2]; n++; };
-      for(let x=0;x<W;x+=3){ add(x); add((H-1)*W+x); } for(let y=0;y<H;y+=3){ add(y*W); add(y*W+W-1); }
-      r/=n; gg/=n; b/=n;
-      const tol=PH.tol*PH.tol*3, near=i=>{ const dr=px[i*4]-r, dg=px[i*4+1]-gg, db=px[i*4+2]-b; return px[i*4+3]<20 || dr*dr+dg*dg+db*db<tol; };
-      const seen=new Uint8Array(W*H), st=[];
-      for(let x=0;x<W;x++){ st.push(x,(H-1)*W+x); } for(let y=0;y<H;y++){ st.push(y*W,y*W+W-1); }
-      while(st.length){ const i=st.pop(); if(seen[i]||!near(i)) continue; seen[i]=1; px[i*4+3]=0;
-        const x=i%W, y=(i-x)/W; if(x>0) st.push(i-1); if(x<W-1) st.push(i+1); if(y>0) st.push(i-W); if(y<H-1) st.push(i+W); }
-      for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){ const i=y*W+x; if(seen[i]) continue;   // weiche Kante
-        if(seen[i-1]||seen[i+1]||seen[i-W]||seen[i+W]) px[i*4+3]=Math.min(px[i*4+3],150); }
-      g.putImageData(img,0,0);
-    }
-    let x0=W,y0=H,x1=-1,y1=-1;
-    for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(px[(y*W+x)*4+3]>40){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
-    if(x1<0){ x0=0;y0=0;x1=W-1;y1=H-1; }
-    const o=document.createElement('canvas'); o.width=x1-x0+1; o.height=y1-y0+1;
-    o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);
-    PH.cut=o;
-  }
-  // Ins feste 4:5-Format setzen: Figur füllt die Höhe, steht unten in der Mitte
-  function phBake(){
-    const o=document.createElement('canvas'); o.width=PH_W; o.height=PH_H;
-    const g=o.getContext('2d'), c=PH.cut;
-    const k=Math.min((PH_H*.96)/c.height, (PH_W*.98)/c.width)*PH.zoom;
-    const w=c.width*k, h=c.height*k, x=PH_W/2-w/2+PH.dx, y=PH_H-h-6+PH.dy;
-    g.imageSmoothingQuality='high';
-    if(PH.flip){ g.translate(PH_W,0); g.scale(-1,1); g.drawImage(c,PH_W-x-w,y,w,h); } else g.drawImage(c,x,y,w,h);
-    PH.baked=o.toDataURL('image/png');
-  }
-  async function phUpload(uid){
-    const tok=Array.from({length:8},()=>String.fromCharCode(97+Math.floor(Math.random()*26))).join('');
-    const blob=await (await fetch(PH.baked)).blob();
-    lsSetJSON('lvlme_photo_'+uid, {img:tok, src:PH.baked});
-    const { error } = await sb.storage.from('avatars').upload(uid+'/'+tok+'.png', blob, {contentType:'image/png', upsert:true});
-    if(!error){ // alte Bilder aufräumen
-      try{ const { data } = await sb.storage.from('avatars').list(uid); const old=(data||[]).map(f=>uid+'/'+f.name).filter(n=>n!==uid+'/'+tok+'.png');
-        if(old.length) await sb.storage.from('avatars').remove(old); }catch(e){}
-    }
-    return { tok, error };
-  }
-  function openLook(){ wizStep=null; PH=null; draftLook=normLook(myLook); lookTab = draftLook.style==='photo' ? 'Bild' : (lookTab==='Bild'?'Körper':lookTab); renderLookEditor(); show($('modal-look')); }
+  function openLook(){ wizStep=null; draftLook=normLook(myLook); renderLookEditor(); show($('modal-look')); }
   function openWizard(){ wizStep=0; draftLook=normLook(myLook); if(!draftLook.weightKg) draftLook.weightKg=78; draftLook=normLook(draftLook); renderLookEditor(); show($('modal-look')); }
   window.openLookWizard = openWizard;
   document.addEventListener('click', e=>{ if(e.target.closest('[data-openlook]')) openLook(); if(e.target.closest('[data-openwizard]')) openWizard(); });
@@ -2339,11 +2168,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     saveLook(true);
   });
   async function saveLook(fromWizard){
-    let upErr=null;
-    if(PH && PH.baked && draftLook.style==='photo'){
-      $('look-save').disabled=true;
-      const r=await phUpload(session.user.id); draftLook.img=r.tok; upErr=r.error; PH=null;
-    }
     myLook={...draftLook};
     lsSet('lvlme_look_'+session.user.id, JSON.stringify(myLook));
     if(fromWizard) lsSet('lvlme_wizard_'+session.user.id,'done');
@@ -2353,7 +2177,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     $('look-save').disabled=false; $('look-next').disabled=false;
     hide($('modal-look')); wizStep=null;
     if(error){ toast('Gespeichert auf diesem Gerät. Damit Freunde es sehen: Migration 0009 in Supabase ausführen.'); pushPublicAvatar(lastTodayScore); }
-    else if(upErr){ myProfile.avatar=pub; toast('Bild ist auf diesem Gerät gespeichert. Damit Freunde es sehen: Migration 0010 in Supabase ausführen.'); }
     else { myProfile.avatar=pub; toast(fromWizard? 'Dein Kämpfer ist bereit! Ändern kannst du alles unter Profil → Aussehen.' : 'Dein Kämpfer ist gespeichert ✓'); }
     lastSkyKey=''; renderHome(lastTodayScore); renderProfile(lastTodayScore);
   }
@@ -2430,7 +2253,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   $('set-delete').addEventListener('click', ()=>{
     askConfirm('Konto wirklich endgültig löschen? Das kann nicht zurückgenommen werden.', async ()=>{
-      try{ const u=session.user.id; const { data } = await sb.storage.from('avatars').list(u); if(data&&data.length) await sb.storage.from('avatars').remove(data.map(f=>u+'/'+f.name)); }catch(e){}
       const { error } = await sb.rpc('delete_account');
       if(error){ toast('Fehler: '+error.message); return; }
       try{ localStorage.clear(); }catch(e){}

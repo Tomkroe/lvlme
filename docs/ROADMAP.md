@@ -34,7 +34,7 @@ Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Sc
 - [x] **A7** Web: Outfits – Kampfanzug (Farbe je Verwandlung), Muscle-Shirt, Trainings-Shirt, Hoodie, Kompression; Oberteil-Farbe (8) und Hose (4); Sneaker bei Sport-Outfits. *(A)*
 - [x] **A8** Web: Editor in Kategorien (Körper, Gesicht, Haare, Outfit, Extras) und Fragestrecke beim ersten Start (8 Schritte: Größe, Gewicht, KFA, Hautton, Haare, Gesicht, Bart/Brille, Outfit). *(A)*
 - [x] **A9** Web: Sport-Hintergründe (Fitnessstudio, Fußballplatz, Laufbahn, Basketball, Berge) mit Licht je Stimmung; menschlichere Proportionen (längere Beine/Rumpf, kleinerer Kopf); Startseite mit ziehbarer Leiste. *(A)*
-- [x] **A10** Web: eigenes Avatar-Bild hochladen (Reiter „Bild“): Hintergrund entfernen mit Stärke-Regler, Größe/Position/Spiegeln, Prompt-Vorlage für ChatGPT/Gemini. Bild liegt im privaten Speicher `avatars/<user-id>/<img>.png`, Freunde sehen es (Migration 0010). Im Look: `style: 'photo'`, `img` (Buchstaben-Kennung). *(A)*
+- [x] **A10** Bild-Upload ausprobiert und wieder aus der Web-App genommen (sah eingefügt eckig aus). Der Speicher aus Migration 0010 bleibt ungenutzt bestehen. Wir bleiben bei der gezeichneten Figur. *(A)*
 - [ ] **B5** iPhone-App: dieselben Optionen in `src/avatar/` (Pfade/Farben aus `docs/web/index.html` → `LOOK_OPTIONS`, `HAIR` übernehmen) und Editor-Screen. **Wichtig:** Beim Hochladen des Avatar-Zustands `look` mitschicken bzw. erhalten, sonst wird es überschrieben.
 
 ### Phase 2 – Wochen-Duell (statt Zufallskampf)
