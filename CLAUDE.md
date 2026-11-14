@@ -8,7 +8,7 @@ Konzept: siehe Konzeptdokument „LvlMe – Konzept“ (claude.ai). Klickbare De
 - Expo (React Native), Expo SDK 58, Development Build (kein Expo Go), Builds über EAS
 - HealthKit über `@kingstinct/react-native-healthkit` (+ `react-native-nitro-modules`), nur Lesezugriff
 - Avatar als SVG über `react-native-svg`, später ggf. Rive
-- **Ein Code für iPhone und PC:** Expo Web baut dieselbe App für den Browser. CI veröffentlicht sie unter https://tomkroe.github.io/lvlme/app/ (Ordner `docs/app/`, nie von Hand ändern). Am PC über Edge/Chrome „Als App installieren“.
+- **Ein Code für iPhone und PC:** Expo Web baut dieselbe App für den Browser. CI veröffentlicht sie unter https://tomkroe.github.io/lvlme/web/ (Ordner `docs/web/`, nie von Hand ändern; `/app/` leitet nur weiter). Am PC über Edge/Chrome „Als App installieren“.
 - Plattform-Weichen über Dateiendungen: `*.web.ts(x)` ersetzt im Web die native Datei (z. B. `healthkit.web.ts`, `AppleButton.web.tsx`); solche Dateien **ohne** Endung importieren. Bildschirmgröße über `useScreenSize()` (`src/ui/layout.ts`), Rückfragen über `confirm()` (`src/ui/confirm.ts`), nicht `Alert.alert`.
 - Rohdaten bleiben auf dem iPhone. Nur mit Einwilligung (Schalter „Mit dem PC synchronisieren“ mit Rückfrage, nur bei E-Mail-Konto; Ausschalten löscht die Daten im Konto über `clear_synced_data`) gehen Tageswerte und Fortschritt ins **eigene** Konto (Migration 0012); die PC-Version liest sie von dort. Freunde sehen nur den Avatarzustand.
 - Anmeldung: auf allen Geräten E-Mail und Passwort (gleiches Konto auf iPhone und PC), auf dem iPhone zusätzlich Apple
@@ -19,7 +19,7 @@ Konzept: siehe Konzeptdokument „LvlMe – Konzept“ (claude.ai). Klickbare De
 - `src/health/` Apple Health · `src/avatar/` Avatar (Bild-Ebenen aus `assets/avatar/`, Aura als SVG) · `src/social/` Konto & Freunde · `src/share/` Teilen
 - `assets/avatar/` Körper- (`body*.png`, `outfit-*.png`) und Kopf-PNGs (`head-*.png`), freigestellt, Hals und Füße auf gleicher Höhe, daher frei kombinierbar; Quellen in `raw/`, Prompts in `docs/Avatar-Design-Prompts.md`
 - `app/` Screens (Expo Router) · `supabase/migrations/` Datenbankschema
-- `public/` Vorlage und Manifest der PC-Version · `docs/web/` alter Web-Prototyp (wird abgelöst, sobald alles in der App ist)
+- `public/` Vorlage und Manifest der PC-Version · `docs/web-alt/` alter Web-Prototyp (Archiv, nicht mehr veröffentlicht verlinkt)
 - Prüfen: `npm run typecheck`, `npm test`; CI auf GitHub macht beides plus Prebuild-Probe und baut die PC-Version
 
 ## Agenten-Team (`.claude/agents/`)

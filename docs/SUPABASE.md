@@ -52,7 +52,7 @@ Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue D
 Die Webversion und die PC-Version der App können sich nicht mit Apple anmelden (das geht nur aus der iPhone-App). Stattdessen: E-Mail und Passwort. Die iPhone-App bietet E-Mail zusätzlich an, damit man auf beiden Geräten dasselbe Konto nutzt.
 
 1. **Authentication → Providers → Email** ist in neuen Supabase-Projekten standardmäßig an. „Confirm email“ kann an bleiben.
-2. **Authentication → URL Configuration**: Bei **Redirect URLs** zusätzlich `https://tomkroe.github.io/lvlme/app/**` eintragen (PC-Version, für den Bestätigungslink nach der Registrierung). Bei **Site URL** die Adresse der veröffentlichten Webversion eintragen (die Artifact-URL, die du von Claude bekommst). Das ist die Adresse, zu der der Link in der Anmelde-Mail führt.
+2. **Authentication → URL Configuration**: Bei **Redirect URLs** zusätzlich `https://tomkroe.github.io/lvlme/web/**` eintragen (PC-Version, für den Bestätigungslink nach der Registrierung). Bei **Site URL** die Adresse der veröffentlichten Webversion eintragen (die Artifact-URL, die du von Claude bekommst). Das ist die Adresse, zu der der Link in der Anmelde-Mail führt.
 3. Fertig – mehr ist für die Webversion nicht nötig. Beim ersten Öffnen gibt man seine E-Mail-Adresse ein, bekommt einen Link per Mail, klickt ihn an und ist angemeldet.
 
 ## 3. Anmeldung mit Apple aktivieren (für die spätere echte App)

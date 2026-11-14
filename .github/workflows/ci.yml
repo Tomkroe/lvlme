@@ -32,21 +32,21 @@ jobs:
         run: npx expo prebuild --platform ios --no-install --clean
       - name: Web-Version bauen (gleicher Code wie die iPhone-App)
         env:
-          # Öffentliche Werte (stehen auch in docs/web/index.html); Zugriff regelt RLS in Supabase
+          # Öffentliche Werte (stehen auch in docs/web-alt/index.html); Zugriff regelt RLS in Supabase
           EXPO_PUBLIC_SUPABASE_URL: https://xvinbohxqofkwlrmrwao.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ETTbcormpZjj5FACAXfV1Q_013dVmAA
         run: npx expo export --platform web --output-dir dist
       - name: Web-Version und angepasste Versionen zurückschreiben
         if: github.ref == 'refs/heads/main'
         run: |
-          rm -rf docs/app && cp -r dist docs/app
+          rm -rf docs/web && cp -r dist docs/web
           # Direkt aufgerufene Unterseiten (z. B. nach Neuladen) landen auf GitHub Pages sonst auf einer 404-Seite
           cp dist/index.html docs/404.html
           git config user.name "lvlme-ci"
           git config user.email "ci@users.noreply.github.com"
-          git add package.json package-lock.json docs/app docs/404.html
+          git add package.json package-lock.json docs/web docs/404.html
           if ! git diff --cached --quiet; then
-            git commit -m "CI: Web-Version (docs/app) und Abhängigkeiten aktualisiert"
+            git commit -m "CI: Web-Version (docs/web) und Abhängigkeiten aktualisiert"
             git pull --rebase origin main && git push
           fi
 
