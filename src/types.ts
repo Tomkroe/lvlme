@@ -113,3 +113,31 @@ export interface PublicAvatar {
   /** Körpertyp/Outfit; fehlt bei älteren Avataren (dann Standard) */
   body?: BodyId;
 }
+
+/** Geschlecht nur für die Kalorienformel; „unspecified“ mittelt beide Formeln */
+export type Sex = 'female' | 'male' | 'unspecified';
+export type CalorieGoal = 'lose' | 'maintain' | 'gain';
+
+/**
+ * Täglicher Kalorienbedarf als grobe Schätzung. Reine Information: fließt nie in Energie, XP, Stimmung oder Avatar ein.
+ * Entsteht nur auf dem Gerät aus lokalen Körperwerten und wird nicht gespeichert oder synchronisiert (nur der eigene Wert `custom`, lokal).
+ */
+export interface CalorieTarget {
+  /** Grundumsatz in kcal */
+  bmr: number;
+  /** Gesamtbedarf in kcal (Grundumsatz × 1,2 + aktive Kalorien, 7-Tage-Schnitt) */
+  tdee: number;
+  /** Empfehlung in kcal, nie unter dem Grundumsatz */
+  recommended: number;
+  /** Eigener Wert des Nutzers, falls gesetzt */
+  custom?: number;
+  /** Gewünschtes Ziel */
+  goal: CalorieGoal;
+  /** Tatsächlich angewandtes Ziel (bei unter 18 Jahren oder BMI unter 18,5 wird „Abnehmen“ zu „Halten“) */
+  goalApplied: CalorieGoal;
+  limitedBy?: 'age' | 'bmi';
+  /** Formel des Grundumsatzes */
+  method: 'katch' | 'mifflin';
+  /** Eigener Wert liegt unter dem Grundumsatz → deutlicher Warnhinweis */
+  belowBmr: boolean;
+}

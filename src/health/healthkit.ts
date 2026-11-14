@@ -26,6 +26,9 @@ const STEPS = 'HKQuantityTypeIdentifierStepCount';
 const ACTIVE_ENERGY = 'HKQuantityTypeIdentifierActiveEnergyBurned';
 const HRV = 'HKQuantityTypeIdentifierHeartRateVariabilitySDNN';
 const RESTING_HR = 'HKQuantityTypeIdentifierRestingHeartRate';
+const BODY_MASS = 'HKQuantityTypeIdentifierBodyMass';
+const HEIGHT = 'HKQuantityTypeIdentifierHeight';
+const BODY_FAT = 'HKQuantityTypeIdentifierBodyFatPercentage';
 const SLEEP = 'HKCategoryTypeIdentifierSleepAnalysis';
 const WORKOUT = 'HKWorkoutTypeIdentifier'; // TODO verify: Name in src/types/Shared.ts (ObjectTypeIdentifier)
 
@@ -45,7 +48,7 @@ interface LooseHK {
 const lib = HealthKitLib as unknown as LooseHK & { default?: LooseHK };
 const hk: LooseHK = { ...(lib.default ?? {}), ...lib };
 
-const READ_TYPES = [STEPS, ACTIVE_ENERGY, HRV, RESTING_HR, SLEEP, WORKOUT] as const;
+const READ_TYPES = [STEPS, ACTIVE_ENERGY, HRV, RESTING_HR, SLEEP, WORKOUT, BODY_MASS, HEIGHT, BODY_FAT] as const;
 
 /** TODO verify: Datumsfilter-Form. Angenommen { filter: { date: { startDate, endDate } } } (v9+ "new filters"). */
 const range = (startDate: Date, endDate: Date) => ({ filter: { date: { startDate, endDate } } });
@@ -149,6 +152,14 @@ async function workoutMinutes(start: Date, end: Date): Promise<number> {
   return Math.round(minutes);
 }
 
+/** Neuester Messwert eines Typs (z. B. Gewicht) oder null. TODO verify: Option-Namen limit/ascending/unit und Feld quantity. */
+async function latestQuantity(id: string, unit: string): Promise<number | null> {
+  if (!hk.queryQuantitySamples) return null;
+  const res = await safe<any[]>(() => hk.queryQuantitySamples!(id, { limit: 1, ascending: false, unit }), []);
+  const q = Number(res?.[0]?.quantity);
+  return Number.isFinite(q) && q > 0 ? q : null;
+}
+
 async function readDay(day: Date): Promise<DailyMetrics> {
   const start = new Date(day);
   start.setHours(0, 0, 0, 0);
@@ -195,6 +206,12 @@ export const healthKitProvider = {
     if (!hk.requestAuthorization) return false;
     // Nur Lesen. iOS verrät nicht, welche Typen erlaubt wurden; fehlende Rechte ergeben einfach leere Werte.
     return safe(() => hk.requestAuthorization!({ toShare: [], toRead: [...READ_TYPES] }), false);
+  },
+  /** Aktuelles Gewicht, Größe und Körperfett aus Apple Health (nur Lesen); fehlende Werte = nicht gesetzt */
+  async readBody(): Promise<{ weightKg?: number; heightCm?: number; bodyFatPct?: number } | null> {
+    const [w, h, f] = await Promise.all([latestQuantity(BODY_MASS, 'kg'), latestQuantity(HEIGHT, 'cm'), latestQuantity(BODY_FAT, '%')]);
+    if (w == null && h == null && f == null) return null;
+    return { weightKg: w ?? undefined, heightCm: h ?? undefined, bodyFatPct: f == null ? undefined : f <= 1 ? f * 100 : f };
   },
   async readDays(days: number): Promise<DailyMetrics[]> {
     const n = Math.max(1, Math.min(60, Math.floor(days) || 1));

@@ -12,15 +12,27 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.ts';
+import type { BodyId, CalorieGoal, CalorieTarget, DailyMetrics, DayScore, HairId, Progress, Sex } from '../types.ts';
 import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
 import { NEW_PROGRESS, awardXp, baselineFrom, bookDay, scoreDay, stageFor, toPublic } from '../game/rules.ts';
 import { clampStats, maxWeightLossKg, suggestBody, type BodyStats } from '../game/body.ts';
 import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
+import { avgActiveKcal, calorieTarget, sanitizeAge, sanitizeCustom, sanitizeGoal, sanitizeSex } from '../game/calories.ts';
+import { placeWidget, resolveLayout, DEFAULT_LAYOUT, type SlotId, type WidgetId, type WidgetLayout } from '../game/widgets.ts';
 import { buyItem as buyShopItem, coinsOf, isOwned, longGoalCoins, shopItem } from '../game/shop.ts';
 
 /** Angelegte Shop-Kosmetik (nur lokal): Aura-Farbe und Szene der Startseite, jeweils eine Shop-ID */
 export interface Cosmetics { aura?: string; scene?: string }
+
+export interface CalorieSettings {
+  age?: number;
+  sex?: Sex;
+  useBodyFat?: boolean;
+  goal?: CalorieGoal;
+  /** Eigener Tageswert in kcal; bleibt, bis der Nutzer auf die Empfehlung zurücksetzt */
+  custom?: number;
+  noticeSeen?: boolean;
+}
 import { MAX_LONG_GOALS, checkLongGoals, newLongGoal, sanitizeLongGoals, type LongGoal, type LongGoalKind } from '../game/longgoals.ts';
 import { getHealthProvider } from '../health/index.ts';
 import * as social from '../social/api.ts';
@@ -48,6 +60,10 @@ interface Profile {
   autoBody?: boolean;
   /** Angelegte Aura-Farbe und Szene (lokal, nicht veröffentlicht) */
   cosmetics?: Cosmetics;
+  /** Kalorienhaushalt (alles lokal, nie synchronisiert): Alter, Geschlecht, KFA verwenden, Ziel, eigener Wert, Hinweis gesehen */
+  calorie?: CalorieSettings;
+  /** Widgets der Startseite (lokal): Belegung der Plätze rund um den Avatar */
+  widgets?: WidgetLayout;
   /** Selbst gewählte Tagesziele (lokal); fehlt das Feld, gelten die Standardziele */
   goals?: Goals;
   /** Langzeitziele (lokal); die XP daraus stecken im Fortschritt */
@@ -97,6 +113,17 @@ export interface AppState {
   setBody: (body: BodyId) => Promise<void>;
   setBodyStats: (stats: BodyStats) => Promise<void>;
   /** Münzen und Shop */
+  /** Kalorienhaushalt: Einstellungen, Empfehlung (null ohne gespeicherte Körperwerte) und aktive Kalorien */
+  calorieSettings: { age: number; sex: Sex; useBodyFat: boolean; goal: CalorieGoal; custom?: number; noticeSeen: boolean };
+  calorie: CalorieTarget | null;
+  activeKcalAvg: number | null;
+  setCalorieSettings: (patch: Partial<CalorieSettings>) => Promise<void>;
+  /** Gewicht, Größe, KFA aus Apple Health übernehmen (nur iPhone). 'none' = nichts gefunden */
+  importBodyFromHealth: () => Promise<'ok' | 'none' | 'unavailable'>;
+  /** Widgets der Startseite */
+  widgetLayout: Record<SlotId, WidgetId | null>;
+  setWidget: (slot: SlotId, id: WidgetId | null) => Promise<void>;
+  resetWidgets: () => Promise<void>;
   coins: number;
   cosmetics: Cosmetics;
   buyOutfit: (id: number | string) => Promise<'ok' | 'owned' | 'poor' | 'unknown'>;
@@ -143,6 +170,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<Progress>(NEW_PROGRESS);
   const [today, setToday] = useState<DayScore | null>(null);
   const [stepsToday, setStepsToday] = useState(0);
+  const [activeKcalAvg, setActiveKcalAvg] = useState<number | null>(null);
   const [todayMetrics, setTodayMetrics] = useState<DailyMetrics | null>(null);
   const [source, setSource] = useState<DailyMetrics['source'] | null>(null);
   const [me, setMeState] = useState<Me | null>(null);
@@ -271,6 +299,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       todayRef.current = score;
       setToday(score);
       setStepsToday(todayM.steps);
+      setActiveKcalAvg(avgActiveKcal(past));
       setTodayMetrics(todayM);
       setSource(todayM.source);
       if (p !== progressRef.current) {
@@ -412,6 +441,46 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
   }, [publish]);
 
+  const setCalorieSettings = useCallback(async (patch: Partial<CalorieSettings>) => {
+    const cur = profileRef.current.calorie ?? {};
+    const merged: CalorieSettings = { ...cur, ...patch };
+    // „custom: undefined“ im Patch bedeutet bewusst: auf die Empfehlung zurücksetzen
+    if ('custom' in patch && patch.custom === undefined) delete merged.custom;
+    const next = { ...profileRef.current, calorie: merged };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+  }, []);
+
+  /** Gewicht, Größe und KFA aus Apple Health übernehmen; bleibt auf dem Gerät. */
+  const importBodyFromHealth = useCallback(async (): Promise<'ok' | 'none' | 'unavailable'> => {
+    const prov = getHealthProvider();
+    if (!IS_IOS || !prov.readBody) return 'unavailable';
+    let b: Awaited<ReturnType<NonNullable<typeof prov.readBody>>> = null;
+    try { b = await prov.readBody(); } catch { b = null; }
+    if (!b) return 'none';
+    const cur = clampStats(profileRef.current.bodyStats);
+    await setBodyStats(clampStats({
+      heightCm: b.heightCm ?? cur.heightCm,
+      weightKg: b.weightKg ?? cur.weightKg,
+      bodyFatPct: b.bodyFatPct ?? cur.bodyFatPct,
+    }));
+    if (b.bodyFatPct != null) await setCalorieSettings({ useBodyFat: true });
+    return 'ok';
+  }, [setBodyStats, setCalorieSettings]);
+
+  const setWidget = useCallback(async (slot: SlotId, id: WidgetId | null) => {
+    const layout = placeWidget(resolveLayout(profileRef.current.widgets), slot, id);
+    const next = { ...profileRef.current, widgets: layout };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+  }, []);
+
+  const resetWidgets = useCallback(async () => {
+    const next = { ...profileRef.current, widgets: { ...DEFAULT_LAYOUT } };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+  }, []);
+
   const addLongGoal = useCallback(async (kind: LongGoalKind, target: number, title = '', unit = '', current = 0): Promise<'ok' | 'limit' | 'weight'> => {
     const open = sanitizeLongGoals(profileRef.current.longGoals).filter(g => !g.doneAt);
     if (open.length >= MAX_LONG_GOALS) return 'limit';
@@ -524,6 +593,25 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     cloudSync: profile.cloudSync === true,
     bodyStats: profile.bodyStats ? clampStats(profile.bodyStats) : null,
     autoBody: profile.autoBody === true && !!profile.bodyStats,
+    calorieSettings: {
+      age: sanitizeAge(profile.calorie?.age),
+      sex: sanitizeSex(profile.calorie?.sex),
+      useBodyFat: profile.calorie?.useBodyFat === true,
+      goal: sanitizeGoal(profile.calorie?.goal),
+      custom: sanitizeCustom(profile.calorie?.custom),
+      noticeSeen: profile.calorie?.noticeSeen === true,
+    },
+    calorie: profile.bodyStats ? calorieTarget({
+      stats: clampStats(profile.bodyStats),
+      ageYears: sanitizeAge(profile.calorie?.age),
+      sex: sanitizeSex(profile.calorie?.sex),
+      useBodyFat: profile.calorie?.useBodyFat === true,
+      activeKcalAvg,
+      goal: sanitizeGoal(profile.calorie?.goal),
+      custom: sanitizeCustom(profile.calorie?.custom),
+    }) : null,
+    activeKcalAvg, setCalorieSettings, importBodyFromHealth,
+    widgetLayout: resolveLayout(profile.widgets), setWidget, resetWidgets,
     coins: coinsOf(progress), buyOutfit, equipCosmetic,
     cosmetics: profile.cosmetics ?? {},
     setAutoBody,
@@ -535,7 +623,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, buyOutfit, equipCosmetic, addLongGoal, removeLongGoal, setLongGoalValue, setAutoBody, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
+  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, buyOutfit, equipCosmetic, setCalorieSettings, importBodyFromHealth, setWidget, resetWidgets, activeKcalAvg, addLongGoal, removeLongGoal, setLongGoalValue, setAutoBody, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

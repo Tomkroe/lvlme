@@ -14,6 +14,7 @@ import { SignIn } from '../../src/ui/SignIn.tsx';
 import { confirm, notify } from '../../src/ui/confirm.ts';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
 import { Slider } from '../../src/ui/Slider.tsx';
+import { CalorieCard } from '../../src/ui/CalorieCard.tsx';
 import { ALL_GOALS_BONUS, GOAL_DEFS, goalDef, type GoalId } from '../../src/game/goals.ts';
 import { isOwned, shopItem } from '../../src/game/shop.ts';
 import { LONG_GOAL_KINDS, MAX_LONG_GOALS, kindDef, longGoalFrac, longGoalValue, rewardXp, type LongGoalKind } from '../../src/game/longgoals.ts';
@@ -216,6 +217,8 @@ export default function Profile() {
         <P style={{ fontSize: 12 }}>Automatisch: Ab {STOCKY_FROM_BODY_FAT} % Körperfett wird der Körper stämmiger, bis {DEFINED_UP_TO_BODY_FAT} % definierter; dazwischen entscheidet die Muskelmasse (Athletisch, Kraftsport, Schlank). Ohne „automatisch“ wählst du den Körpertyp selbst. Outfits haben Vorrang.</P>
         <P style={{ fontSize: 12 }}>Größe, Gewicht und KFA bleiben auf diesem Gerät, werden nicht synchronisiert und ändern weder XP noch Level. Freunde sehen nur den Körpertyp – den du wählst oder, wenn „automatisch“ an ist, den abgeleiteten.</P>
       </Card>
+
+      <CalorieCard draftStats={stats} />
 
       <Card>
         <H>Tagesziele</H>

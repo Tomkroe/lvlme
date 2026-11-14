@@ -15,6 +15,8 @@ export interface HealthProvider {
   requestAccess(): Promise<boolean>;
   /** Tageswerte der letzten `days` Tage, älteste zuerst, heute zuletzt. Fehlende Werte = null bzw. 0. */
   readDays(days: number): Promise<DailyMetrics[]>;
+  /** Nur iPhone: aktuelles Gewicht, Größe und Körperfett aus Apple Health. Bleibt lokal. */
+  readBody?(): Promise<{ weightKg?: number; heightCm?: number; bodyFatPct?: number } | null>;
 }
 
 let cached: HealthProvider | null = null;
