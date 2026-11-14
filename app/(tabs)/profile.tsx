@@ -1,12 +1,13 @@
 /** Profil: Stats, Serie, Verwandlungen, Datenquelle, Konto, Datenschutz. Zuständig: app-ui. */
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useApp } from '../../src/state/AppState.tsx';
 import { MOOD_TEXT, STAGES } from '../../src/game/rules.ts';
 import { STAGE_COLORS } from '../../src/avatar/palette.ts';
 import { Avatar } from '../../src/avatar/Avatar.tsx';
+import { BODIES, HAIRSTYLES, type BodyOption } from '../../src/avatar/assets.ts';
 import * as social from '../../src/social/api.ts';
 import { AppleSignIn } from '../../src/ui/AppleSignIn.tsx';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
@@ -56,7 +57,7 @@ export default function Profile() {
       <Text style={[st.title, F.display]}>Profil</Text>
 
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Avatar stage={app.stage} mood={mood} size={84} still id="prof" />
+        <Avatar stage={app.stage} mood={mood} hair={app.hair} body={app.body} size={72} still id="prof" />
         <View style={{ flex: 1, gap: 4 }}>
           <TextInput value={name} onChangeText={setName} onEndEditing={() => app.setName(name)} placeholder="Dein Name"
             placeholderTextColor={C.mute} maxLength={24} style={st.name} accessibilityLabel="Name ändern" />
@@ -64,6 +65,44 @@ export default function Profile() {
           <Text style={st.meta}>Kampfkraft <Text style={[{ color: C.sky }, F.num]}>{fmt(app.power)}</Text></Text>
           <Text style={st.meta}>Heute: {MOOD_TEXT[mood].label}</Text>
         </View>
+      </Card>
+
+      <Card>
+        <H>Frisur</H>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 2 }}>
+          {HAIRSTYLES.map(h => {
+            const on = h.id === app.hair;
+            return (
+              <Pressable key={h.id} onPress={() => { app.setHair(h.id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                accessibilityLabel={`Frisur ${h.name}`} style={[st.hairOpt, on && st.hairOn]}>
+                <Avatar stage={app.stage} mood="awake" hair={h.id} body={app.body} size={52} still id={`hair${h.id}`} />
+                <Text style={[st.hairName, on && { color: C.ki }]} numberOfLines={1}>{h.name}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </Card>
+
+      <Card>
+        <H>Körper & Outfit</H>
+        {([['type', 'Körpertyp'], ['outfit', 'Outfit']] as [BodyOption['kind'], string][]).map(([kind, label]) => (
+          <View key={kind} style={{ gap: 6 }}>
+            <Text style={st.meta}>{label}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 2 }}>
+              {BODIES.filter(b => b.kind === kind).map(b => {
+                const on = b.id === app.body;
+                return (
+                  <Pressable key={b.id} onPress={() => { app.setBody(b.id); }} accessibilityRole="radio" accessibilityState={{ selected: on }}
+                    accessibilityLabel={`${label} ${b.name}`} style={[st.hairOpt, on && st.hairOn]}>
+                    <Avatar stage={app.stage} mood="awake" hair={app.hair} body={b.id} size={52} still id={`body${b.id}`} />
+                    <Text style={[st.hairName, on && { color: C.ki }]} numberOfLines={1}>{b.name}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ))}
+        <P style={{ fontSize: 12 }}>Körpertyp und Outfit schließen sich vorerst aus: Outfits gibt es nur mit athletischem Körper. Freunde sehen deine Frisur und deinen Körper, sobald du angemeldet bist.</P>
       </Card>
 
       <Card>
@@ -98,7 +137,7 @@ export default function Profile() {
       <Card>
         <H>Daten</H>
         <P>Quelle: <Text style={{ color: C.ink, fontWeight: '700' }}>{app.source ? SOURCE[app.source] ?? app.source : 'noch keine'}</Text></P>
-        <P>Deine Gesundheitsdaten bleiben auf deinem iPhone. LvlMe liest sie nur, um deinen Avatar zu berechnen. Freunde sehen Level, Stufe, Kampfkraft und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+        <P>Deine Gesundheitsdaten bleiben auf deinem iPhone. LvlMe liest sie nur, um deinen Avatar zu berechnen. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
         <View style={st.switchRow}>
           <Text style={[st.label, { flex: 1 }]}>Tagesform mit Freunden teilen</Text>
           <Switch value={app.shareMood} onValueChange={v => { app.setShareMood(v); }}
@@ -143,4 +182,7 @@ const st = StyleSheet.create({
   ladderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
   ladderName: { flex: 1, fontSize: 15 },
+  hairOpt: { alignItems: 'center', gap: 4, padding: 6, borderRadius: 14, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card2, width: 78 },
+  hairOn: { borderColor: C.ki, backgroundColor: 'rgba(255,138,31,0.12)' },
+  hairName: { color: C.mute, fontSize: 11, fontWeight: '700' },
 });

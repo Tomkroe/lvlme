@@ -2,7 +2,7 @@
  * Spielregeln: reine Funktionen ohne Abhängigkeiten. Zuständig: Agent game-balance.
  * Startwerte aus der Demo; vor dem Launch mit echten Daten nachjustieren.
  */
-import type { Baseline, DailyMetrics, DayScore, Mood, Progress, PublicAvatar, Stats } from '../types.ts';
+import type { Appearance, Baseline, DailyMetrics, DayScore, Mood, Progress, PublicAvatar, Stats } from '../types.ts';
 
 export const STAGES = [
   { name: 'Grundform', level: 1 },
@@ -163,8 +163,11 @@ export interface PublicOptions {
   shareMood: boolean;
 }
 
-/** Öffentlicher Zustand. Ohne shareMood: mood = null und Kampfkraft mit fester Energie (keine Rückschlüsse auf die Tagesform). */
-export function toPublic(name: string, p: Progress, d: DayScore | null, opts: PublicOptions): PublicAvatar {
+/**
+ * Öffentlicher Zustand. Ohne shareMood: mood = null und Kampfkraft mit fester Energie (keine Rückschlüsse auf die Tagesform).
+ * Das Aussehen (Frisur, Körper) geht immer mit, damit Freunde den gewählten Avatar sehen.
+ */
+export function toPublic(name: string, p: Progress, d: DayScore | null, opts: PublicOptions, appearance: Appearance): PublicAvatar {
   const share = opts.shareMood;
   return {
     displayName: name,
@@ -174,6 +177,8 @@ export function toPublic(name: string, p: Progress, d: DayScore | null, opts: Pu
     power: power(p, share ? d?.energy ?? BALANCE.neutralEnergy : BALANCE.neutralEnergy),
     streak: p.streak,
     updatedAt: new Date().toISOString(),
+    hair: appearance.hair,
+    body: appearance.body,
   };
 }
 

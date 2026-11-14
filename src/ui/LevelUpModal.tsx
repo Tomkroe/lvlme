@@ -14,7 +14,7 @@ const RAYS = Array.from({ length: 24 }, (_, i) => {
 });
 
 export function LevelUpModal() {
-  const { events, dismissEvent } = useApp();
+  const { events, dismissEvent, hair, body } = useApp();
   const ev = events[0];
   const spin = useRef(new Animated.Value(0)).current;
   const pop = useRef(new Animated.Value(0)).current;
@@ -57,7 +57,7 @@ export function LevelUpModal() {
           </Svg>
         </Animated.View>
         <Animated.View style={[st.content, { transform: [{ scale }] }]}>
-          {isStage && <Avatar stage={ev.stage} mood="proud" size={200} id="lvup" />}
+          {isStage && <Avatar stage={ev.stage} mood="proud" hair={hair} body={body} size={170} id="lvup" />}
           <Text style={[st.title, F.display]}>{title}</Text>
           <View style={st.pill}><Text style={st.pillText}>{sub}</Text></View>
           <Text style={st.hint}>Tippen zum Schließen</Text>

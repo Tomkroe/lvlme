@@ -49,7 +49,7 @@ export default function Onboarding() {
       <ScrollView contentContainerStyle={[st.wrap, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
         <View style={st.brand}><Text style={[st.word, F.display]}>Lvl<Text style={{ color: C.ki }}>Me</Text></Text></View>
         <View style={{ alignItems: 'center' }}>
-          <Avatar stage={step === 0 ? 0 : 1} mood={step === 2 ? 'proud' : 'charged'} size={180} id="onb" />
+          <Avatar stage={step === 0 ? 0 : 1} mood={step === 2 ? 'proud' : 'charged'} hair={app.hair} body={app.body} size={150} id="onb" />
         </View>
 
         {step === 0 && (
@@ -83,7 +83,7 @@ export default function Onboarding() {
             {social.isConfigured() && !app.me && (
               <Card>
                 <P style={{ color: C.ink, fontWeight: '700' }}>Mit Freunden spielen (optional)</P>
-                <P>Mit einem Konto kannst du Freunde einladen. Freunde sehen Level, Stufe, Kampfkraft und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+                <P>Mit einem Konto kannst du Freunde einladen. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
                 <AppleSignIn />
               </Card>
             )}

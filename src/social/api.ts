@@ -5,7 +5,7 @@
  */
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
-import type { Mood, PublicAvatar } from '../types.ts';
+import type { BodyId, HairId, Mood, PublicAvatar } from '../types.ts';
 import { supabase, supabaseConfigured } from './client.ts';
 
 export interface Me { userId: string; displayName: string }
@@ -16,6 +16,14 @@ const NOT_CONFIGURED = 'Freunde sind in dieser Version noch nicht eingerichtet.'
 const NOT_SIGNED_IN = 'Bitte melde dich zuerst mit Apple an.';
 const OFFLINE = 'Keine Verbindung. Bitte prüfe dein Internet und versuch es noch einmal.';
 const MOODS: Mood[] = ['charged', 'awake', 'tired', 'proud', 'lazy'];
+/** Höchste erlaubte Frisur-/Körper-ID, wie in is_public_avatar (Migration 0011) */
+const MAX_HAIR = 6;
+const MAX_BODY = 9;
+
+/** Ganze Zahl 0…max, sonst 0 (Standard-Aussehen) */
+function appearanceId(v: unknown, max: number): number {
+  return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max ? v : 0;
+}
 
 export const inviteUrl = (code: string) => `lvlme://invite/${code}`;
 
@@ -126,6 +134,9 @@ export async function publishAvatar(a: PublicAvatar): Promise<void> {
     power: a.power,
     streak: a.streak,
     updatedAt: a.updatedAt,
+    // Aussehen: reine Darstellungsdaten, keine Gesundheitsdaten
+    hair: appearanceId(a.hair, MAX_HAIR) as HairId,
+    body: appearanceId(a.body, MAX_BODY) as BodyId,
   };
   const { error } = await supabase.from('profiles').update({ avatar, updated_at: new Date().toISOString() }).eq('id', userId);
   if (error) throw new Error(message(error));
@@ -176,6 +187,9 @@ export async function listFriends(): Promise<Friend[]> {
         power: typeof a.power === 'number' ? a.power : 0,
         streak: typeof a.streak === 'number' ? a.streak : 0,
         updatedAt: a.updatedAt ?? (row.updated_at as string),
+        // Fehlend oder ungültig (z. B. ältere App-Version) → Standard-Aussehen 0
+        hair: appearanceId(a.hair, MAX_HAIR) as HairId,
+        body: appearanceId(a.body, MAX_BODY) as BodyId,
       } satisfies Friend;
     })
     .sort((x, y) => y.power - x.power);

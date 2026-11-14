@@ -3,13 +3,14 @@
  * - Fortschritt (Progress) und Profil lokal in AsyncStorage
  * - Health-Daten der letzten 8 Tage über getHealthProvider(); Vortage werden automatisch verbucht
  * - Öffentlicher Avatarzustand geht an das Backend, wenn konfiguriert und angemeldet;
- *   die Tagesform (mood) nur, wenn shareMood an ist (Standard: aus)
+ *   die Tagesform (mood) nur, wenn shareMood an ist (Standard: aus); Frisur und Körper immer
  * - Der Kämpfername aus dem Onboarding wird nach Anmeldung und bei Änderung per setDisplayName gesetzt
  * Gesundheitsrohdaten werden weder gespeichert noch gesendet noch geloggt.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { DailyMetrics, DayScore, Progress } from '../types.ts';
+import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.ts';
+import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
 import { NEW_PROGRESS, baselineFrom, bookDay, power as powerOf, scoreDay, stageFor, toPublic } from '../game/rules.ts';
 import { getHealthProvider } from '../health/index.ts';
 import * as social from '../social/api.ts';
@@ -27,6 +28,10 @@ interface Profile {
   onboarded: boolean;
   /** Tagesform mit Freunden teilen. Standard: aus (lässt Rückschlüsse auf Schlaf und Erholung zu). */
   shareMood: boolean;
+  /** Frisur des Avatars (wird mit dem öffentlichen Avatar an Freunde veröffentlicht) */
+  hair: HairId;
+  /** Körpertyp oder Outfit des Avatars (wird mit dem öffentlichen Avatar an Freunde veröffentlicht) */
+  body: BodyId;
 }
 
 export interface AppState {
@@ -36,6 +41,8 @@ export interface AppState {
   name: string;
   onboarded: boolean;
   shareMood: boolean;
+  hair: HairId;
+  body: BodyId;
   source: DailyMetrics['source'] | null;
   progress: Progress;
   today: DayScore | null;
@@ -50,6 +57,8 @@ export interface AppState {
   setName: (name: string) => Promise<void>;
   finishOnboarding: () => Promise<void>;
   setShareMood: (on: boolean) => Promise<void>;
+  setHair: (hair: HairId) => Promise<void>;
+  setBody: (body: BodyId) => Promise<void>;
   setMe: (me: Me | null) => void;
   signOut: () => Promise<void>;
   resetLocal: () => Promise<void>;
@@ -57,7 +66,7 @@ export interface AppState {
 
 const K_PROGRESS = 'lvlme.progress.v1';
 const K_PROFILE = 'lvlme.profile.v1';
-const DEFAULT_PROFILE: Profile = { name: '', onboarded: false, shareMood: false };
+const DEFAULT_PROFILE: Profile = { name: '', onboarded: false, shareMood: false, hair: DEFAULT_HAIR, body: DEFAULT_BODY };
 
 const Ctx = createContext<AppState | null>(null);
 
@@ -100,7 +109,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!social.isConfigured() || !meRef.current) return;
     const prof = profileRef.current;
     const name = prof.name || meRef.current.displayName;
-    await social.publishAvatar(toPublic(name, progressRef.current, todayRef.current, { shareMood: prof.shareMood === true }));
+    // Ältere gespeicherte Profile haben noch kein hair/body → Standard
+    const appearance = { hair: prof.hair ?? DEFAULT_HAIR, body: prof.body ?? DEFAULT_BODY };
+    await social.publishAvatar(toPublic(name, progressRef.current, todayRef.current, { shareMood: prof.shareMood === true }, appearance));
   }, []);
 
   /** Kämpfernamen an den Server geben (der Apple-Name wird dort nicht übernommen). */
@@ -223,6 +234,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
   }, [publish]);
 
+  const setHair = useCallback(async (hair: HairId) => {
+    const next = { ...profileRef.current, hair };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    // Sofort neu veröffentlichen, damit Freunde die neue Frisur sehen
+    try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
+  }, [publish]);
+
+  const setBody = useCallback(async (body: BodyId) => {
+    const next = { ...profileRef.current, body };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    // Sofort neu veröffentlichen, damit Freunde den neuen Körper sehen
+    try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
+  }, [publish]);
+
   const finishOnboarding = useCallback(async () => {
     const next = { ...profileRef.current, onboarded: true };
     setProfile(next); profileRef.current = next;
@@ -249,11 +276,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     name: profile.name || me?.displayName || '',
     onboarded: profile.onboarded,
     shareMood: profile.shareMood === true,
+    hair: profile.hair ?? DEFAULT_HAIR,
+    body: profile.body ?? DEFAULT_BODY,
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     power: powerOf(progress, today?.energy ?? 60),
-    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setMe, signOut, resetLocal]);
+    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setMe, signOut, resetLocal,
+  }), [ready, loading, error, profile, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { scoreDay, bookDay, NEW_PROGRESS, stageFor, xpNeeded, recoveryScore, strainScore, baselineFrom, toPublic, power, BALANCE } from './rules.ts';
-import type { DailyMetrics, Progress } from '../types.ts';
+import type { Appearance, DailyMetrics, Progress } from '../types.ts';
 
 const day = (o: Partial<DailyMetrics> = {}): DailyMetrics => ({ date: '2026-11-12', steps: 9000, activeEnergyKcal: 450, workoutMinutes: 40, sleepHours: 7.6, hrvMs: 62, restingHr: 54, source: 'demo', ...o });
 const base = { hrvMs: 55, restingHr: 56, sleepHours: 7.2 };
+const look: Appearance = { hair: 0, body: 0 };
 
 test('guter Tag: aufgeladen, Bonus', () => {
   const d = scoreDay(day(), base);
@@ -55,9 +56,9 @@ test('toPublic ohne shareMood: keine Stimmung, Kampfkraft unabhängig von der Ta
   const p = bookDay(NEW_PROGRESS, day(), scoreDay(day(), base)).progress;
   const good = scoreDay(day(), base);
   const bad = scoreDay(day({ sleepHours: 4, hrvMs: 30, restingHr: 66 }), base);
-  const a = toPublic('A', p, good, { shareMood: false });
-  const b = toPublic('A', p, bad, { shareMood: false });
-  const c = toPublic('A', p, null, { shareMood: false });
+  const a = toPublic('A', p, good, { shareMood: false }, look);
+  const b = toPublic('A', p, bad, { shareMood: false }, look);
+  const c = toPublic('A', p, null, { shareMood: false }, look);
   assert.equal(a.mood, null);
   assert.equal(a.power, b.power);
   assert.equal(a.power, c.power);
@@ -66,10 +67,36 @@ test('toPublic ohne shareMood: keine Stimmung, Kampfkraft unabhängig von der Ta
 test('toPublic mit shareMood: Stimmung und Tagesenergie', () => {
   const p = NEW_PROGRESS;
   const d = scoreDay(day(), base);
-  const a = toPublic('A', p, d, { shareMood: true });
+  const a = toPublic('A', p, d, { shareMood: true }, look);
   assert.equal(a.mood, 'charged');
   assert.equal(a.power, power(p, d.energy));
-  assert.equal(toPublic('A', p, null, { shareMood: true }).mood, 'awake');
+  assert.equal(toPublic('A', p, null, { shareMood: true }, look).mood, 'awake');
+});
+
+// --- Aussehen: Frisur und Körper gehen an Freunde ---
+test('toPublic übernimmt Frisur und Körper, mit und ohne geteilte Tagesform', () => {
+  const d = scoreDay(day(), base);
+  const appearance: Appearance = { hair: 4, body: 7 };
+  for (const shareMood of [false, true]) {
+    const a = toPublic('A', NEW_PROGRESS, d, { shareMood }, appearance);
+    assert.equal(a.hair, 4);
+    assert.equal(a.body, 7);
+  }
+  const std = toPublic('A', NEW_PROGRESS, null, { shareMood: false }, { hair: 0, body: 0 });
+  assert.equal(std.hair, 0);
+  assert.equal(std.body, 0);
+});
+test('toPublic: Aussehen ändert weder Kampfkraft noch Stimmung', () => {
+  const d = scoreDay(day(), base);
+  const x = toPublic('A', NEW_PROGRESS, d, { shareMood: true }, { hair: 0, body: 0 });
+  const y = toPublic('A', NEW_PROGRESS, d, { shareMood: true }, { hair: 6, body: 9 });
+  assert.equal(x.power, y.power);
+  assert.equal(x.mood, y.mood);
+});
+test('toPublic: nur die erlaubten Felder (wie is_public_avatar)', () => {
+  const a = toPublic('A', NEW_PROGRESS, scoreDay(day(), base), { shareMood: true }, { hair: 2, body: 3 });
+  const allowed = ['displayName', 'level', 'stage', 'mood', 'power', 'streak', 'updatedAt', 'hair', 'body'];
+  assert.deepEqual(Object.keys(a).filter(k => !allowed.includes(k)), []);
 });
 
 // --- Serie: Ruhetage ---
