@@ -144,7 +144,7 @@ export interface AppState {
 const TEST_GRANT_ID = 'shop-test-1';
 const TEST_GRANT_COINS = 10000;
 /** Testphase: Tester mit diesem Kämpfernamen bekommen einmalig mindestens Level 25. Vor dem Release entfernen. */
-const TEST_LEVEL_NAME = 'bushtiger';
+const TEST_LEVEL_NAME = 'buschtiger';
 const TEST_LEVEL = 25;
 const K_PROGRESS = 'lvlme.progress.v1';
 const K_PROFILE = 'lvlme.profile.v1';
