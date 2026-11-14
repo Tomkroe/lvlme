@@ -14,6 +14,7 @@ import { confirm, notify } from '../../src/ui/confirm.ts';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
 import { Slider } from '../../src/ui/Slider.tsx';
 import { ALL_GOALS_BONUS, GOAL_DEFS, goalDef, type GoalId } from '../../src/game/goals.ts';
+import { LONG_GOAL_KINDS, MAX_LONG_GOALS, kindDef, longGoalFrac, longGoalValue, rewardXp, type LongGoalKind } from '../../src/game/longgoals.ts';
 import { BODY_LIMITS, DEFAULT_BODY_STATS, bmi, clampStats, ffmi, suggestBody, type BodyStats } from '../../src/game/body.ts';
 import { C, F, PRIVACY_URL, fmt } from '../../src/ui/theme.ts';
 
@@ -39,6 +40,26 @@ export default function Profile() {
     app.setGoals(g);
   };
   const [goalDraft, setGoalDraft] = useState<Record<string, number>>({});
+
+  const [lgKind, setLgKind] = useState<LongGoalKind>('steps_total');
+  const [lgTarget, setLgTarget] = useState<number>(kindDef('steps_total').def);
+  const [lgTitle, setLgTitle] = useState('');
+  const [lgUnit, setLgUnit] = useState('');
+  const [lgCurrent, setLgCurrent] = useState('');
+  const [lgTargetText, setLgTargetText] = useState('');
+  const [lgEdit, setLgEdit] = useState<Record<string, string>>({});
+  const num = (s: string) => { const n = Number(s.replace(',', '.')); return Number.isFinite(n) && n >= 0 ? n : 0; };
+  const pickKind = (k: LongGoalKind) => { setLgKind(k); setLgTarget(kindDef(k).def); };
+  const addLong = async () => {
+    const target = lgKind === 'custom' ? num(lgTargetText) : lgTarget;
+    if (lgKind === 'custom' && (!lgTitle.trim() || target <= 0)) { notify('Eigenes Ziel', 'Gib dem Ziel einen Namen und eine Zielmarke größer als 0.'); return; }
+    const ok = await app.addLongGoal(lgKind, target, lgTitle, lgUnit, num(lgCurrent));
+    if (!ok) { notify('Zu viele Ziele', `Du kannst höchstens ${MAX_LONG_GOALS} offene Langzeitziele haben. Schließe eins ab oder entferne es.`); return; }
+    setLgTitle(''); setLgUnit(''); setLgCurrent(''); setLgTargetText('');
+  };
+  const removeLong = async (id: string, title: string) => {
+    if (await confirm('Ziel entfernen?', `„${title}“ wird gelöscht. Bereits erhaltene XP bleiben.`, 'Entfernen')) app.removeLongGoal(id);
+  };
 
   const s = app.progress.stats;
   const max = Math.max(100, s.str, s.end, s.rec, s.dis);
@@ -187,6 +208,58 @@ export default function Profile() {
       </Card>
 
       <Card>
+        <H>Langzeitziele</H>
+        <P>Größere Ziele mit einmaliger XP-Belohnung. Schritte, Trainingstage (ab {20} Min.) und Serie zählt LvlMe ab dem Anlegen automatisch. Eigene Ziele, zum Beispiel Bankdrücken oder ein Lauf, trägst du selbst nach. Nichts wird bestraft, wenn es länger dauert.</P>
+        {app.longGoals.map(g => {
+          const done = !!g.doneAt;
+          const val = longGoalValue(g, app.progress);
+          return (
+            <View key={g.id} style={{ gap: 4 }}>
+              <View style={st.row}>
+                <Text style={{ color: done ? C.good : C.ink, fontWeight: '700', fontSize: 14, flexShrink: 1 }} numberOfLines={1}>{done ? '✓ ' : ''}{g.title}</Text>
+                <Pressable onPress={() => removeLong(g.id, g.title)} accessibilityRole="button" accessibilityLabel={`Ziel ${g.title} entfernen`} hitSlop={10}><Text style={{ color: C.mute, fontSize: 16 }}>✕</Text></Pressable>
+              </View>
+              <Bar frac={done ? 1 : longGoalFrac(g, app.progress)} color={done ? C.good : C.violet} height={8} />
+              <Text style={st.meta}>{Math.round(val).toLocaleString('de-DE')} / {g.target.toLocaleString('de-DE')} {g.unit} · {done ? ((g.xp ?? 0) > 0 ? `+${g.xp} XP erhalten` : 'erreicht, ohne XP (eigene Ziele: höchstens einmal pro Woche)') : `+${rewardXp(g)} XP bei Erfolg`}</Text>
+              {!done && g.kind === 'custom' && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TextInput value={lgEdit[g.id] ?? String(g.current)} onChangeText={v => setLgEdit(o => ({ ...o, [g.id]: v }))} keyboardType="decimal-pad"
+                    style={st.numInput} accessibilityLabel={`Aktueller Stand für ${g.title}`} placeholderTextColor={C.mute} />
+                  <Button title="Stand speichern" kind="ghost" onPress={() => { app.setLongGoalValue(g.id, num(lgEdit[g.id] ?? String(g.current))); setLgEdit(o => { const n = { ...o }; delete n[g.id]; return n; }); }} />
+                </View>
+              )}
+            </View>
+          );
+        })}
+        <Text style={[st.label, { marginTop: 6 }]}>Neues Ziel</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {LONG_GOAL_KINDS.map(k => {
+            const on = k.kind === lgKind;
+            return (
+              <Pressable key={k.kind} onPress={() => pickKind(k.kind)} accessibilityRole="radio" accessibilityState={{ selected: on }} style={[st.kindChip, on && st.hairOn]}>
+                <Text style={[st.hairName, on && { color: C.ki }]}>{k.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        {lgKind === 'custom' ? (
+          <View style={{ gap: 8 }}>
+            <TextInput value={lgTitle} onChangeText={setLgTitle} placeholder="Name, z. B. Bankdrücken" placeholderTextColor={C.mute} maxLength={40} style={st.textInput} accessibilityLabel="Name des Ziels" />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput value={lgTargetText} onChangeText={setLgTargetText} placeholder="Ziel, z. B. 100" placeholderTextColor={C.mute} keyboardType="decimal-pad" style={[st.textInput, { flex: 1 }]} accessibilityLabel="Zielmarke" />
+              <TextInput value={lgUnit} onChangeText={setLgUnit} placeholder="Einheit, z. B. kg" placeholderTextColor={C.mute} maxLength={12} style={[st.textInput, { flex: 1 }]} accessibilityLabel="Einheit" />
+            </View>
+            <TextInput value={lgCurrent} onChangeText={setLgCurrent} placeholder="Aktueller Stand (optional)" placeholderTextColor={C.mute} keyboardType="decimal-pad" style={st.textInput} accessibilityLabel="Aktueller Stand" />
+            <P style={{ fontSize: 12 }}>Gewichts- oder Körperfettziele gibt es bewusst nicht: LvlMe belohnt weder Hungern noch Schlafentzug. Eigene Ziele geben {100} XP, höchstens einmal pro Woche.</P>
+          </View>
+        ) : (
+          <Slider label="Zielmarke" unit={kindDef(lgKind).unit} value={lgTarget} min={kindDef(lgKind).min} max={kindDef(lgKind).max} step={kindDef(lgKind).step}
+            format={v => v.toLocaleString('de-DE')} onChange={setLgTarget} />
+        )}
+        <Button title="Ziel hinzufügen" onPress={addLong} />
+      </Card>
+
+      <Card>
         <H>Stats</H>
         {bars.map(([n, v, c]) => (
           <View key={n} style={{ gap: 4 }}>
@@ -286,6 +359,9 @@ const st = StyleSheet.create({
   dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
   ladderName: { flex: 1, fontSize: 15 },
   hairOpt: { alignItems: 'center', gap: 4, padding: 6, borderRadius: 14, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card2, width: 78 },
+  numInput: { flex: 1, color: C.ink, backgroundColor: C.card2, borderColor: C.line, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15 },
+  textInput: { color: C.ink, backgroundColor: C.card2, borderColor: C.line, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 15 },
+  kindChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card2 },
   hairOn: { borderColor: C.ki, backgroundColor: 'rgba(255,138,31,0.12)' },
   hairName: { color: C.mute, fontSize: 11, fontWeight: '700' },
 });

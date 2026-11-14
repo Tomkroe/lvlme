@@ -12,6 +12,7 @@ import { C, F, energyColor, fmt } from '../../src/ui/theme.ts';
 import { shareCard } from '../../src/share/index.ts';
 import { useScreenSize } from '../../src/ui/layout.ts';
 import { ALL_GOALS_BONUS, goalDef, goalStatus, goalXp } from '../../src/game/goals.ts';
+import { longGoalFrac, longGoalValue, rewardXp } from '../../src/game/longgoals.ts';
 
 export default function Home() {
   const app = useApp();
@@ -39,6 +40,8 @@ export default function Home() {
   const name = app.name || 'Du';
   const warn = app.today?.overtraining ?? false;
   const nextStage = STAGES[app.stage + 1];
+  const openLong = app.longGoals.filter(g => !g.doneAt).slice(0, 3);
+  const doneGoal = app.goalEvents[0];
   const goalRows = app.todayMetrics ? goalStatus(app.todayMetrics, app.goals) : [];
   const goalBonus = app.todayMetrics ? goalXp(app.todayMetrics, app.goals).xp : 0;
   const fmtGoal = (id: string, v: number | null) => (v == null ? '–' : id === 'sleep' ? v.toLocaleString('de-DE', { maximumFractionDigits: 1 }) : Math.round(v).toLocaleString('de-DE'));
@@ -131,6 +134,13 @@ export default function Home() {
             {warn && <Chip text="Kein Bonus heute" color={C.warn} bg="rgba(255,204,61,0.14)" />}
           </View>
         )}
+        {doneGoal && (
+          <Card style={{ borderColor: C.good }}>
+            <Text style={{ color: C.good, fontWeight: '900', fontSize: 16 }}>Ziel erreicht!</Text>
+            <P style={{ color: C.ink }}>{doneGoal.title}: {doneGoal.target.toLocaleString('de-DE')} {doneGoal.unit}{(doneGoal.xp ?? 0) > 0 ? ` · +${doneGoal.xp} XP` : ' · diesmal ohne XP (eigene Ziele geben höchstens einmal pro Woche XP)'}</P>
+            <Button title="Weiter" kind="ghost" onPress={app.dismissGoalEvent} />
+          </Card>
+        )}
         {goalRows.length > 0 && (
           <Card>
             <View style={st.row}>
@@ -150,6 +160,20 @@ export default function Home() {
               );
             })}
             {goalRows.length >= 2 && <P style={{ fontSize: 12 }}>Alle Ziele an einem Tag: +{ALL_GOALS_BONUS} XP extra. Verfehlte Ziele kosten nichts, Ruhetage sind in Ordnung. Ziele änderst du im Profil.</P>}
+          </Card>
+        )}
+        {openLong.length > 0 && (
+          <Card>
+            <Text style={st.xpTitle}>Langzeitziele</Text>
+            {openLong.map(g => (
+              <View key={g.id} style={{ gap: 4 }} accessible accessibilityLabel={`${g.title}: ${Math.round(longGoalValue(g, app.progress))} von ${g.target} ${g.unit}`}>
+                <View style={st.row}>
+                  <Text style={{ color: C.ink, fontWeight: '700', fontSize: 14, flexShrink: 1 }} numberOfLines={1}>{g.title}</Text>
+                  <Text style={[st.xpNums, F.num]}>{Math.round(longGoalValue(g, app.progress)).toLocaleString('de-DE')} / {g.target.toLocaleString('de-DE')} {g.unit} · +{rewardXp(g)} XP</Text>
+                </View>
+                <Bar frac={longGoalFrac(g, app.progress)} color={C.violet} height={8} />
+              </View>
+            ))}
           </Card>
         )}
         {nextStage && (

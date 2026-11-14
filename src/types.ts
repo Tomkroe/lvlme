@@ -73,6 +73,10 @@ export interface Progress {
   restDays?: string[];
   /** bereits verbuchte Tage (YYYY-MM-DD), damit kein Tag doppelt zählt */
   booked: string[];
+  /** Summe der Schritte aller verbuchten Tage (für Langzeitziele; fehlt bei altem Fortschritt = 0) */
+  totalSteps?: number;
+  /** Anzahl verbuchter Tage mit mindestens WORKOUT_DAY_MINUTES Training (fehlt bei altem Fortschritt = 0) */
+  workoutDays?: number;
 }
 
 /** Frisur: Index in HAIRSTYLES (src/avatar/assets.ts); 0 = Originalkopf */

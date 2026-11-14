@@ -23,6 +23,9 @@ export const MOOD_TEXT: Record<Mood, { label: string; text: string }> = {
 
 export const SLEEP_GOAL_HOURS = 8;
 
+/** Ab so vielen Workout-Minuten zählt ein Tag als Trainingstag (Langzeitziele) */
+export const WORKOUT_DAY_MINUTES = 20;
+
 /** Balancing-Konstanten an einer Stelle */
 export const BALANCE = {
   /** XP je Strain-Punkt */
@@ -116,6 +119,17 @@ export interface BookResult {
   stageAfter: number;
 }
 
+/** Gibt einmalig XP (z. B. für ein Langzeitziel) und steigt bei Bedarf im Level auf. */
+export function awardXp(p: Progress, xpGain: number): BookResult {
+  const stageBefore = stageFor(p.level);
+  const gain = Math.max(0, Math.round(xpGain));
+  if (gain === 0) return { progress: p, levelsGained: 0, stageBefore, stageAfter: stageBefore };
+  let level = p.level;
+  let xp = p.xp + gain;
+  while (xp >= xpNeeded(level)) { xp -= xpNeeded(level); level++; }
+  return { progress: { ...p, level, xp }, levelsGained: level - p.level, stageBefore, stageAfter: stageFor(level) };
+}
+
 /** Tage zwischen zwei YYYY-MM-DD-Daten (b - a). Unlesbare Daten gelten als gleicher Tag (zählen also ins Fenster). */
 function daysBetween(a: string, b: string): number {
   const ta = Date.parse(`${a}T00:00:00Z`);
@@ -154,7 +168,9 @@ export function bookDay(p: Progress, m: DailyMetrics, d: DayScore, bonusXp = 0):
   let xp = p.xp + d.xp + Math.max(0, Math.round(bonusXp));
   while (xp >= xpNeeded(level)) { xp -= xpNeeded(level); level++; }
   const booked = [...p.booked, d.date].slice(-60);
-  const progress: Progress = { level, xp, stats, streak, restDays, booked };
+  const totalSteps = (p.totalSteps ?? 0) + Math.max(0, Math.round(m.steps));
+  const workoutDays = (p.workoutDays ?? 0) + (m.workoutMinutes >= WORKOUT_DAY_MINUTES ? 1 : 0);
+  const progress: Progress = { level, xp, stats, streak, restDays, booked, totalSteps, workoutDays };
   return { progress, levelsGained: level - p.level, stageBefore, stageAfter: stageFor(level) };
 }
 

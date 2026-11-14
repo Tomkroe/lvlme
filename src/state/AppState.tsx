@@ -14,9 +14,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.ts';
 import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
-import { NEW_PROGRESS, baselineFrom, bookDay, power as powerOf, scoreDay, stageFor, toPublic } from '../game/rules.ts';
+import { NEW_PROGRESS, awardXp, baselineFrom, bookDay, power as powerOf, scoreDay, stageFor, toPublic } from '../game/rules.ts';
 import { clampStats, type BodyStats } from '../game/body.ts';
 import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
+import { MAX_LONG_GOALS, checkLongGoals, newLongGoal, sanitizeLongGoals, type LongGoal, type LongGoalKind } from '../game/longgoals.ts';
 import { getHealthProvider } from '../health/index.ts';
 import * as social from '../social/api.ts';
 import type { Me } from '../social/api.ts';
@@ -41,6 +42,8 @@ interface Profile {
   bodyStats?: BodyStats;
   /** Selbst gewählte Tagesziele (lokal); fehlt das Feld, gelten die Standardziele */
   goals?: Goals;
+  /** Langzeitziele (lokal); die XP daraus stecken im Fortschritt */
+  longGoals?: LongGoal[];
   /** iPhone: Tageswerte und Fortschritt ins eigene Konto laden, damit der PC dasselbe zeigt. Standard: aus. */
   cloudSync: boolean;
 }
@@ -57,6 +60,13 @@ export interface AppState {
   cloudSync: boolean;
   bodyStats: BodyStats | null;
   goals: Goals;
+  longGoals: LongGoal[];
+  /** Neu erreichte Langzeitziele, die noch nicht angezeigt wurden */
+  goalEvents: LongGoal[];
+  dismissGoalEvent: () => void;
+  addLongGoal: (kind: LongGoalKind, target: number, title?: string, unit?: string, current?: number) => Promise<boolean>;
+  removeLongGoal: (id: string) => Promise<void>;
+  setLongGoalValue: (id: string, value: number) => Promise<void>;
   /** Heutige Rohwerte – nur zur Anzeige des Ziel-Fortschritts, werden nicht gespeichert */
   todayMetrics: DailyMetrics | null;
   signInMethod: 'apple' | 'email' | null;
@@ -124,6 +134,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [me, setMeState] = useState<Me | null>(null);
   const [signInMethod, setSignInMethod] = useState<'apple' | 'email' | null>(null);
   const [events, setEvents] = useState<LevelEvent[]>([]);
+  const [goalEvents, setGoalEvents] = useState<LongGoal[]>([]);
   const busy = useRef(false);
   /** Laufender Upload ans Konto – beim Ausschalten des Syncs abwarten, damit danach nichts mehr ankommt */
   const uploadRef = useRef<Promise<void> | null>(null);
@@ -175,6 +186,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!remote || best !== remote) await social.saveProgress(best);
   }, [syncAllowed]);
 
+  /** Langzeitziele prüfen, XP gutschreiben, Fortschritt und Ziele speichern. Liefert den neuen Fortschritt. */
+  const applyLongGoals = useCallback(async (p: Progress, today: string, goalsIn?: LongGoal[]): Promise<{ progress: Progress; events: LevelEvent[] }> => {
+    const list = goalsIn ?? sanitizeLongGoals(profileRef.current.longGoals);
+    const check = checkLongGoals(list, p, today);
+    if (check.completed.length === 0) return { progress: p, events: [] };
+    const next = { ...profileRef.current, longGoals: check.goals };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    setGoalEvents(ev => [...ev, ...check.completed]);
+    const r = awardXp(p, check.xp);
+    const events: LevelEvent[] = r.levelsGained > 0
+      ? [{ id: `goal-${today}-${r.progress.level}`, kind: r.stageAfter > r.stageBefore ? 'stage' : 'level', level: r.progress.level, stage: r.stageAfter }]
+      : [];
+    return { progress: r.progress, events };
+  }, []);
+
   const refresh = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
@@ -212,6 +239,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         p = r.progress;
       });
 
+      if (bookable.length > 0) {
+        const lg = await applyLongGoals(p, todayM.date);
+        p = lg.progress;
+        newEvents.push(...lg.events);
+      }
+
       const score = scoreDay(todayM, baselineFrom(past));
       todayRef.current = score;
       setToday(score);
@@ -240,7 +273,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       busy.current = false;
       setLoading(false);
     }
-  }, [publish, syncProgress, syncAllowed]);
+  }, [publish, syncProgress, syncAllowed, applyLongGoals]);
 
   // Start: gespeicherte Daten laden, dann Health lesen
   useEffect(() => {
@@ -325,6 +358,53 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     await writeJson(K_PROFILE, next);
   }, []);
 
+  const localDate = () => {
+    const d = new Date();
+    const z = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+  };
+
+  /** Fortschritt nach einer Änderung an Langzeitzielen speichern (und ggf. synchronisieren) */
+  const commitProgress = useCallback(async (p: Progress, evs: LevelEvent[]) => {
+    if (p === progressRef.current) return;
+    progressRef.current = p; setProgress(p);
+    await writeJson(K_PROGRESS, p);
+    if (syncAllowed()) social.saveProgress(p).catch(() => { /* offline: beim nächsten Mal */ });
+    if (evs.length) setEvents(ev => [...ev, ...evs]);
+    publish().catch(() => { /* offline */ });
+  }, [publish, syncAllowed]);
+
+  const addLongGoal = useCallback(async (kind: LongGoalKind, target: number, title = '', unit = '', current = 0): Promise<boolean> => {
+    const open = sanitizeLongGoals(profileRef.current.longGoals).filter(g => !g.doneAt);
+    if (open.length >= MAX_LONG_GOALS) return false;
+    const g = newLongGoal(kind, target, progressRef.current, localDate(), title, unit, current);
+    const list = [...sanitizeLongGoals(profileRef.current.longGoals), g];
+    const next = { ...profileRef.current, longGoals: list };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    const r = await applyLongGoals(progressRef.current, localDate(), list);
+    await commitProgress(r.progress, r.events);
+    return true;
+  }, [applyLongGoals, commitProgress]);
+
+  const removeLongGoal = useCallback(async (id: string) => {
+    const list = sanitizeLongGoals(profileRef.current.longGoals).filter(g => g.id !== id);
+    const next = { ...profileRef.current, longGoals: list };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+  }, []);
+
+  const setLongGoalValue = useCallback(async (id: string, value: number) => {
+    const list = sanitizeLongGoals(profileRef.current.longGoals).map(g => (g.id === id && g.kind === 'custom' && !g.doneAt ? { ...g, current: Math.max(0, value) } : g));
+    const next = { ...profileRef.current, longGoals: list };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    const r = await applyLongGoals(progressRef.current, localDate(), list);
+    await commitProgress(r.progress, r.events);
+  }, [applyLongGoals, commitProgress]);
+
+  const dismissGoalEvent = useCallback(() => setGoalEvents(ev => ev.slice(1)), []);
+
   /** Tagesziele speichern (nur lokal) */
   const setGoals = useCallback(async (goals: Goals) => {
     const next = { ...profileRef.current, goals: sanitizeGoals(goals) };
@@ -371,7 +451,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await AsyncStorage.multiRemove([K_PROGRESS, K_PROFILE]); } catch { /* egal */ }
     setProgress(NEW_PROGRESS); progressRef.current = NEW_PROGRESS;
     setProfile(DEFAULT_PROFILE); profileRef.current = DEFAULT_PROFILE;
-    setToday(null); setTodayMetrics(null); todayRef.current = null; setEvents([]);
+    setToday(null); setTodayMetrics(null); todayRef.current = null; setEvents([]); setGoalEvents([]);
   }, []);
 
   const dismissEvent = useCallback(() => setEvents(ev => ev.slice(1)), []);
@@ -386,13 +466,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     cloudSync: profile.cloudSync === true,
     bodyStats: profile.bodyStats ? clampStats(profile.bodyStats) : null,
     goals: profile.goals !== undefined ? sanitizeGoals(profile.goals) : DEFAULT_GOALS,
+    longGoals: sanitizeLongGoals(profile.longGoals),
+    goalEvents, dismissGoalEvent, addLongGoal, removeLongGoal, setLongGoalValue,
     todayMetrics,
     signInMethod,
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     power: powerOf(progress, today?.energy ?? 60),
     me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
+  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, addLongGoal, removeLongGoal, setLongGoalValue, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

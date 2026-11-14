@@ -47,4 +47,5 @@ Gemeinsame Typen liegen in `src/types.ts`. Wer sie ändert, sagt es in der Über
 - Keine Figuren, Namen, Symbole, Frisuren oder Verwandlungsnamen aus Dragon Ball oder anderen geschützten Werken.
 - Ruhetage und schlechte Tage werden nie bestraft; keine Belohnung für wenig Essen oder Schlafentzug.
 - Tagesziele (`src/game/goals.ts`): selbst gewählt, lokal gespeichert, Bonus-XP beim Verbuchen des Tages; kein Gewichts-/KFA-Ziel, Schlafziel mindestens 6 Std. Größe/Gewicht/KFA (`src/game/body.ts`) bleiben nur auf dem Gerät.
+- Langzeitziele (`src/game/longgoals.ts`): Schritte gesamt, Trainingstage, Serie (automatisch, zählen ab dem Anlegen; Zähler `totalSteps`/`workoutDays` im Progress) und eigene Ziele (von Hand, XP höchstens 1× pro Woche); einmalige XP über `awardXp`.
 - Kleine, überprüfbare Schritte; jeder Agent beendet seine Arbeit mit einer kurzen Übergabe (was geändert, was offen, wer als Nächstes).
