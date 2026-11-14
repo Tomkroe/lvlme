@@ -65,6 +65,7 @@ interface Profile {
   calorie?: CalorieSettings;
   /** Testphase: welche einmalige Münzen-Gutschrift schon verbucht wurde */
   testGrant?: string;
+  testLevel?: boolean;
   /** Widgets der Startseite (lokal): Belegung der Plätze rund um den Avatar */
   widgets?: WidgetLayout;
   /** Selbst gewählte Tagesziele (lokal); fehlt das Feld, gelten die Standardziele */
@@ -142,6 +143,9 @@ export interface AppState {
 /** Testphase: einmalige Gutschrift zum Ausprobieren des Shops; Kennung ändern = erneute Gutschrift. Vor dem Release entfernen. */
 const TEST_GRANT_ID = 'shop-test-1';
 const TEST_GRANT_COINS = 10000;
+/** Testphase: Tester mit diesem Kämpfernamen bekommen einmalig mindestens Level 25. Vor dem Release entfernen. */
+const TEST_LEVEL_NAME = 'bushtiger';
+const TEST_LEVEL = 25;
 const K_PROGRESS = 'lvlme.progress.v1';
 const K_PROFILE = 'lvlme.profile.v1';
 const DEFAULT_PROFILE: Profile = { name: '', onboarded: false, shareMood: false, hair: DEFAULT_HAIR, body: DEFAULT_BODY, cloudSync: false };
@@ -355,6 +359,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       }
       setProfile(prof2); profileRef.current = prof2;
       setProgress(prog2); progressRef.current = prog2;
+      await applyTestLevel();
       if (social.isConfigured()) {
         try {
           const m = await social.getMe();
@@ -386,15 +391,28 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [syncDisplayName, publish, refresh]);
 
+  /** Testphase: Level 25 für den Tester „bushtiger“ (einmalig, nur hochsetzen) */
+  const applyTestLevel = useCallback(async () => {
+    const prof = profileRef.current;
+    if (prof.testLevel || prof.name.trim().toLowerCase() !== TEST_LEVEL_NAME) return;
+    const p = progressRef.current;
+    const nextP = p.level >= TEST_LEVEL ? p : { ...p, level: TEST_LEVEL, xp: 0 };
+    const next = { ...prof, testLevel: true };
+    setProfile(next); profileRef.current = next;
+    progressRef.current = nextP; setProgress(nextP);
+    await writeJson(K_PROFILE, next); await writeJson(K_PROGRESS, nextP);
+  }, []);
+
   const setName = useCallback(async (name: string) => {
     const next = { ...profileRef.current, name: name.trim().slice(0, 24) };
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);
+    await applyTestLevel();
     if (next.name) {
       try { await syncDisplayName(); } catch { /* offline: beim nächsten Start */ }
       publish().catch(() => {});
     }
-  }, [syncDisplayName, publish]);
+  }, [syncDisplayName, publish, applyTestLevel]);
 
   const setShareMood = useCallback(async (on: boolean) => {
     const next = { ...profileRef.current, shareMood: on };

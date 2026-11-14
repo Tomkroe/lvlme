@@ -1,5 +1,5 @@
-/** Avatar-Startseite: Szene, HUD und anpassbare Widgets rund um den Avatar, Teilen. Zuständig: app-ui. */
-import React, { useRef, useState } from 'react';
+/** Avatar-Startseite: Szene, HUD und anpassbare Widgets rund um den Avatar. Zuständig: app-ui. */
+import React, { useState } from 'react';
 import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../../src/state/AppState.tsx';
@@ -11,15 +11,12 @@ import { Chip, LevelRing } from '../../src/ui/components.tsx';
 import { Tile, TILE_H, WidgetPicker, widgetView } from '../../src/ui/HomeWidgets.tsx';
 import { SLOTS, type SlotId } from '../../src/game/widgets.ts';
 import { C, F } from '../../src/ui/theme.ts';
-import { shareCard } from '../../src/share/index.ts';
 import { useScreenSize } from '../../src/ui/layout.ts';
 
 export default function Home() {
   const app = useApp();
   const { width: W, height: Hs } = useScreenSize();
   const insets = useSafeAreaInsets();
-  const cardRef = useRef<React.ComponentRef<typeof View>>(null);
-  const [shareErr, setShareErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [pickSlot, setPickSlot] = useState<SlotId | null>(null);
   const [areaH, setAreaH] = useState(0);
@@ -58,15 +55,6 @@ export default function Home() {
   const warn = app.today?.overtraining ?? false;
   const doneGoal = app.goalEvents[0];
 
-  const onShare = async () => {
-    setShareErr(null);
-    try {
-      await shareCard(cardRef, `Mein LvlMe-Kämpfer: Level ${app.progress.level}, ${STAGES[app.stage].name}`);
-    } catch {
-      setShareErr('Teilen hat gerade nicht geklappt. Versuch es gleich noch einmal.');
-    }
-  };
-
   const notes: React.ReactNode[] = [];
   if (Platform.OS !== 'ios' && app.source === 'demo') notes.push(<Text key="demo" style={st.noteText}>Du siehst Beispieldaten. Melde dich unter Profil an, um die Werte von deinem iPhone zu sehen.</Text>);
   if (warn) notes.push(<Text key="warn" style={[st.noteText, { color: C.warn }]}>Übertraining: hohe Belastung bei wenig Erholung. Heute gibt es keinen Bonus, gönn dir Ruhe.</Text>);
@@ -82,8 +70,8 @@ export default function Home() {
         refreshControl={<RefreshControl refreshing={app.loading} onRefresh={app.refresh} tintColor="#fff" />}
       >
         <View style={{ height: sceneH }}>
-          {/* Teilbare Karte: nur Szene, Avatar und HUD – keine Widgets, die zeigen eigene Werte */}
-          <View ref={cardRef} collapsable={false} style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: C.bg }]}>
+          {/* Szene, Avatar und HUD */}
+          <View style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: C.bg }]}>
             <Scene mood={mood} id="home" theme={sceneTheme} />
             <View style={{ position: 'absolute', left: avLeft, top: avTop }}>
               <Avatar stage={app.stage} mood={mood} hair={app.hair} body={app.body} auraColor={auraColor} size={avSize} id="me" />
@@ -123,7 +111,6 @@ export default function Home() {
 
           <View style={st.bottom}>
             {notes.length > 0 && !editing && <View style={st.note}>{notes}</View>}
-            {shareErr && <View style={st.note}><Text style={st.noteText}>{shareErr}</Text></View>}
             {editing && <View style={st.note}><Text style={st.noteText}>Tippe auf eine Kachel oder ein „+“, um zu wählen, was dort stehen soll.</Text></View>}
             <View style={st.btnRow}>
               {editing ? (
@@ -134,7 +121,6 @@ export default function Home() {
               ) : (
                 <>
                   <Pressable onPress={() => setEditing(true)} accessibilityRole="button" accessibilityHint="Widgets rund um den Avatar hinzufügen, ändern oder entfernen" style={[st.glass, st.pill]}><Text style={st.pillText}>Anpassen</Text></Pressable>
-                  <Pressable onPress={onShare} accessibilityRole="button" accessibilityHint="Öffnet das Teilen-Menü mit einem Bild deines Avatars" style={[st.glass, st.pill]}><Text style={st.pillText}>Teilen</Text></Pressable>
                 </>
               )}
             </View>
