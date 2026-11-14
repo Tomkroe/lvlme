@@ -2,13 +2,12 @@
 import React, { useRef, useState } from 'react';
 import { Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../../src/state/AppState.tsx';
-import { MOOD_TEXT, STAGES, xpNeeded } from '../../src/game/rules.ts';
+import { STAGES, xpNeeded } from '../../src/game/rules.ts';
 import { Avatar, AVATAR_FEET, AVATAR_RATIO } from '../../src/avatar/Avatar.tsx';
 import { Scene } from '../../src/ui/Scene.tsx';
 import { Bar, Button, Card, Chip, LevelRing, P, Ring } from '../../src/ui/components.tsx';
-import { C, F, energyColor, fmt } from '../../src/ui/theme.ts';
+import { C, F, energyColor } from '../../src/ui/theme.ts';
 import { shareCard } from '../../src/share/index.ts';
 import { useScreenSize } from '../../src/ui/layout.ts';
 import { ALL_GOALS_BONUS, goalDef, goalStatus, goalXp } from '../../src/game/goals.ts';
@@ -49,7 +48,7 @@ export default function Home() {
   const onShare = async () => {
     setShareErr(null);
     try {
-      await shareCard(cardRef, `Mein LvlMe-Kämpfer: Level ${app.progress.level}, ${STAGES[app.stage].name}, Kampfkraft ${fmt(app.power)}`);
+      await shareCard(cardRef, `Mein LvlMe-Kämpfer: Level ${app.progress.level}, ${STAGES[app.stage].name}`);
     } catch {
       setShareErr('Teilen hat gerade nicht geklappt. Versuch es gleich noch einmal.');
     }
@@ -77,30 +76,20 @@ export default function Home() {
                 <Chip text={STAGES[app.stage].name.toUpperCase()} />
               </View>
             </View>
-            <View style={[st.glass, st.power]} accessible accessibilityLabel={`Kampfkraft ${fmt(app.power)}`}>
-              <Text style={st.powLabel}>KAMPFKRAFT</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Svg width={12} height={15} viewBox="0 0 13 16"><Path d="M8 0 L0 9 H5.5 L4 16 L13 6 H7.5Z" fill="#7fe3ff" /></Svg>
-                <Text style={[st.powVal, F.num]}>{fmt(app.power)}</Text>
-              </View>
-            </View>
           </View>
-        </View>
-
-        {/* Sprechblase liegt über der Karte, gehört aber nicht zum geteilten Bild */}
-        <View style={[st.bubble, { top: insets.top + 76 }, warn && { backgroundColor: '#ffd84d' }]} accessibilityLiveRegion="polite">
-          <Text style={[st.bubbleLabel, warn && { color: '#6a4b00' }]}>{warn ? 'Achtung: Übertraining' : MOOD_TEXT[mood].label}</Text>
-          <Text style={st.bubbleText}>
-            {warn ? 'Hohe Belastung bei wenig Erholung. Heute gibt es keinen Bonus, gönn dir Ruhe.' : app.today ? MOOD_TEXT[mood].text : (Platform.OS === 'ios' ? 'Ich warte auf deine Daten aus Apple Health.' : 'Ich warte auf deine Daten vom iPhone.')}
-          </Text>
         </View>
       </View>
 
       {/* Sheet */}
       <View style={st.sheet}>
-        <View style={st.grab} />
         {Platform.OS !== 'ios' && app.source === 'demo' && (
           <Card><P style={{ color: C.ink }}>Du siehst Beispieldaten. Melde dich unter Profil an, um die Werte von deinem iPhone zu sehen.</P></Card>
+        )}
+        {warn && (
+          <Card style={{ borderColor: C.warn }}>
+            <Text style={{ color: C.warn, fontWeight: '900', fontSize: 15 }}>Achtung: Übertraining</Text>
+            <P style={{ color: C.ink }}>Hohe Belastung bei wenig Erholung. Heute gibt es keinen Bonus, gönn dir Ruhe.</P>
+          </Card>
         )}
         {app.error && <Card style={{ borderColor: C.warn }}><P style={{ color: C.ink }}>{app.error}</P></Card>}
 
@@ -193,14 +182,7 @@ const st = StyleSheet.create({
   glass: { backgroundColor: 'rgba(9,13,30,0.55)', borderColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderRadius: 20 },
   who: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 5, paddingRight: 12, flexShrink: 1 },
   name: { color: '#fff', fontWeight: '800', fontSize: 15, maxWidth: 140 },
-  power: { paddingHorizontal: 13, paddingVertical: 7, alignItems: 'flex-end' },
-  powLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 9.5, letterSpacing: 1.6, fontWeight: '700' },
-  powVal: { color: '#fff', fontSize: 22, textShadowColor: 'rgba(63,208,255,0.8)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 },
-  bubble: { position: 'absolute', left: 12, maxWidth: 170, backgroundColor: '#fff', borderColor: C.outline, borderWidth: 2.5, borderRadius: 18, paddingHorizontal: 11, paddingVertical: 7 },
-  bubbleLabel: { color: '#6b5f84', fontSize: 10.5, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
-  bubbleText: { color: C.outline, fontSize: 13, fontWeight: '600', lineHeight: 17 },
   sheet: { marginTop: -24, backgroundColor: C.sheet, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 10, gap: 16 },
-  grab: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: C.line },
   rings: { flexDirection: 'row', justifyContent: 'space-around' },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   xpTitle: { color: C.ink, fontWeight: '800', fontSize: 16 },
