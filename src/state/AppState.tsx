@@ -19,6 +19,7 @@ import { clampStats, maxWeightLossKg, suggestBody, type BodyStats } from '../gam
 import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
 import { avgActiveKcal, calorieTarget, sanitizeAge, sanitizeCustom, sanitizeGoal, sanitizeSex } from '../game/calories.ts';
 import { placeWidget, resolveLayout, DEFAULT_LAYOUT, type SlotId, type WidgetId, type WidgetLayout } from '../game/widgets.ts';
+import { awardCoins } from '../game/shop.ts';
 import { buyItem as buyShopItem, coinsOf, isOwned, longGoalCoins, shopItem } from '../game/shop.ts';
 
 /** Angelegte Shop-Kosmetik (nur lokal): Aura-Farbe und Szene der Startseite, jeweils eine Shop-ID */
@@ -62,6 +63,8 @@ interface Profile {
   cosmetics?: Cosmetics;
   /** Kalorienhaushalt (alles lokal, nie synchronisiert): Alter, Geschlecht, KFA verwenden, Ziel, eigener Wert, Hinweis gesehen */
   calorie?: CalorieSettings;
+  /** Testphase: welche einmalige Münzen-Gutschrift schon verbucht wurde */
+  testGrant?: string;
   /** Widgets der Startseite (lokal): Belegung der Plätze rund um den Avatar */
   widgets?: WidgetLayout;
   /** Selbst gewählte Tagesziele (lokal); fehlt das Feld, gelten die Standardziele */
@@ -136,6 +139,9 @@ export interface AppState {
   resetLocal: () => Promise<void>;
 }
 
+/** Testphase: einmalige Gutschrift zum Ausprobieren des Shops; Kennung ändern = erneute Gutschrift. Vor dem Release entfernen. */
+const TEST_GRANT_ID = 'shop-test-1';
+const TEST_GRANT_COINS = 10000;
 const K_PROGRESS = 'lvlme.progress.v1';
 const K_PROFILE = 'lvlme.profile.v1';
 const DEFAULT_PROFILE: Profile = { name: '', onboarded: false, shareMood: false, hair: DEFAULT_HAIR, body: DEFAULT_BODY, cloudSync: false };
@@ -340,7 +346,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       let prog2 = prog;
       const eq = prof.body ?? DEFAULT_BODY;
       if (eq >= 5 && !isOwned(prog, eq) && shopItem(eq)) { prog2 = { ...prog, owned: [...(prog.owned ?? []), eq] }; await writeJson(K_PROGRESS, prog2); }
-      setProfile(prof); profileRef.current = prof;
+      // TESTPHASE: einmalig 10.000 Münzen zum Ausprobieren des Shops. Vor dem Release entfernen (TEST_GRANT_COINS).
+      let prof2 = prof;
+      if (prof.testGrant !== TEST_GRANT_ID) {
+        prog2 = awardCoins(prog2, TEST_GRANT_COINS);
+        prof2 = { ...prof, testGrant: TEST_GRANT_ID };
+        await writeJson(K_PROGRESS, prog2); await writeJson(K_PROFILE, prof2);
+      }
+      setProfile(prof2); profileRef.current = prof2;
       setProgress(prog2); progressRef.current = prog2;
       if (social.isConfigured()) {
         try {
