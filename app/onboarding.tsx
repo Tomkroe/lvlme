@@ -7,7 +7,7 @@ import { getHealthProvider } from '../src/health/index.ts';
 import * as social from '../src/social/api.ts';
 import { useApp } from '../src/state/AppState.tsx';
 import { Avatar } from '../src/avatar/Avatar.tsx';
-import { AppleSignIn } from '../src/ui/AppleSignIn.tsx';
+import { SignIn } from '../src/ui/SignIn.tsx';
 import { Button, Card, P } from '../src/ui/components.tsx';
 import { C, F, PRIVACY_URL } from '../src/ui/theme.ts';
 
@@ -60,7 +60,16 @@ export default function Onboarding() {
           </>
         )}
 
-        {step === 1 && (
+        {step === 1 && Platform.OS !== 'ios' && (
+          <>
+            <Text style={[st.h1, F.display]}>Deine Daten kommen vom iPhone</Text>
+            <P>Am PC kann LvlMe nicht direkt auf Apple Health zugreifen. Schalte in der iPhone-App unter Profil „Mit dem PC synchronisieren“ ein und melde dich hier mit demselben Konto an. Dann siehst du hier dieselben Werte und denselben Fortschritt.</P>
+            <P>Ohne Anmeldung zeigt LvlMe dir Beispieldaten zum Ausprobieren.</P>
+            <Button title="Weiter" onPress={() => setStep(2)} />
+          </>
+        )}
+
+        {step === 1 && Platform.OS === 'ios' && (
           <>
             <Text style={[st.h1, F.display]}>Apple Health verbinden</Text>
             <P>LvlMe liest Schlaf, Schritte, Workouts, aktive Kalorien, Ruhepuls und Herzfrequenzvariabilität, um deine Tagesform zu berechnen. Die Daten bleiben auf deinem iPhone, LvlMe schreibt nichts in Health.</P>
@@ -82,9 +91,9 @@ export default function Onboarding() {
               style={st.input} autoFocus returnKeyType="done" accessibilityLabel="Name deines Kämpfers" />
             {social.isConfigured() && !app.me && (
               <Card>
-                <P style={{ color: C.ink, fontWeight: '700' }}>Mit Freunden spielen (optional)</P>
-                <P>Mit einem Konto kannst du Freunde einladen. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
-                <AppleSignIn />
+                <P style={{ color: C.ink, fontWeight: '700' }}>{Platform.OS === 'ios' ? 'Mit Freunden spielen (optional)' : 'Anmelden'}</P>
+                <P>Mit einem Konto kannst du Freunde einladen{Platform.OS === 'ios' ? '' : ' und siehst die Werte von deinem iPhone'}. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+                <SignIn />
               </Card>
             )}
             <Button title="Fertig" onPress={finish} busy={busy} disabled={!name.trim()} />

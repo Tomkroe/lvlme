@@ -1,19 +1,22 @@
 /**
  * Freunde & Konto. Zuständig: Agent social-backend.
  * Ohne Supabase-Konfiguration (EXPO_PUBLIC_SUPABASE_URL/_ANON_KEY) läuft die App offline weiter: isConfigured() === false.
- * An das Backend geht ausschließlich PublicAvatar – nie Gesundheitsrohdaten.
+ * An Freunde geht ausschließlich PublicAvatar – nie Gesundheitsrohdaten.
+ * Eigene Tageswerte und Fortschritt gehen nur mit Einwilligung ins eigene Konto (Sync iPhone ↔ PC),
+ * lesbar nur für einen selbst (RLS, Migration 0012).
  */
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Crypto from 'expo-crypto';
-import type { BodyId, HairId, Mood, PublicAvatar } from '../types.ts';
+import { Platform } from 'react-native';
+import type { BodyId, DailyMetrics, HairId, Mood, Progress, PublicAvatar } from '../types.ts';
 import { supabase, supabaseConfigured } from './client.ts';
+// Ohne Dateiendung: Metro nimmt im Web apple.web.ts
+import { appleIdToken } from './apple';
 
 export interface Me { userId: string; displayName: string }
 export interface Friend extends PublicAvatar { userId: string }
 export interface Invite { code: string; url: string }
 
 const NOT_CONFIGURED = 'Freunde sind in dieser Version noch nicht eingerichtet.';
-const NOT_SIGNED_IN = 'Bitte melde dich zuerst mit Apple an.';
+const NOT_SIGNED_IN = 'Bitte melde dich zuerst an.';
 const OFFLINE = 'Keine Verbindung. Bitte prüfe dein Internet und versuch es noch einmal.';
 const MOODS: Mood[] = ['charged', 'awake', 'tired', 'proud', 'lazy'];
 /** Höchste erlaubte Frisur-/Körper-ID, wie in is_public_avatar (Migration 0011) */
@@ -33,6 +36,11 @@ function message(err: unknown): string {
   // Unsere SQL-Funktionen werfen bereits deutsche Sätze
   if (/[äöüÄÖÜß]|Bitte|Code|Einladung/.test(m)) return m;
   if (/network|fetch|Failed to fetch|timeout/i.test(m)) return OFFLINE;
+  if (/Invalid login credentials/i.test(m)) return 'E-Mail oder Passwort stimmt nicht.';
+  if (/Email not confirmed/i.test(m)) return 'Bitte bestätige zuerst deine E-Mail-Adresse (Link in der Mail).';
+  if (/already registered|already exists/i.test(m)) return 'Für diese E-Mail gibt es schon ein Konto. Melde dich damit an.';
+  if (/Password should be|password/i.test(m)) return 'Das Passwort muss mindestens 6 Zeichen haben.';
+  if (/rate limit|too many/i.test(m)) return 'Zu viele Versuche. Bitte warte kurz und versuch es dann noch einmal.';
   return 'Das hat nicht geklappt. Bitte versuch es gleich noch einmal.';
 }
 
@@ -60,36 +68,52 @@ export async function getMe(): Promise<Me | null> {
  */
 export async function signInWithApple(): Promise<Me | null> {
   if (!supabase) throw new Error(NOT_CONFIGURED);
-  if (!(await AppleAuthentication.isAvailableAsync())) return null;
-
-  // Apple bekommt den gehashten Nonce, Supabase den ungehashten – so prüft Supabase das Token.
-  const rawNonce = Crypto.randomUUID();
-  const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
-
-  let credential: AppleAuthentication.AppleAuthenticationCredential;
-  try {
-    credential = await AppleAuthentication.signInAsync({
-      // Keine Scopes: Wir brauchen weder E-Mail noch Namen von Apple.
-      // Den öffentlichen Namen wählt der Nutzer selbst (Kämpfername aus dem Onboarding → setDisplayName).
-      requestedScopes: [],
-      nonce: hashedNonce,
-    });
-  } catch (e) {
-    if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return null;
-    throw new Error(message(e));
-  }
-  if (!credential.identityToken) throw new Error('Apple hat keine Anmeldung zurückgegeben. Bitte noch einmal versuchen.');
+  let apple: { token: string; nonce: string } | null;
+  try { apple = await appleIdToken(); } catch (e) { throw new Error(message(e)); }
+  if (!apple) return null;
 
   const { data, error } = await supabase.auth.signInWithIdToken({
     provider: 'apple',
-    token: credential.identityToken,
-    nonce: rawNonce,
+    token: apple.token,
+    nonce: apple.nonce,
   });
   if (error || !data.user) throw new Error(message(error));
 
   // Das Profil heißt serverseitig zunächst „Kämpfer“. Die App setzt danach den
   // Kämpfernamen aus dem Onboarding über setDisplayName – nie den echten Namen von Apple.
   return getMe();
+}
+
+/**
+ * Anmelden mit E-Mail und Passwort – auf iPhone und PC gleich, dasselbe Konto wie in der Webversion.
+ * Wirft einen Fehler mit deutscher Meldung.
+ */
+export async function signInWithEmail(email: string, password: string): Promise<Me | null> {
+  if (!supabase) throw new Error(NOT_CONFIGURED);
+  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+  if (error || !data.user) throw new Error(message(error));
+  return getMe();
+}
+
+/**
+ * Neues Konto mit E-Mail und Passwort. Gibt 'signed-in' zurück, wenn sofort angemeldet,
+ * sonst 'confirm-email' (Supabase schickt dann einen Bestätigungslink).
+ */
+export async function signUpWithEmail(email: string, password: string): Promise<'signed-in' | 'confirm-email'> {
+  if (!supabase) throw new Error(NOT_CONFIGURED);
+  const redirect = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.href.split('#')[0] : undefined;
+  const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: redirect ? { emailRedirectTo: redirect } : undefined });
+  if (error) throw new Error(message(error));
+  return data.session ? 'signed-in' : 'confirm-email';
+}
+
+/** Wie ist das Konto angemeldet? Nur für die Anzeige im Profil. */
+export async function signInMethod(): Promise<'apple' | 'email' | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  const user = data.session?.user;
+  if (!user) return null;
+  return user.app_metadata?.provider === 'apple' ? 'apple' : 'email';
 }
 
 export async function signOut(): Promise<void> {
@@ -138,7 +162,11 @@ export async function publishAvatar(a: PublicAvatar): Promise<void> {
     hair: appearanceId(a.hair, MAX_HAIR) as HairId,
     body: appearanceId(a.body, MAX_BODY) as BodyId,
   };
-  const { error } = await supabase.from('profiles').update({ avatar, updated_at: new Date().toISOString() }).eq('id', userId);
+  // Das Aussehen aus dem Web-Editor ("look") erhalten, sonst würde es beim Veröffentlichen überschrieben
+  const { data: current } = await supabase.from('profiles').select('avatar').eq('id', userId).maybeSingle();
+  const look = (current?.avatar as { look?: unknown } | null)?.look;
+  const payload = look && typeof look === 'object' ? { ...avatar, look } : avatar;
+  const { error } = await supabase.from('profiles').update({ avatar: payload, updated_at: new Date().toISOString() }).eq('id', userId);
   if (error) throw new Error(message(error));
 }
 
@@ -199,5 +227,75 @@ export async function removeFriend(userId: string): Promise<void> {
   if (!supabase) throw new Error(NOT_CONFIGURED);
   if (!(await currentUserId())) throw new Error(NOT_SIGNED_IN);
   const { error } = await supabase.rpc('remove_friend', { p_friend: userId });
+  if (error) throw new Error(message(error));
+}
+
+// ---------------------------------------------------------------------------
+// Sync iPhone ↔ PC (nur eigenes Konto, Migration 0012)
+// ---------------------------------------------------------------------------
+
+/** Ist jemand angemeldet? */
+export async function isSignedIn(): Promise<boolean> {
+  return (await currentUserId()) !== null;
+}
+
+/**
+ * iPhone: Tageswerte aus Apple Health ins eigene Konto laden (nur mit Einwilligung, siehe AppState).
+ * Ernährungswerte im Konto bleiben unberührt.
+ */
+export async function uploadHealthDays(days: DailyMetrics[]): Promise<void> {
+  if (!supabase || !(await currentUserId())) return;
+  const rows = days.filter(d => d.source === 'healthkit').slice(-31).map(d => ({
+    date: d.date,
+    steps: Math.max(0, Math.round(d.steps)),
+    active_energy_kcal: Math.max(0, d.activeEnergyKcal),
+    workout_minutes: Math.max(0, d.workoutMinutes),
+    sleep_hours: d.sleepHours,
+    hrv_ms: d.hrvMs,
+    resting_hr: d.restingHr,
+  }));
+  if (rows.length === 0) return;
+  const { error } = await supabase.rpc('upsert_health_days', { p_days: rows });
+  if (error) throw new Error(message(error));
+}
+
+/** PC/Web: eigene Tageswerte der letzten `days` Tage aus dem Konto, älteste zuerst. */
+export async function fetchHealthDays(days: number): Promise<DailyMetrics[]> {
+  if (!supabase) throw new Error(NOT_CONFIGURED);
+  if (!(await currentUserId())) throw new Error(NOT_SIGNED_IN);
+  const { data, error } = await supabase.rpc('get_health_metrics', { p_days: days });
+  if (error) throw new Error(message(error));
+  const num = (v: unknown): number | null => (v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v));
+  return ((data ?? []) as Record<string, unknown>[]).map(r => ({
+    date: String(r.date),
+    steps: num(r.steps) ?? 0,
+    activeEnergyKcal: num(r.active_energy_kcal) ?? 0,
+    workoutMinutes: num(r.workout_minutes) ?? 0,
+    sleepHours: num(r.sleep_hours),
+    hrvMs: num(r.hrv_ms),
+    restingHr: num(r.resting_hr),
+    source: 'cloud' as const,
+  }));
+}
+
+/** Gespeicherten Fortschritt aus dem Konto lesen (null = noch keiner). */
+export async function loadProgress(): Promise<Progress | null> {
+  if (!supabase) return null;
+  const userId = await currentUserId();
+  if (!userId) return null;
+  const { data, error } = await supabase.from('user_progress').select('data').eq('user_id', userId).maybeSingle();
+  if (error) throw new Error(message(error));
+  const p = data?.data as Progress | undefined;
+  return p && typeof p.level === 'number' && Array.isArray(p.booked) ? p : null;
+}
+
+/** Fortschritt ins Konto schreiben, damit iPhone und PC denselben Stand zeigen. */
+export async function saveProgress(p: Progress): Promise<void> {
+  if (!supabase) return;
+  const userId = await currentUserId();
+  if (!userId) return;
+  // Nur die letzten 400 gebuchten Tage mitschicken (reicht für "kein Tag doppelt")
+  const data: Progress = { ...p, booked: p.booked.slice(-400), restDays: p.restDays?.slice(-60) };
+  const { error } = await supabase.from('user_progress').upsert({ user_id: userId, data, updated_at: new Date().toISOString() });
   if (error) throw new Error(message(error));
 }

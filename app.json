@@ -31,7 +31,18 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": false
+      "typedRoutes": false,
+      "baseUrl": "/lvlme/app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "LvlMe",
+      "shortName": "LvlMe",
+      "lang": "de",
+      "themeColor": "#0a0d1a",
+      "backgroundColor": "#0a0d1a",
+      "favicon": "./public/icon-192.png"
     }
   }
 }

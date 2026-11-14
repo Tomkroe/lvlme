@@ -13,7 +13,7 @@ E-Mail: [Kontakt-E-Mail]
 
 ## 2. Kurz gesagt
 
-- Deine Gesundheitsdaten aus Apple Health werden **nur auf deinem iPhone** ausgewertet. Sie werden nicht gespeichert, nicht an uns gesendet und nicht geloggt.
+- Deine Gesundheitsdaten aus Apple Health werden auf deinem iPhone ausgewertet. Sie verlassen dein iPhone nur, wenn du „Mit dem PC synchronisieren“ einschaltest – dann werden deine Tageswerte und dein Fortschritt in deinem Konto gespeichert, damit die PC-Version dasselbe zeigt. Nur du siehst sie, Freunde nie.
 - Wenn du ein Konto anlegst, um mit Freunden zu spielen, speichern wir auf einem Server in der EU (Frankfurt) nur deinen Kämpfernamen und deinen öffentlichen Avatar (Level, Stufe, Kampfkraft, Serie, Frisur und Körper deines Avatars und – nur wenn du es erlaubst – deine Tagesform).
 - Ohne Konto bleibt alles auf deinem iPhone.
 
@@ -25,7 +25,7 @@ Mit deiner Einwilligung liest LvlMe aus Apple Health: Schritte, Training (Workou
 
 - Rechtsgrundlage: ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a i. V. m. Art. 6 Abs. 1 lit. a DSGVO). [prüfen]
 - LvlMe schreibt keine Daten in Apple Health.
-- Die Rohwerte verlassen dein iPhone nicht.
+- Ohne Sync verlassen die Rohwerte dein iPhone nicht.
 - Du kannst den Zugriff jederzeit in der Health-App unter Profil › Apps › LvlMe widerrufen.
 
 ### 3.2 Lokal gespeicherte Spieldaten
@@ -34,7 +34,7 @@ Auf deinem iPhone speichert LvlMe deinen Kämpfernamen, Level, XP, Stats, Serie,
 
 ### 3.3 Konto und Freunde (optional, Server in Frankfurt)
 
-Nur wenn du dich mit Apple anmeldest, verarbeiten wir bei unserem Dienstleister Supabase (Rechenzentrum Frankfurt, EU):
+Nur wenn du dich anmeldest (mit Apple oder mit E-Mail und Passwort), verarbeiten wir bei unserem Dienstleister Supabase (Rechenzentrum Frankfurt, EU):
 
 - **Konto:** eine von Apple bereitgestellte Kennung und ggf. die von Apple übermittelte E-Mail-Adresse (ggf. eine anonyme Weiterleitungsadresse). [mit social-backend prüfen, was genau in Supabase Auth gespeichert wird]
 - **Kämpfername:** der Name, den du in LvlMe eingibst (nicht dein Apple-Name).
@@ -44,6 +44,17 @@ Nur wenn du dich mit Apple anmeldest, verarbeiten wir bei unserem Dienstleister 
 Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) für Konto und Freunde; Einwilligung (Art. 6 Abs. 1 lit. a / Art. 9 Abs. 2 lit. a DSGVO) für das Teilen der Tagesform. [prüfen]
 
 Auftragsverarbeiter: Supabase Inc. [AV-Vertrag, Unterauftragsverarbeiter und ggf. Drittlandübermittlung prüfen und ergänzen]
+
+### 3.3a Sync mit der PC-Version (optional, Server in Frankfurt)
+
+Nur wenn du in der iPhone-App unter Profil „Mit dem PC synchronisieren“ einschaltest und angemeldet bist, speichern wir in deinem Konto:
+
+- **Tageswerte:** Datum, Schritte, aktive Kalorien, Trainingsminuten, Schlafdauer, HRV und Ruhepuls (höchstens die letzten 60 Tage werden angenommen).
+- **Fortschritt:** Level, XP, Stats, Serie und die bereits verbuchten Tage.
+
+Diese Daten kann nur dein eigenes Konto lesen (Row Level Security), Freunde sehen sie nie. Ausschalten stoppt das Hochladen; „Konto löschen“ entfernt alles endgültig.
+
+Rechtsgrundlage: ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a DSGVO) durch Einschalten des Schalters, jederzeit widerrufbar. [prüfen, ob ein eigener Einwilligungstext vor dem ersten Einschalten nötig ist]
 
 ### 3.4 Teilen
 
@@ -55,7 +66,7 @@ LvlMe verwendet keine Werbe- oder Analyse-Dienste und gibt keine Daten zu Werbez
 
 ## 4. Speicherdauer
 
-- Gesundheitsdaten: werden nicht gespeichert, nur bei Bedarf aus Apple Health gelesen.
+- Gesundheitsdaten: ohne Sync nicht gespeichert, nur bei Bedarf aus Apple Health gelesen. Mit Sync bis zum Ausschalten bzw. Löschen des Kontos. [Löschen beim Ausschalten des Syncs ergänzen]
 - Lokale Spieldaten: bis du sie zurücksetzt oder die App löschst.
 - Konto, Name, öffentlicher Avatar, Freundschaften: bis du dein Konto in der App unter Profil › Konto › „Konto löschen“ löschst. Danach werden sie endgültig entfernt. [Fristen für Backups beim Dienstleister ergänzen]
 

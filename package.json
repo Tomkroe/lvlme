@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test src/**/*.test.ts",
     "fix-deps": "expo install --fix",
-    "setup-deps": "expo install react-dom expo-router expo-dev-client expo-linking expo-constants expo-status-bar expo-apple-authentication expo-sharing expo-haptics expo-font react react-native react-native-svg react-native-safe-area-context react-native-screens react-native-view-shot @react-native-async-storage/async-storage react-native-url-polyfill expo-crypto -- --no-audit --no-fund && expo install typescript @types/react -- --save-dev --no-audit --no-fund"
+    "setup-deps": "expo install react-dom expo-router expo-dev-client expo-linking expo-constants expo-status-bar expo-apple-authentication expo-sharing expo-haptics expo-font react react-native react-native-svg react-native-safe-area-context react-native-screens react-native-view-shot @react-native-async-storage/async-storage react-native-url-polyfill expo-crypto react-native-web @expo/metro-runtime -- --no-audit --no-fund && expo install typescript @types/react -- --save-dev --no-audit --no-fund",
+    "web": "expo start --web",
+    "export:web": "expo export --platform web"
   },
   "dependencies": {
     "@kingstinct/react-native-healthkit": "^14",

@@ -4,7 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as social from '../../src/social/api.ts';
 import { useApp } from '../../src/state/AppState.tsx';
-import { AppleSignIn } from '../../src/ui/AppleSignIn.tsx';
+import { SignIn } from '../../src/ui/SignIn.tsx';
 import { Button, Card, P } from '../../src/ui/components.tsx';
 import { C, F } from '../../src/ui/theme.ts';
 
@@ -35,7 +35,7 @@ export default function InviteScreen() {
       {social.isConfigured() && !app.me && (
         <Card>
           <P style={{ color: C.ink, fontWeight: '700' }}>Melde dich an, um die Einladung anzunehmen</P>
-          <AppleSignIn />
+          <SignIn />
         </Card>
       )}
       {status.kind === 'busy' && <ActivityIndicator color={C.ki} />}

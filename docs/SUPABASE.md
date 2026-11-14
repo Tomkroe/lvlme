@@ -30,6 +30,7 @@ Dauer: etwa 15 Minuten. Kosten: im kostenlosen Tarif von Supabase ist das enthal
 8. Kontrolle: Unter **Authentication → Policies** steht bei `profiles` weiterhin „profiles: eigenes oder Freunde lesen“.
 9. Danach `supabase/migrations/0011_appearance_hair_body.sql` ausführen (setzt 0008–0010 vom Branch `main` voraus, weil es deren Prüfung für `look` übernimmt): Der Avatar darf jetzt auch Frisur (`hair`, 0–6) und Körper bzw. Outfit (`body`, 0–9) enthalten, damit Freunde dein gewähltes Aussehen sehen. **Wichtig:** Ohne diese Migration lehnt der Server das Speichern des Avatars von App-Versionen mit Frisur/Körper-Auswahl ab.
 10. Kontrolle: Neue Query mit `select public.is_public_avatar('{"hair": 3, "body": 9}'::jsonb);` ausführen. Das Ergebnis muss `true` sein (mit `"hair": 7` dagegen `false`).
+11. Danach `supabase/migrations/0012_sync_iphone_pc.sql` ausführen: Sync zwischen iPhone-App und PC-Version. Die iPhone-App darf – nur mit Einwilligung („Mit dem PC synchronisieren“) – Tageswerte (Quelle `healthkit`) und den Fortschritt (Tabelle `user_progress`) ins eigene Konto laden; die PC-Version liest sie. `delete_account()` löscht jetzt auch den Fortschritt. **Wichtig:** Ohne diese Migration zeigt die PC-Version keine Werte vom iPhone.
 
 8. Für die **Webversion** (Prototyp ohne App Store) zusätzlich `supabase/migrations/0004_web_health.sql` ausführen. Das legt die Tabellen für Tageswerte an, die die Webversion braucht, weil ein Browser nicht direkt auf Apple Health zugreifen darf. Werte kommen dort über einen Apple-Kurzbefehl (per Geheim-Token, siehe unten) oder per Hand in die App.
 
@@ -48,10 +49,10 @@ Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue D
 
 ## 3a. Anmeldung per E-Mail (für die Webversion)
 
-Die Webversion kann sich nicht mit Apple anmelden (das geht nur aus einer echten iPhone-App). Stattdessen: E-Mail mit **Magic Link**.
+Die Webversion und die PC-Version der App können sich nicht mit Apple anmelden (das geht nur aus der iPhone-App). Stattdessen: E-Mail und Passwort. Die iPhone-App bietet E-Mail zusätzlich an, damit man auf beiden Geräten dasselbe Konto nutzt.
 
 1. **Authentication → Providers → Email** ist in neuen Supabase-Projekten standardmäßig an. „Confirm email“ kann an bleiben.
-2. **Authentication → URL Configuration**: Bei **Site URL** die Adresse der veröffentlichten Webversion eintragen (die Artifact-URL, die du von Claude bekommst). Das ist die Adresse, zu der der Link in der Anmelde-Mail führt.
+2. **Authentication → URL Configuration**: Bei **Redirect URLs** zusätzlich `https://tomkroe.github.io/lvlme/app/**` eintragen (PC-Version, für den Bestätigungslink nach der Registrierung). Bei **Site URL** die Adresse der veröffentlichten Webversion eintragen (die Artifact-URL, die du von Claude bekommst). Das ist die Adresse, zu der der Link in der Anmelde-Mail führt.
 3. Fertig – mehr ist für die Webversion nicht nötig. Beim ersten Öffnen gibt man seine E-Mail-Adresse ein, bekommt einen Link per Mail, klickt ihn an und ist angemeldet.
 
 ## 3. Anmeldung mit Apple aktivieren (für die spätere echte App)

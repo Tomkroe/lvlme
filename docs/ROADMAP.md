@@ -15,6 +15,16 @@ Tom pflegt die aktuellen Aufgaben auf https://claude.ai/artifact/Ai4DZTqzBZtXFAw
 
 Gemeinsame Dateien (`src/types.ts`, `CLAUDE.md`, diese Datei): nur in kleinen Schritten ändern und im Commit erwähnen.
 
+## Neu ab 14.11.: Ein Code für iPhone und PC
+Die iPhone-App (Expo) ist jetzt auch die PC-Version: CI baut sie fürs Web und veröffentlicht sie unter https://tomkroe.github.io/lvlme/app/ (am PC über Edge/Chrome „Als App installieren“). Der alte Web-Prototyp unter `/lvlme/web/` bleibt online, bis alle seine Funktionen in der App sind, und bekommt **keine neuen Funktionen** mehr. Neue Funktionen kommen nur noch in `app/` und `src/` – damit laufen sie automatisch auf iPhone und PC.
+
+- [x] **P0** Expo Web, PWA-Manifest, Veröffentlichung durch CI nach `docs/app/`, E-Mail-Anmeldung auf allen Geräten, Sync iPhone → Konto → PC mit Einwilligung (Migration 0012). *(Tom-Sitzung)*
+- [ ] **P1** Funktionen aus `docs/web/` in die App holen: Ernährung, Ränge, Charakter-Editor mit `look`, Kurzbefehl-Token.
+- [ ] **P2** Neues Datenmodell mit Ziel und Prozent-Fortschritt (Konzept: https://claude.ai/artifact/3dXmwYLpMTujJyaMt62hcx), Tabellen als Migration 0013.
+- [ ] **P3** `docs/web/` abschalten und `/lvlme/web/` auf `/lvlme/app/` weiterleiten.
+
+**Für Tom:** `supabase/migrations/0012_sync_iphone_pc.sql` im Supabase SQL Editor ausführen und in Supabase unter Authentication → URL Configuration die Redirect-URL `https://tomkroe.github.io/lvlme/app/**` ergänzen.
+
 ## Spielregeln für die Zusammenarbeit
 1. Vor jedem Schritt: `git pull` (bzw. `git fetch` + rebase) auf `main`.
 2. Nach jedem Schritt: committen, pushen, hier den Haken setzen (`[x]`) und Kürzel der Sitzung dazuschreiben.

@@ -5,10 +5,13 @@
  * - Öffentlicher Avatarzustand geht an das Backend, wenn konfiguriert und angemeldet;
  *   die Tagesform (mood) nur, wenn shareMood an ist (Standard: aus); Frisur und Körper immer
  * - Der Kämpfername aus dem Onboarding wird nach Anmeldung und bei Änderung per setDisplayName gesetzt
- * Gesundheitsrohdaten werden weder gespeichert noch gesendet noch geloggt.
+ * - Sync iPhone ↔ PC (nur mit Einwilligung `cloudSync` auf dem iPhone): Tageswerte und Fortschritt gehen ins
+ *   eigene Konto; die PC-/Web-Version liest sie von dort. Freunde sehen davon nichts.
+ * Gesundheitsrohdaten werden sonst weder gespeichert noch gesendet noch geloggt.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.ts';
 import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
 import { NEW_PROGRESS, baselineFrom, bookDay, power as powerOf, scoreDay, stageFor, toPublic } from '../game/rules.ts';
@@ -32,6 +35,8 @@ interface Profile {
   hair: HairId;
   /** Körpertyp oder Outfit des Avatars (wird mit dem öffentlichen Avatar an Freunde veröffentlicht) */
   body: BodyId;
+  /** iPhone: Tageswerte und Fortschritt ins eigene Konto laden, damit der PC dasselbe zeigt. Standard: aus. */
+  cloudSync: boolean;
 }
 
 export interface AppState {
@@ -43,6 +48,8 @@ export interface AppState {
   shareMood: boolean;
   hair: HairId;
   body: BodyId;
+  cloudSync: boolean;
+  signInMethod: 'apple' | 'email' | null;
   source: DailyMetrics['source'] | null;
   progress: Progress;
   today: DayScore | null;
@@ -59,6 +66,7 @@ export interface AppState {
   setShareMood: (on: boolean) => Promise<void>;
   setHair: (hair: HairId) => Promise<void>;
   setBody: (body: BodyId) => Promise<void>;
+  setCloudSync: (on: boolean) => Promise<void>;
   setMe: (me: Me | null) => void;
   signOut: () => Promise<void>;
   resetLocal: () => Promise<void>;
@@ -66,7 +74,15 @@ export interface AppState {
 
 const K_PROGRESS = 'lvlme.progress.v1';
 const K_PROFILE = 'lvlme.profile.v1';
-const DEFAULT_PROFILE: Profile = { name: '', onboarded: false, shareMood: false, hair: DEFAULT_HAIR, body: DEFAULT_BODY };
+const DEFAULT_PROFILE: Profile = { name: '', onboarded: false, shareMood: false, hair: DEFAULT_HAIR, body: DEFAULT_BODY, cloudSync: false };
+const IS_IOS = Platform.OS === 'ios';
+
+/** Welcher Fortschritt ist weiter? Mehr verbuchte Tage gewinnt, sonst Level, dann XP. */
+function further(a: Progress, b: Progress): Progress {
+  if (a.booked.length !== b.booked.length) return a.booked.length > b.booked.length ? a : b;
+  if (a.level !== b.level) return a.level > b.level ? a : b;
+  return a.xp >= b.xp ? a : b;
+}
 
 const Ctx = createContext<AppState | null>(null);
 
@@ -93,6 +109,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [stepsToday, setStepsToday] = useState(0);
   const [source, setSource] = useState<DailyMetrics['source'] | null>(null);
   const [me, setMeState] = useState<Me | null>(null);
+  const [signInMethod, setSignInMethod] = useState<'apple' | 'email' | null>(null);
   const [events, setEvents] = useState<LevelEvent[]>([]);
   const busy = useRef(false);
   const progressRef = useRef<Progress>(NEW_PROGRESS);
@@ -123,21 +140,46 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setMeState(meRef.current);
   }, []);
 
+  /** Darf mit dem Konto synchronisiert werden? PC/Web immer (liest nur), iPhone nur mit Einwilligung. */
+  const syncAllowed = useCallback(
+    () => social.isConfigured() && meRef.current !== null && (!IS_IOS || profileRef.current.cloudSync === true),
+    [],
+  );
+
+  /** Fortschritt mit dem Konto abgleichen: der weitere Stand gewinnt auf beiden Seiten. */
+  const syncProgress = useCallback(async () => {
+    if (!syncAllowed()) return;
+    const remote = await social.loadProgress();
+    const local = progressRef.current;
+    const best = remote ? further(local, remote) : local;
+    if (best !== local) {
+      progressRef.current = best;
+      setProgress(best);
+      await writeJson(K_PROGRESS, best);
+    }
+    if (!remote || best !== remote) await social.saveProgress(best);
+  }, [syncAllowed]);
+
   const refresh = useCallback(async () => {
     if (busy.current) return;
     busy.current = true;
     setLoading(true);
     setError(null);
     try {
+      await syncProgress().catch(() => { /* offline: beim nächsten Mal */ });
       const days = await getHealthProvider().readDays(8);
-      if (days.length === 0) { setToday(null); return; }
+      if (days.length === 0) { setToday(null); setSource('cloud'); return; }
+      // iPhone mit Einwilligung: Tageswerte fürs PC ins eigene Konto laden
+      if (IS_IOS && syncAllowed()) social.uploadHealthDays(days).catch(() => { /* offline: beim nächsten Mal */ });
       const todayM = days[days.length - 1];
       const past = days.slice(0, -1);
 
       // Abgeschlossene Vortage verbuchen (älteste zuerst); jeder Tag zählt nur einmal
       let p = progressRef.current;
       const newEvents: LevelEvent[] = [];
-      past.forEach((m, i) => {
+      // Am PC ohne Anmeldung (Beispieldaten) nichts verbuchen, sonst landet Demo-Fortschritt später im Konto
+      const bookable = IS_IOS || todayM.source !== 'demo' ? past : [];
+      bookable.forEach((m, i) => {
         const prior = past.slice(0, i);
         const base = baselineFrom(prior.length >= 3 ? prior : past);
         const r = bookDay(p, m, scoreDay(m, base));
@@ -161,6 +203,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         progressRef.current = p;
         setProgress(p);
         await writeJson(K_PROGRESS, p);
+        if (syncAllowed()) social.saveProgress(p).catch(() => { /* offline: beim nächsten Mal */ });
       }
       if (newEvents.length) {
         // Mehrere Level-ups zusammenfassen: nur das höchste zeigen, Verwandlung hat Vorrang
@@ -171,12 +214,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
       publish().catch(() => { /* offline: beim nächsten Mal */ });
     } catch {
-      setError('Deine Gesundheitsdaten konnten gerade nicht gelesen werden. Zieh zum Aktualisieren nach unten oder prüfe in den Einstellungen unter Health › Datenzugriff, ob LvlMe lesen darf.');
+      setError(IS_IOS
+        ? 'Deine Gesundheitsdaten konnten gerade nicht gelesen werden. Zieh zum Aktualisieren nach unten oder prüfe in den Einstellungen unter Health › Datenzugriff, ob LvlMe lesen darf.'
+        : 'Deine Werte konnten gerade nicht aus deinem Konto geladen werden. Prüfe deine Internetverbindung und lade die Seite neu.');
     } finally {
       busy.current = false;
       setLoading(false);
     }
-  }, [publish]);
+  }, [publish, syncProgress, syncAllowed]);
 
   // Start: gespeicherte Daten laden, dann Health lesen
   useEffect(() => {
@@ -194,6 +239,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           const m = await social.getMe();
           if (alive) {
             setMeState(m); meRef.current = m;
+            if (m) social.signInMethod().then(setSignInMethod).catch(() => {});
             // Server-Name weicht ab (z. B. noch der Apple-Name): Kämpfernamen nachziehen
             if (m && prof.name && m.displayName !== prof.name) syncDisplayName().catch(() => {});
           }
@@ -209,12 +255,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const setMe = useCallback((m: Me | null) => {
     meRef.current = m;
     setMeState(m);
-    if (!m) return;
+    if (!m) { setSignInMethod(null); return; }
     (async () => {
+      social.signInMethod().then(setSignInMethod).catch(() => {});
       try { await syncDisplayName(); } catch { /* offline: beim nächsten Start */ }
-      try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
+      // Nach der Anmeldung: Fortschritt abgleichen und (am PC) die Werte aus dem Konto laden
+      if (profileRef.current.onboarded) await refresh();
+      else try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
     })();
-  }, [syncDisplayName, publish]);
+  }, [syncDisplayName, publish, refresh]);
 
   const setName = useCallback(async (name: string) => {
     const next = { ...profileRef.current, name: name.trim().slice(0, 24) };
@@ -250,6 +299,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
   }, [publish]);
 
+  const setCloudSync = useCallback(async (on: boolean) => {
+    const next = { ...profileRef.current, cloudSync: on };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+    // Beim Einschalten sofort hochladen
+    if (on) await refresh();
+  }, [refresh]);
+
   const finishOnboarding = useCallback(async () => {
     const next = { ...profileRef.current, onboarded: true };
     setProfile(next); profileRef.current = next;
@@ -259,7 +316,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     try { await social.signOut(); } catch { /* egal */ }
-    setMeState(null); meRef.current = null;
+    setMeState(null); meRef.current = null; setSignInMethod(null);
   }, []);
 
   const resetLocal = useCallback(async () => {
@@ -278,11 +335,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     shareMood: profile.shareMood === true,
     hair: profile.hair ?? DEFAULT_HAIR,
     body: profile.body ?? DEFAULT_BODY,
+    cloudSync: profile.cloudSync === true,
+    signInMethod,
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     power: powerOf(progress, today?.energy ?? 60),
-    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setMe, signOut, resetLocal]);
+    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setCloudSync, setMe, signOut, resetLocal,
+  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setCloudSync, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

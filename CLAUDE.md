@@ -1,6 +1,6 @@
 # LvlMe
 
-Eine iOS-App (später auch Android), in der ein Anime-Avatar im Stil klassischer Shōnen-Serien *du selbst* bist. Er reagiert wie ein Tamagotchi auf deine echten Gesundheitsdaten aus Apple Health (später WHOOP): gut geschlafen → leuchtende Aura, viel trainiert → verschwitzt und stolz, tagelang gesessen → träge. Level, Stats und Verwandlungsstufen wachsen langfristig. Freunde sehen deinen Avatar, nie deine Rohdaten.
+Eine App für iPhone und PC (Windows, als installierbare Web-App aus demselben Code; später auch Android), in der ein Anime-Avatar im Stil klassischer Shōnen-Serien *du selbst* bist. Er reagiert wie ein Tamagotchi auf deine echten Gesundheitsdaten aus Apple Health (später WHOOP): gut geschlafen → leuchtende Aura, viel trainiert → verschwitzt und stolz, tagelang gesessen → träge. Level, Stats und Verwandlungsstufen wachsen langfristig. Freunde sehen deinen Avatar, nie deine Rohdaten.
 
 Konzept: siehe Konzeptdokument „LvlMe – Konzept“ (claude.ai). Klickbare Demo: „Fitness-Avatar Demo“.
 
@@ -8,7 +8,10 @@ Konzept: siehe Konzeptdokument „LvlMe – Konzept“ (claude.ai). Klickbare De
 - Expo (React Native), Expo SDK 58, Development Build (kein Expo Go), Builds über EAS
 - HealthKit über `@kingstinct/react-native-healthkit` (+ `react-native-nitro-modules`), nur Lesezugriff
 - Avatar als SVG über `react-native-svg`, später ggf. Rive
-- Rohdaten bleiben auf dem Gerät; an ein Backend geht höchstens der Avatarzustand
+- **Ein Code für iPhone und PC:** Expo Web baut dieselbe App für den Browser. CI veröffentlicht sie unter https://tomkroe.github.io/lvlme/app/ (Ordner `docs/app/`, nie von Hand ändern). Am PC über Edge/Chrome „Als App installieren“.
+- Plattform-Weichen über Dateiendungen: `*.web.ts(x)` ersetzt im Web die native Datei (z. B. `healthkit.web.ts`, `AppleButton.web.tsx`); solche Dateien **ohne** Endung importieren. Bildschirmgröße über `useScreenSize()` (`src/ui/layout.ts`), Rückfragen über `confirm()` (`src/ui/confirm.ts`), nicht `Alert.alert`.
+- Rohdaten bleiben auf dem iPhone. Nur mit Einwilligung („Mit dem PC synchronisieren“) gehen Tageswerte und Fortschritt ins **eigene** Konto (Migration 0012); die PC-Version liest sie von dort. Freunde sehen nur den Avatarzustand.
+- Anmeldung: auf allen Geräten E-Mail und Passwort (gleiches Konto auf iPhone und PC), auf dem iPhone zusätzlich Apple
 - Backend: Supabase (Auth mit Apple, Postgres mit RLS), Teilen über iOS-Teilen-Menü
 
 ## Ordner
@@ -16,7 +19,8 @@ Konzept: siehe Konzeptdokument „LvlMe – Konzept“ (claude.ai). Klickbare De
 - `src/health/` Apple Health · `src/avatar/` Avatar (Bild-Ebenen aus `assets/avatar/`, Aura als SVG) · `src/social/` Konto & Freunde · `src/share/` Teilen
 - `assets/avatar/` Körper- (`body*.png`, `outfit-*.png`) und Kopf-PNGs (`head-*.png`), freigestellt, Hals und Füße auf gleicher Höhe, daher frei kombinierbar; Quellen in `raw/`, Prompts in `docs/Avatar-Design-Prompts.md`
 - `app/` Screens (Expo Router) · `supabase/migrations/` Datenbankschema
-- Prüfen: `npm run typecheck`, `npm test`; CI auf GitHub macht beides plus Prebuild-Probe
+- `public/` Vorlage und Manifest der PC-Version · `docs/web/` alter Web-Prototyp (wird abgelöst, sobald alles in der App ist)
+- Prüfen: `npm run typecheck`, `npm test`; CI auf GitHub macht beides plus Prebuild-Probe und baut die PC-Version
 
 ## Agenten-Team (`.claude/agents/`)
 | Agent | Zuständig für |

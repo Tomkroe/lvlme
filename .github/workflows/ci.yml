@@ -19,6 +19,9 @@ jobs:
         run: |
           if ! grep -q '"expo-router"' package.json; then npm run setup-deps; fi
           npx expo install --check || npx expo install --fix
+      - name: Web-Pakete (Windows/PC-Version)
+        run: |
+          grep -q '"react-native-web"' package.json || npx expo install react-native-web @expo/metro-runtime -- --no-audit --no-fund
       - name: Typen prüfen
         run: npx tsc --noEmit
       - name: Tests (Spielregeln)
@@ -27,13 +30,25 @@ jobs:
         run: npx expo-doctor || true
       - name: Prebuild-Probe (iOS-Konfiguration erzeugen)
         run: npx expo prebuild --platform ios --no-install --clean
-      - name: Angepasste Versionen zurückschreiben
+      - name: Web-Version bauen (gleicher Code wie die iPhone-App)
+        env:
+          # Öffentliche Werte (stehen auch in docs/web/index.html); Zugriff regelt RLS in Supabase
+          EXPO_PUBLIC_SUPABASE_URL: https://xvinbohxqofkwlrmrwao.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ETTbcormpZjj5FACAXfV1Q_013dVmAA
+        run: npx expo export --platform web --output-dir dist
+      - name: Web-Version und angepasste Versionen zurückschreiben
         if: github.ref == 'refs/heads/main'
         run: |
+          rm -rf docs/app && cp -r dist docs/app
+          # Direkt aufgerufene Unterseiten (z. B. nach Neuladen) landen auf GitHub Pages sonst auf einer 404-Seite
+          cp dist/index.html docs/404.html
           git config user.name "lvlme-ci"
           git config user.email "ci@users.noreply.github.com"
-          git add package.json package-lock.json
-          git diff --cached --quiet || (git commit -m "CI: Abhängigkeiten an Expo SDK angepasst" && git push)
+          git add package.json package-lock.json docs/app docs/404.html
+          if ! git diff --cached --quiet; then
+            git commit -m "CI: Web-Version (docs/app) und Abhängigkeiten aktualisiert"
+            git pull --rebase origin main && git push
+          fi
 
   build-ios:
     # Manuell starten, sobald EXPO_TOKEN als Secret hinterlegt ist und der erste Build einmal am PC lief

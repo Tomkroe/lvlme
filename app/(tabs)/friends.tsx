@@ -1,6 +1,6 @@
 /** Freunde: einladen, Code eingeben, Liste, Kampf, entfernen. Zuständig: app-ui. */
 import React, { useCallback, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
@@ -12,7 +12,8 @@ import { MOOD_TEXT, STAGES } from '../../src/game/rules.ts';
 import { useApp } from '../../src/state/AppState.tsx';
 import { Avatar } from '../../src/avatar/Avatar.tsx';
 import { miniSkySvg } from '../../src/ui/Scene.tsx';
-import { AppleSignIn } from '../../src/ui/AppleSignIn.tsx';
+import { SignIn } from '../../src/ui/SignIn.tsx';
+import { confirm } from '../../src/ui/confirm.ts';
 import { FightModal, type Fighter } from '../../src/ui/FightModal.tsx';
 import { Button, Card, Chip, H, P } from '../../src/ui/components.tsx';
 import { C, F, fmt } from '../../src/ui/theme.ts';
@@ -65,14 +66,10 @@ export default function Friends() {
     } finally { setAdding(false); }
   };
 
-  const remove = (f: Friend) => {
-    Alert.alert(`${f.displayName} entfernen?`, 'Ihr seht eure Avatare dann nicht mehr. Ihr könnt euch jederzeit neu einladen.', [
-      { text: 'Abbrechen', style: 'cancel' },
-      { text: 'Entfernen', style: 'destructive', onPress: async () => {
-        try { await social.removeFriend(f.userId); setFriends(xs => xs.filter(x => x.userId !== f.userId)); }
-        catch { setMsg({ ok: false, text: 'Entfernen hat nicht geklappt. Versuch es noch einmal.' }); }
-      } },
-    ]);
+  const remove = async (f: Friend) => {
+    if (!(await confirm(`${f.displayName} entfernen?`, 'Ihr seht eure Avatare dann nicht mehr. Ihr könnt euch jederzeit neu einladen.', 'Entfernen'))) return;
+    try { await social.removeFriend(f.userId); setFriends(xs => xs.filter(x => x.userId !== f.userId)); }
+    catch { setMsg({ ok: false, text: 'Entfernen hat nicht geklappt. Versuch es noch einmal.' }); }
   };
 
   return (
@@ -92,7 +89,7 @@ export default function Friends() {
         <Card>
           <P style={{ color: C.ink, fontWeight: '700' }}>Melde dich an, um Freunde hinzuzufügen</P>
           <P>Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Schlaf, Puls oder Schritte sehen sie nie.</P>
-          <AppleSignIn />
+          <SignIn />
         </Card>
       )}
 

@@ -1,6 +1,6 @@
 /** Avatar-Startseite: Szene, HUD, Sprechblase, Ringanzeigen, XP, Teilen. Zuständig: app-ui. */
 import React, { useRef, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useApp } from '../../src/state/AppState.tsx';
@@ -10,10 +10,11 @@ import { Scene } from '../../src/ui/Scene.tsx';
 import { Bar, Button, Card, Chip, LevelRing, P, Ring } from '../../src/ui/components.tsx';
 import { C, F, energyColor, fmt } from '../../src/ui/theme.ts';
 import { shareCard } from '../../src/share/index.ts';
+import { useScreenSize } from '../../src/ui/layout.ts';
 
 export default function Home() {
   const app = useApp();
-  const { width: W, height: Hs } = useWindowDimensions();
+  const { width: W, height: Hs } = useScreenSize();
   const insets = useSafeAreaInsets();
   const cardRef = useRef<React.ComponentRef<typeof View>>(null);
   const [shareErr, setShareErr] = useState<string | null>(null);
@@ -79,7 +80,7 @@ export default function Home() {
         <View style={[st.bubble, { top: insets.top + 76 }, warn && { backgroundColor: '#ffd84d' }]} accessibilityLiveRegion="polite">
           <Text style={[st.bubbleLabel, warn && { color: '#6a4b00' }]}>{warn ? 'Achtung: Übertraining' : MOOD_TEXT[mood].label}</Text>
           <Text style={st.bubbleText}>
-            {warn ? 'Hohe Belastung bei wenig Erholung. Heute gibt es keinen Bonus, gönn dir Ruhe.' : app.today ? MOOD_TEXT[mood].text : 'Ich warte auf deine Daten aus Apple Health.'}
+            {warn ? 'Hohe Belastung bei wenig Erholung. Heute gibt es keinen Bonus, gönn dir Ruhe.' : app.today ? MOOD_TEXT[mood].text : (Platform.OS === 'ios' ? 'Ich warte auf deine Daten aus Apple Health.' : 'Ich warte auf deine Daten vom iPhone.')}
           </Text>
         </View>
       </View>
@@ -87,6 +88,9 @@ export default function Home() {
       {/* Sheet */}
       <View style={st.sheet}>
         <View style={st.grab} />
+        {Platform.OS !== 'ios' && app.source === 'demo' && (
+          <Card><P style={{ color: C.ink }}>Du siehst Beispieldaten. Melde dich unter Profil an, um die Werte von deinem iPhone zu sehen.</P></Card>
+        )}
         {app.error && <Card style={{ borderColor: C.warn }}><P style={{ color: C.ink }}>{app.error}</P></Card>}
 
         {app.today ? (
@@ -98,7 +102,9 @@ export default function Home() {
         ) : !app.loading && (
           <Card>
             <P style={{ color: C.ink, fontWeight: '700' }}>Noch keine Daten für heute</P>
-            <P>Trag deine Apple Watch oder nimm dein iPhone mit, dann füllen sich Energie, Belastung und Schlaf. Zum Aktualisieren nach unten ziehen.</P>
+            <P>{Platform.OS === 'ios'
+              ? 'Trag deine Apple Watch oder nimm dein iPhone mit, dann füllen sich Energie, Belastung und Schlaf. Zum Aktualisieren nach unten ziehen.'
+              : 'Noch keine Werte in deinem Konto. Schalte in der iPhone-App unter Profil „Mit dem PC synchronisieren“ ein und öffne dort einmal die App.'}</P>
           </Card>
         )}
 

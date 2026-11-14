@@ -3,7 +3,10 @@
  * Wer hier etwas ändert, nennt es in der Übergabe (siehe CLAUDE.md).
  */
 
-/** Tageswerte, wie sie aus Apple Health (oder später WHOOP) gelesen werden. Rohdaten, bleiben auf dem Gerät. */
+/**
+ * Tageswerte, wie sie aus Apple Health (oder später WHOOP) gelesen werden. Rohdaten.
+ * Sie verlassen das Gerät nur mit Einwilligung, und dann nur ins eigene Konto (Sync iPhone ↔ PC).
+ */
 export interface DailyMetrics {
   /** Kalendertag in lokaler Zeit, Format YYYY-MM-DD */
   date: string;
@@ -18,8 +21,8 @@ export interface DailyMetrics {
   hrvMs: number | null;
   /** Ruhepuls in bpm */
   restingHr: number | null;
-  /** Woher die Werte stammen */
-  source: 'healthkit' | 'whoop' | 'demo';
+  /** Woher die Werte stammen ('cloud' = vom iPhone ins eigene Konto geladen, auf dem PC gelesen) */
+  source: 'healthkit' | 'whoop' | 'cloud' | 'demo';
 }
 
 /** Persönliche Basiswerte über 7 Tage, um Recovery relativ zu berechnen */

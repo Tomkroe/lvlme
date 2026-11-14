@@ -1,6 +1,6 @@
 /** Profil: Stats, Serie, Verwandlungen, Datenquelle, Konto, Datenschutz. Zuständig: app-ui. */
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useApp } from '../../src/state/AppState.tsx';
@@ -9,11 +9,13 @@ import { STAGE_COLORS } from '../../src/avatar/palette.ts';
 import { Avatar } from '../../src/avatar/Avatar.tsx';
 import { BODIES, HAIRSTYLES, type BodyOption } from '../../src/avatar/assets.ts';
 import * as social from '../../src/social/api.ts';
-import { AppleSignIn } from '../../src/ui/AppleSignIn.tsx';
+import { SignIn } from '../../src/ui/SignIn.tsx';
+import { confirm, notify } from '../../src/ui/confirm.ts';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
 import { C, F, PRIVACY_URL, fmt } from '../../src/ui/theme.ts';
 
-const SOURCE: Record<string, string> = { healthkit: 'Apple Health', whoop: 'WHOOP', demo: 'Beispieldaten' };
+const SOURCE: Record<string, string> = { healthkit: 'Apple Health', whoop: 'WHOOP', cloud: 'Dein Konto (vom iPhone)', demo: 'Beispieldaten' };
+const isIos = Platform.OS === 'ios';
 
 export default function Profile() {
   const app = useApp();
@@ -26,31 +28,32 @@ export default function Profile() {
   const bars: [string, number, string][] = [['Stärke', s.str, C.ki], ['Ausdauer', s.end, C.sky], ['Erholung', s.rec, C.good], ['Disziplin', s.dis, C.violet]];
   const mood = app.today?.mood ?? 'awake';
 
-  const reset = () => Alert.alert('Fortschritt zurücksetzen?', 'Level, Stats und Serie auf diesem iPhone werden gelöscht. Deine Daten in Apple Health bleiben unberührt.', [
-    { text: 'Abbrechen', style: 'cancel' },
-    { text: 'Zurücksetzen', style: 'destructive', onPress: async () => { await app.resetLocal(); router.replace('/onboarding'); } },
-  ]);
+  const reset = async () => {
+    const ok = await confirm('Fortschritt zurücksetzen?', 'Level, Stats und Serie auf diesem Gerät werden gelöscht. Deine Daten in Apple Health bleiben unberührt.', 'Zurücksetzen');
+    if (!ok) return;
+    await app.resetLocal();
+    router.replace('/onboarding');
+  };
 
   const [deleting, setDeleting] = useState(false);
-  const deleteAccount = () => Alert.alert('Konto löschen?', 'Dein Konto, dein Profil, deine Einladungen und alle Freundschaften werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.', [
-    { text: 'Abbrechen', style: 'cancel' },
-    { text: 'Konto löschen', style: 'destructive', onPress: async () => {
-      setDeleting(true);
-      try {
-        await social.deleteAccount();
-        await app.signOut();
-      } catch (e) {
-        setDeleting(false);
-        Alert.alert('Konto nicht gelöscht', (e as Error).message);
-        return;
-      }
+  const deleteAccount = async () => {
+    const ok = await confirm('Konto löschen?', 'Dein Konto, dein Profil, deine Einladungen, alle Freundschaften und die im Konto gespeicherten Tageswerte werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.', 'Konto löschen');
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await social.deleteAccount();
+      await app.signOut();
+    } catch (e) {
       setDeleting(false);
-      Alert.alert('Konto gelöscht', 'Auch Fortschritt auf diesem iPhone löschen?', [
-        { text: 'Behalten', style: 'cancel' },
-        { text: 'Löschen', style: 'destructive', onPress: async () => { await app.resetLocal(); router.replace('/onboarding'); } },
-      ]);
-    } },
-  ]);
+      notify('Konto nicht gelöscht', (e as Error).message);
+      return;
+    }
+    setDeleting(false);
+    if (await confirm('Konto gelöscht', 'Auch den Fortschritt auf diesem Gerät löschen?', 'Löschen')) {
+      await app.resetLocal();
+      router.replace('/onboarding');
+    }
+  };
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: 16, paddingBottom: 32, gap: 14 }}>
@@ -137,7 +140,24 @@ export default function Profile() {
       <Card>
         <H>Daten</H>
         <P>Quelle: <Text style={{ color: C.ink, fontWeight: '700' }}>{app.source ? SOURCE[app.source] ?? app.source : 'noch keine'}</Text></P>
-        <P>Deine Gesundheitsdaten bleiben auf deinem iPhone. LvlMe liest sie nur, um deinen Avatar zu berechnen. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+        {isIos ? (
+          <P>LvlMe liest deine Gesundheitsdaten aus Apple Health, um deinen Avatar zu berechnen. Ohne Sync bleiben sie auf deinem iPhone. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+        ) : (
+          <P>Am PC kann LvlMe nicht auf Apple Health zugreifen. Deine Werte kommen von deinem iPhone, wenn du dort „Mit dem PC synchronisieren“ einschaltest und auf beiden Geräten mit demselben Konto angemeldet bist. Ohne Anmeldung siehst du Beispieldaten.</P>
+        )}
+        {isIos && social.isConfigured() && (
+          <>
+            <View style={st.switchRow}>
+              <Text style={[st.label, { flex: 1 }]}>Mit dem PC synchronisieren</Text>
+              <Switch value={app.cloudSync} onValueChange={v => { app.setCloudSync(v); }}
+                trackColor={{ true: C.ki, false: C.line }} ios_backgroundColor={C.line}
+                accessibilityLabel="Mit dem PC synchronisieren"
+                accessibilityHint="Speichert deine Tageswerte und deinen Fortschritt in deinem Konto, damit die PC-Version dasselbe zeigt" />
+            </View>
+            <P>Dann speichert LvlMe deine Tageswerte (Schritte, aktive Kalorien, Training, Schlaf, HRV, Ruhepuls) und deinen Fortschritt in deinem Konto. Nur du kannst sie sehen, Freunde nie. Ausschalten stoppt das Hochladen; „Konto löschen“ entfernt alles.</P>
+            {app.cloudSync && !app.me && <P style={{ color: C.ki }}>Melde dich unten an, damit der Sync startet.</P>}
+          </>
+        )}
         <View style={st.switchRow}>
           <Text style={[st.label, { flex: 1 }]}>Tagesform mit Freunden teilen</Text>
           <Switch value={app.shareMood} onValueChange={v => { app.setShareMood(v); }}
@@ -146,7 +166,7 @@ export default function Profile() {
             accessibilityHint="Freunde sehen dann, ob du aufgeladen, müde usw. bist" />
         </View>
         <P>Freunde sehen dann, ob du aufgeladen, müde usw. bist. Daraus lassen sich Rückschlüsse auf Schlaf und Erholung ziehen. Du kannst das jederzeit wieder ausschalten.</P>
-        <P>Welche Daten LvlMe lesen darf, änderst du in der Health-App unter Profil › Apps › LvlMe.</P>
+        {isIos && <P>Welche Daten LvlMe lesen darf, änderst du in der Health-App unter Profil › Apps › LvlMe.</P>}
         <Text style={st.link} accessibilityRole="link" accessibilityHint="Öffnet die Datenschutzerklärung im Browser"
           onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>Datenschutzerklärung</Text>
       </Card>
@@ -156,13 +176,13 @@ export default function Profile() {
         {!social.isConfigured() && <P>Konto und Freunde sind in dieser Version noch nicht eingerichtet.</P>}
         {social.isConfigured() && app.me && (
           <>
-            <P>Angemeldet mit Apple.</P>
+            <P>{app.signInMethod === 'apple' ? 'Angemeldet mit Apple.' : 'Angemeldet mit E-Mail.'}</P>
             <Button title="Abmelden" kind="ghost" onPress={app.signOut} />
             <Button title="Konto löschen" kind="danger" busy={deleting} disabled={deleting} onPress={deleteAccount}
               accessibilityHint="Löscht dein Konto, dein Profil und alle Freundschaften endgültig" />
           </>
         )}
-        {social.isConfigured() && !app.me && <AppleSignIn />}
+        {social.isConfigured() && !app.me && <SignIn />}
         <Button title="Fortschritt zurücksetzen" kind="danger" onPress={reset} />
       </Card>
     </ScrollView>
