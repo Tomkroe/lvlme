@@ -115,18 +115,14 @@ export default function Home() {
           <View style={st.bottom}>
             {notes.length > 0 && !editing && <View style={st.note}>{notes}</View>}
             {editing && <View style={st.note}><Text style={st.noteText}>Tippe auf eine Kachel oder ein „+“, um zu wählen, was dort stehen soll.</Text></View>}
-            <View style={st.btnRow}>
+            {editing && <View style={st.btnRow}>
               {editing ? (
                 <>
                   <Pressable onPress={() => app.resetWidgets()} accessibilityRole="button" style={[st.glass, st.pill]}><Text style={st.pillText}>Standard</Text></Pressable>
                   <Pressable onPress={() => setEditing(false)} accessibilityRole="button" style={[st.pill, { backgroundColor: C.ki }]}><Text style={[st.pillText, { color: C.kiInk }]}>Fertig</Text></Pressable>
                 </>
-              ) : (
-                <>
-                  <Pressable onPress={() => setEditing(true)} accessibilityRole="button" accessibilityHint="Widgets rund um den Avatar hinzufügen, ändern oder entfernen" style={[st.glass, st.pill]}><Text style={st.pillText}>Widgets</Text></Pressable>
-                </>
-              )}
-            </View>
+              ) : null}
+            </View>}
           </View>
         </View>
       </ScrollView>
