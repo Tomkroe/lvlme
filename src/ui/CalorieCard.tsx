@@ -75,6 +75,7 @@ export function CalorieCard({ draftStats }: { draftStats: BodyStats }) {
       {Platform.OS === 'ios' && <Button title="Aus Apple Health übernehmen" kind="ghost" busy={busy} onPress={fromHealth} accessibilityHint="Liest Gewicht, Größe und Körperfett aus Apple Health. Die Werte bleiben auf deinem iPhone." />}
 
       <Slider label="Alter" unit="Jahre" value={age} min={AGE_LIMITS.min} max={AGE_LIMITS.max} onChange={setAge} onDone={v => app.setCalorieSettings({ age: v })} />
+      {!s.ageSet && <Button title={`Alter ${age} übernehmen`} kind="ghost" onPress={() => app.setCalorieSettings({ age })} accessibilityHint="Ohne gesetztes Alter gibt es keine Empfehlung zum Abnehmen" />}
       <Text style={st.label}>Geschlecht (nur für die Formel)</Text>
       <View style={st.chips}>
         {SEXES.map(x => (
@@ -97,7 +98,7 @@ export function CalorieCard({ draftStats }: { draftStats: BodyStats }) {
       </View>
       {t?.limitedBy && (
         <P style={{ fontSize: 12 }}>
-          {t.limitedBy === 'age' ? `Unter ${MIN_LOSE_AGE} Jahren gibt LvlMe keine Empfehlung zum Abnehmen, es gilt „Halten“.` : `Bei einem BMI unter ${MIN_LOSE_BMI.toString().replace('.', ',')} gibt LvlMe keine Empfehlung zum Abnehmen, es gilt „Halten“.`}
+          {t.limitedBy === 'noage' ? 'Stell zuerst dein Alter ein: ohne Altersangabe gibt LvlMe keine Empfehlung zum Abnehmen, es gilt „Halten“.' : t.limitedBy === 'age' ? `Unter ${MIN_LOSE_AGE} Jahren gibt LvlMe keine Empfehlung zum Abnehmen, es gilt „Halten“.` : `Bei einem BMI unter ${MIN_LOSE_BMI.toString().replace('.', ',')} gibt LvlMe keine Empfehlung zum Abnehmen, es gilt „Halten“.`}
         </P>
       )}
 

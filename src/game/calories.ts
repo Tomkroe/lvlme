@@ -51,6 +51,8 @@ export interface CalorieInput {
   activeKcalAvg: number | null;
   goal: CalorieGoal;
   custom?: number;
+  /** Hat der Nutzer sein Alter selbst gesetzt? Ohne Angabe gibt es keine Abnehmen-Empfehlung (Standardwert 30 ist nur ein Platzhalter). Standard: ja */
+  ageKnown?: boolean;
 }
 
 /** Grundumsatz. Mit KFA: Katch-McArdle; ohne: Mifflin-St Jeor, bei „keine Angabe“ der Mittelwert aus weiblich und männlich. */
@@ -69,7 +71,8 @@ export function calorieTarget(i: CalorieInput): CalorieTarget {
   let applied = i.goal;
   let limitedBy: CalorieTarget['limitedBy'];
   if (applied === 'lose') {
-    if (i.ageYears < MIN_LOSE_AGE) { applied = 'maintain'; limitedBy = 'age'; }
+    if (i.ageKnown === false) { applied = 'maintain'; limitedBy = 'noage'; }
+    else if (i.ageYears < MIN_LOSE_AGE) { applied = 'maintain'; limitedBy = 'age'; }
     else if (bmi(i.stats) < MIN_LOSE_BMI) { applied = 'maintain'; limitedBy = 'bmi'; }
   }
   const factor = applied === 'lose' ? Math.max(LOSE_FACTOR, 1 - MAX_DEFICIT) : applied === 'gain' ? GAIN_FACTOR : 1;

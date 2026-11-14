@@ -49,7 +49,7 @@ export function widgetView(id: WidgetId, app: AppState): WidgetView {
       const c = app.calorie;
       if (!c) return { label: 'KALORIEN', value: '–', sub: 'Körperwerte eintragen', onPress: () => router.push('/profile') };
       const active = m ? Math.round(m.activeEnergyKcal) : null;
-      return { label: 'KALORIEN', value: n0(c.custom ?? c.recommended), sub: `${c.custom != null ? 'dein Wert' : 'Empfehlung'}${active != null ? ` · aktiv ${n0(active)}` : ''}`, color: C.sky, onPress: () => router.push('/profile') };
+      return { label: 'KALORIEN', value: n0(c.custom ?? c.recommended), sub: c.belowBmr ? 'Schätzung · unter Grundumsatz' : `${c.custom != null ? 'dein Wert' : 'Schätzung'}${active != null ? ` · aktiv ${n0(active)}` : ''}`, color: c.belowBmr ? C.warn : C.sky, onPress: () => router.push('/profile') };
     }
     case 'coins': return { label: 'MÜNZEN', value: n0(app.coins), sub: 'zum Shop', color: C.warn, onPress: () => router.push('/shop') };
     case 'stage': {

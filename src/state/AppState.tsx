@@ -111,10 +111,11 @@ export interface AppState {
   setShareMood: (on: boolean) => Promise<void>;
   setHair: (hair: HairId) => Promise<void>;
   setBody: (body: BodyId) => Promise<void>;
-  setBodyStats: (stats: BodyStats) => Promise<void>;
+  /** `fromImport`: Werte aus Apple Health lösen keine Gewichtsziele aus (kein XP durch automatisch gelesenes Gewicht) */
+  setBodyStats: (stats: BodyStats, opts?: { fromImport?: boolean }) => Promise<void>;
   /** Münzen und Shop */
   /** Kalorienhaushalt: Einstellungen, Empfehlung (null ohne gespeicherte Körperwerte) und aktive Kalorien */
-  calorieSettings: { age: number; sex: Sex; useBodyFat: boolean; goal: CalorieGoal; custom?: number; noticeSeen: boolean };
+  calorieSettings: { age: number; ageSet: boolean; sex: Sex; useBodyFat: boolean; goal: CalorieGoal; custom?: number; noticeSeen: boolean };
   calorie: CalorieTarget | null;
   activeKcalAvg: number | null;
   setCalorieSettings: (patch: Partial<CalorieSettings>) => Promise<void>;
@@ -424,13 +425,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [publish, syncAllowed]);
 
   /** Körperwerte lokal speichern. Die Zahlen werden nie veröffentlicht; nur bei „automatisch“ geht der daraus abgeleitete Körpertyp an Freunde. */
-  const setBodyStats = useCallback(async (stats: BodyStats) => {
+  const setBodyStats = useCallback(async (stats: BodyStats, opts?: { fromImport?: boolean }) => {
     const next = { ...profileRef.current, bodyStats: clampStats(stats) };
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);
     // Gewichtsverlust-Ziele prüfen; bei „automatisch“ hat sich evtl. auch die Figur geändert
-    const r = await applyLongGoals(progressRef.current, localDate());
-    await commitProgress(r.progress, r.events);
+    if (!opts?.fromImport) {
+      const r = await applyLongGoals(progressRef.current, localDate());
+      await commitProgress(r.progress, r.events);
+    }
     if (next.autoBody === true) { try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ } }
   }, [applyLongGoals, commitProgress, publish]);
 
@@ -463,7 +466,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       heightCm: b.heightCm ?? cur.heightCm,
       weightKg: b.weightKg ?? cur.weightKg,
       bodyFatPct: b.bodyFatPct ?? cur.bodyFatPct,
-    }));
+    }), { fromImport: true });
     if (b.bodyFatPct != null) await setCalorieSettings({ useBodyFat: true });
     return 'ok';
   }, [setBodyStats, setCalorieSettings]);
@@ -595,6 +598,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     autoBody: profile.autoBody === true && !!profile.bodyStats,
     calorieSettings: {
       age: sanitizeAge(profile.calorie?.age),
+      ageSet: profile.calorie?.age !== undefined,
       sex: sanitizeSex(profile.calorie?.sex),
       useBodyFat: profile.calorie?.useBodyFat === true,
       goal: sanitizeGoal(profile.calorie?.goal),
@@ -604,6 +608,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     calorie: profile.bodyStats ? calorieTarget({
       stats: clampStats(profile.bodyStats),
       ageYears: sanitizeAge(profile.calorie?.age),
+      ageKnown: profile.calorie?.age !== undefined,
       sex: sanitizeSex(profile.calorie?.sex),
       useBodyFat: profile.calorie?.useBodyFat === true,
       activeKcalAvg,

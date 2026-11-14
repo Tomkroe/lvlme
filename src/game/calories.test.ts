@@ -47,6 +47,11 @@ test('Unter 18 oder BMI unter 18,5: kein Abnehmen, sondern Halten', () => {
   assert.equal(lean.goalApplied, 'maintain'); assert.equal(lean.limitedBy, 'bmi');
 });
 
+test('Ohne gesetztes Alter kein Abnehmen', () => {
+  const t = calorieTarget({ ...base, goal: 'lose', ageKnown: false });
+  assert.equal(t.goalApplied, 'maintain'); assert.equal(t.limitedBy, 'noage');
+});
+
 test('Eigener Wert bleibt, unter Grundumsatz gibt es die Warnung', () => {
   const t = calorieTarget({ ...base, custom: 1500 });
   assert.equal(t.custom, 1500); assert.ok(t.belowBmr);

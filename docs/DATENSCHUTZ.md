@@ -21,7 +21,7 @@ E-Mail: [Kontakt-E-Mail]
 
 ### 3.1 Gesundheitsdaten (nur auf dem Gerät)
 
-Mit deiner Einwilligung liest LvlMe aus Apple Health: Schritte, Training (Workouts, aktive Kalorien), Schlaf, Herzfrequenzvariabilität (HRV) und Ruhepuls. Daraus berechnet die App auf deinem iPhone deine Tagesform (Energie, Belastung, Schlaf) und den Fortschritt deines Avatars.
+Mit deiner Einwilligung liest LvlMe aus Apple Health: Schritte, Training (Workouts, aktive Kalorien), Schlaf, Herzfrequenzvariabilität (HRV), Ruhepuls sowie – nur lesend und nur für die grobe Kalorienschätzung und die Körperwerte – Gewicht, Größe und Körperfettanteil. Gewicht, Größe, Körperfett, Alter und Geschlecht bleiben immer auf dem Gerät. Daraus berechnet die App auf deinem iPhone deine Tagesform (Energie, Belastung, Schlaf) und den Fortschritt deines Avatars.
 
 - Rechtsgrundlage: ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a i. V. m. Art. 6 Abs. 1 lit. a DSGVO). [prüfen]
 - LvlMe schreibt keine Daten in Apple Health.

@@ -135,7 +135,7 @@ export interface CalorieTarget {
   goal: CalorieGoal;
   /** Tatsächlich angewandtes Ziel (bei unter 18 Jahren oder BMI unter 18,5 wird „Abnehmen“ zu „Halten“) */
   goalApplied: CalorieGoal;
-  limitedBy?: 'age' | 'bmi';
+  limitedBy?: 'age' | 'noage' | 'bmi';
   /** Formel des Grundumsatzes */
   method: 'katch' | 'mifflin';
   /** Eigener Wert liegt unter dem Grundumsatz → deutlicher Warnhinweis */
