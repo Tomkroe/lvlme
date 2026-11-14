@@ -155,7 +155,6 @@ export async function publishAvatar(a: PublicAvatar): Promise<void> {
     level: a.level,
     stage: a.stage,
     mood: a.mood,
-    power: a.power,
     streak: a.streak,
     updatedAt: a.updatedAt,
     // Aussehen: reine Darstellungsdaten, keine Gesundheitsdaten
@@ -212,7 +211,6 @@ export async function listFriends(): Promise<Friend[]> {
         level: typeof a.level === 'number' ? a.level : 1,
         stage: typeof a.stage === 'number' ? a.stage : 0,
         mood,
-        power: typeof a.power === 'number' ? a.power : 0,
         streak: typeof a.streak === 'number' ? a.streak : 0,
         updatedAt: a.updatedAt ?? (row.updated_at as string),
         // Fehlend oder ungültig (z. B. ältere App-Version) → Standard-Aussehen 0
@@ -220,7 +218,7 @@ export async function listFriends(): Promise<Friend[]> {
         body: appearanceId(a.body, MAX_BODY) as BodyId,
       } satisfies Friend;
     })
-    .sort((x, y) => y.power - x.power);
+    .sort((x, y) => y.level - x.level || y.streak - x.streak);
 }
 
 export async function removeFriend(userId: string): Promise<void> {

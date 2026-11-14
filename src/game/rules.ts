@@ -40,8 +40,6 @@ export const BALANCE = {
   streakRestDays: 2,
   /** Fenstergröße in Tagen (inklusive aktuellem Tag) */
   streakWindowDays: 7,
-  /** Energie, mit der die öffentliche Kampfkraft ohne geteilte Tagesform berechnet wird */
-  neutralEnergy: 60,
 } as const;
 
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
@@ -103,11 +101,6 @@ export function stageFor(level: number): number {
   let i = 0;
   STAGES.forEach((s, k) => { if (level >= s.level) i = k; });
   return i;
-}
-
-export function power(progress: Progress, energy: number): number {
-  const s = progress.stats;
-  return Math.round((s.str * 1.4 + s.end * 1.2 + s.rec + s.dis * 1.1) * progress.level * 2.3 * (0.75 + energy / 400));
 }
 
 export const NEW_PROGRESS: Progress = { level: 1, xp: 0, stats: { str: 10, end: 10, rec: 10, dis: 10 }, streak: 0, restDays: [], booked: [] };
@@ -175,12 +168,12 @@ export function bookDay(p: Progress, m: DailyMetrics, d: DayScore, bonusXp = 0):
 }
 
 export interface PublicOptions {
-  /** Tagesform (Stimmung, tagesabhängige Kampfkraft) mit Freunden teilen */
+  /** Tagesform (Stimmung) mit Freunden teilen */
   shareMood: boolean;
 }
 
 /**
- * Öffentlicher Zustand. Ohne shareMood: mood = null und Kampfkraft mit fester Energie (keine Rückschlüsse auf die Tagesform).
+ * Öffentlicher Zustand. Ohne shareMood: mood = null (keine Rückschlüsse auf die Tagesform).
  * Das Aussehen (Frisur, Körper) geht immer mit, damit Freunde den gewählten Avatar sehen.
  */
 export function toPublic(name: string, p: Progress, d: DayScore | null, opts: PublicOptions, appearance: Appearance): PublicAvatar {
@@ -190,7 +183,6 @@ export function toPublic(name: string, p: Progress, d: DayScore | null, opts: Pu
     level: p.level,
     stage: stageFor(p.level),
     mood: share ? d?.mood ?? 'awake' : null,
-    power: power(p, share ? d?.energy ?? BALANCE.neutralEnergy : BALANCE.neutralEnergy),
     streak: p.streak,
     updatedAt: new Date().toISOString(),
     hair: appearance.hair,

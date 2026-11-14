@@ -1,4 +1,4 @@
-/** Freunde: einladen, Code eingeben, Liste, Kampf, entfernen. Zuständig: app-ui. */
+/** Freunde: einladen, Code eingeben, Liste, entfernen. Zuständig: app-ui. */
 import React, { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -14,9 +14,8 @@ import { Avatar } from '../../src/avatar/Avatar.tsx';
 import { miniSkySvg } from '../../src/ui/Scene.tsx';
 import { SignIn } from '../../src/ui/SignIn.tsx';
 import { confirm } from '../../src/ui/confirm.ts';
-import { FightModal, type Fighter } from '../../src/ui/FightModal.tsx';
 import { Button, Card, Chip, H, P } from '../../src/ui/components.tsx';
-import { C, F, fmt } from '../../src/ui/theme.ts';
+import { C, F } from '../../src/ui/theme.ts';
 
 /** Darstellung, wenn ein Freund seine Tagesform nicht teilt: ruhiger Standard-Look */
 const NEUTRAL_MOOD: Mood = 'awake';
@@ -30,7 +29,6 @@ export default function Friends() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [inviting, setInviting] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [foe, setFoe] = useState<Fighter | null>(null);
   const configured = social.isConfigured();
 
   const load = useCallback(async () => {
@@ -88,7 +86,7 @@ export default function Friends() {
       {configured && !app.me && (
         <Card>
           <P style={{ color: C.ink, fontWeight: '700' }}>Melde dich an, um Freunde hinzuzufügen</P>
-          <P>Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Schlaf, Puls oder Schritte sehen sie nie.</P>
+          <P>Freunde sehen Level, Stufe, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Schlaf, Puls oder Schritte sehen sie nie.</P>
           <SignIn />
         </Card>
       )}
@@ -133,9 +131,7 @@ export default function Friends() {
                     <Chip text={STAGES[Math.max(0, Math.min(5, f.stage))].name} />
                   </View>
                   <Text style={st.meta}>{f.mood ? MOOD_TEXT[f.mood].label : 'Tagesform privat'} · Serie {f.streak} Tage</Text>
-                  <Text style={[st.pow, F.num]}>⚡ {fmt(f.power)}</Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                    <Button title="Kampf" onPress={() => setFoe({ name: f.displayName, stage: f.stage, power: f.power })} style={{ minHeight: 38, flex: 1 }} />
                     <Button title="Entfernen" kind="ghost" onPress={() => remove(f)} style={{ minHeight: 38 }} />
                   </View>
                 </View>
@@ -145,7 +141,6 @@ export default function Friends() {
         </>
       )}
 
-      <FightModal me={{ name: app.name || 'Du', stage: app.stage, power: app.power }} foe={foe} onClose={() => setFoe(null)} />
     </ScrollView>
   );
 }
@@ -157,5 +152,4 @@ const st = StyleSheet.create({
   mini: { width: 92, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 6 },
   fname: { color: C.ink, fontWeight: '800', fontSize: 17 },
   meta: { color: C.mute, fontSize: 13 },
-  pow: { color: C.sky, fontSize: 16 },
 });

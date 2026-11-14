@@ -102,8 +102,6 @@ export interface PublicAvatar {
   stage: number;
   /** null, wenn der Nutzer seine Tagesform nicht teilt */
   mood: Mood | null;
-  /** Kampfkraft; ohne geteilte Tagesform mit fester Energie berechnet (keine Rückschlüsse) */
-  power: number;
   streak: number;
   updatedAt: string;
   /** Frisur; fehlt bei älteren Avataren (dann Standard) */

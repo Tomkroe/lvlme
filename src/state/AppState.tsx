@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.ts';
 import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
-import { NEW_PROGRESS, awardXp, baselineFrom, bookDay, power as powerOf, scoreDay, stageFor, toPublic } from '../game/rules.ts';
+import { NEW_PROGRESS, awardXp, baselineFrom, bookDay, scoreDay, stageFor, toPublic } from '../game/rules.ts';
 import { clampStats, type BodyStats } from '../game/body.ts';
 import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
 import { MAX_LONG_GOALS, checkLongGoals, newLongGoal, sanitizeLongGoals, type LongGoal, type LongGoalKind } from '../game/longgoals.ts';
@@ -76,7 +76,6 @@ export interface AppState {
   /** Schritte heute – nur zur Anzeige, wird nicht gespeichert */
   stepsToday: number;
   stage: number;
-  power: number;
   me: Me | null;
   events: LevelEvent[];
   dismissEvent: () => void;
@@ -472,7 +471,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     signInMethod,
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
-    power: powerOf(progress, today?.energy ?? 60),
     me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal,
   }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, addLongGoal, removeLongGoal, setLongGoalValue, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
 

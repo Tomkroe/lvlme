@@ -92,7 +92,7 @@ export default function Onboarding() {
             {social.isConfigured() && !app.me && (
               <Card>
                 <P style={{ color: C.ink, fontWeight: '700' }}>{Platform.OS === 'ios' ? 'Mit Freunden spielen (optional)' : 'Anmelden'}</P>
-                <P>Mit einem Konto kannst du Freunde einladen{Platform.OS === 'ios' ? '' : ' und siehst die Werte von deinem iPhone'}. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+                <P>Mit einem Konto kannst du Freunde einladen{Platform.OS === 'ios' ? '' : ' und siehst die Werte von deinem iPhone'}. Freunde sehen Level, Stufe, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
                 <SignIn />
               </Card>
             )}

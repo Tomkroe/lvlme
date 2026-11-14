@@ -16,7 +16,7 @@ import { Slider } from '../../src/ui/Slider.tsx';
 import { ALL_GOALS_BONUS, GOAL_DEFS, goalDef, type GoalId } from '../../src/game/goals.ts';
 import { LONG_GOAL_KINDS, MAX_LONG_GOALS, kindDef, longGoalFrac, longGoalValue, rewardXp, type LongGoalKind } from '../../src/game/longgoals.ts';
 import { BODY_LIMITS, DEFAULT_BODY_STATS, bmi, clampStats, ffmi, suggestBody, type BodyStats } from '../../src/game/body.ts';
-import { C, F, PRIVACY_URL, fmt } from '../../src/ui/theme.ts';
+import { C, F, PRIVACY_URL } from '../../src/ui/theme.ts';
 
 const SOURCE: Record<string, string> = { healthkit: 'Apple Health', whoop: 'WHOOP', cloud: 'Dein Konto (vom iPhone)', demo: 'Beispieldaten' };
 const isIos = Platform.OS === 'ios';
@@ -123,7 +123,6 @@ export default function Profile() {
           <TextInput value={name} onChangeText={setName} onEndEditing={() => app.setName(name)} placeholder="Dein Name"
             placeholderTextColor={C.mute} maxLength={24} style={st.name} accessibilityLabel="Name ändern" />
           <Text style={st.meta}>Level {app.progress.level} · {STAGES[app.stage].name}</Text>
-          <Text style={st.meta}>Kampfkraft <Text style={[{ color: C.sky }, F.num]}>{fmt(app.power)}</Text></Text>
           <Text style={st.meta}>Heute: {MOOD_TEXT[mood].label}</Text>
         </View>
       </Card>
@@ -292,7 +291,7 @@ export default function Profile() {
         <H>Daten</H>
         <P>Quelle: <Text style={{ color: C.ink, fontWeight: '700' }}>{app.source ? SOURCE[app.source] ?? app.source : 'noch keine'}</Text></P>
         {isIos ? (
-          <P>LvlMe liest deine Gesundheitsdaten aus Apple Health, um deinen Avatar zu berechnen. Ohne Sync bleiben sie auf deinem iPhone. Freunde sehen Level, Stufe, Kampfkraft, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
+          <P>LvlMe liest deine Gesundheitsdaten aus Apple Health, um deinen Avatar zu berechnen. Ohne Sync bleiben sie auf deinem iPhone. Freunde sehen Level, Stufe, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
         ) : (
           <P>Am PC kann LvlMe nicht auf Apple Health zugreifen. Deine Werte kommen von deinem iPhone, wenn du dort „Mit dem PC synchronisieren“ einschaltest und auf beiden Geräten mit demselben Konto angemeldet bist. Ohne Anmeldung siehst du Beispieldaten.</P>
         )}

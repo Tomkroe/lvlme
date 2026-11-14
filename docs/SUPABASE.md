@@ -1,6 +1,6 @@
 # Supabase einrichten (Freunde, Konto, Einladungen)
 
-LvlMe nutzt Supabase für Anmeldung mit Apple, Profile und Freundschaften. Auf dem Server liegt nur der öffentliche Avatarzustand (Name, Level, Stufe, Stimmung, Kampfkraft, Serie, Frisur und Körper des Avatars). Gesundheitsdaten verlassen dein iPhone nie, und die Datenbank lehnt sie sogar aktiv ab.
+LvlMe nutzt Supabase für Anmeldung mit Apple, Profile und Freundschaften. Auf dem Server liegt nur der öffentliche Avatarzustand (Name, Level, Stufe, Stimmung, Serie, Frisur und Körper des Avatars). Gesundheitsdaten verlassen dein iPhone nie, und die Datenbank lehnt sie sogar aktiv ab.
 
 Ohne diese Einrichtung läuft die App trotzdem, nur der Freunde-Bereich bleibt deaktiviert.
 
