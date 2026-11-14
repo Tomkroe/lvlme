@@ -15,6 +15,7 @@ import { Platform } from 'react-native';
 import type { BodyId, DailyMetrics, DayScore, HairId, Progress } from '../types.ts';
 import { DEFAULT_BODY, DEFAULT_HAIR } from '../avatar/assets.ts';
 import { NEW_PROGRESS, baselineFrom, bookDay, power as powerOf, scoreDay, stageFor, toPublic } from '../game/rules.ts';
+import { clampStats, type BodyStats } from '../game/body.ts';
 import { getHealthProvider } from '../health/index.ts';
 import * as social from '../social/api.ts';
 import type { Me } from '../social/api.ts';
@@ -35,6 +36,8 @@ interface Profile {
   hair: HairId;
   /** Körpertyp oder Outfit des Avatars (wird mit dem öffentlichen Avatar an Freunde veröffentlicht) */
   body: BodyId;
+  /** Größe, Gewicht, KFA: nur lokal, wird nie veröffentlicht oder synchronisiert */
+  bodyStats?: BodyStats;
   /** iPhone: Tageswerte und Fortschritt ins eigene Konto laden, damit der PC dasselbe zeigt. Standard: aus. */
   cloudSync: boolean;
 }
@@ -49,6 +52,7 @@ export interface AppState {
   hair: HairId;
   body: BodyId;
   cloudSync: boolean;
+  bodyStats: BodyStats | null;
   signInMethod: 'apple' | 'email' | null;
   source: DailyMetrics['source'] | null;
   progress: Progress;
@@ -66,6 +70,7 @@ export interface AppState {
   setShareMood: (on: boolean) => Promise<void>;
   setHair: (hair: HairId) => Promise<void>;
   setBody: (body: BodyId) => Promise<void>;
+  setBodyStats: (stats: BodyStats) => Promise<void>;
   setCloudSync: (on: boolean) => Promise<void>;
   setMe: (me: Me | null) => void;
   signOut: () => Promise<void>;
@@ -303,6 +308,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
   }, [publish]);
 
+  /** Körperwerte nur lokal speichern, nichts wird veröffentlicht */
+  const setBodyStats = useCallback(async (stats: BodyStats) => {
+    const next = { ...profileRef.current, bodyStats: clampStats(stats) };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+  }, []);
+
   /**
    * Einwilligung für den Sync setzen. Die Rückfrage mit allen Infos zeigt der Profil-Screen vorher.
    * Ausschalten = Widerruf: Die hochgeladenen Daten werden im Konto gelöscht (wirft bei Fehler,
@@ -355,12 +367,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     hair: profile.hair ?? DEFAULT_HAIR,
     body: profile.body ?? DEFAULT_BODY,
     cloudSync: profile.cloudSync === true,
+    bodyStats: profile.bodyStats ? clampStats(profile.bodyStats) : null,
     signInMethod,
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     power: powerOf(progress, today?.energy ?? 60),
-    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setCloudSync, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setCloudSync, setMe, signOut, resetLocal]);
+    me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setCloudSync, setMe, signOut, resetLocal,
+  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setCloudSync, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

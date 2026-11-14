@@ -12,6 +12,8 @@ import * as social from '../../src/social/api.ts';
 import { SignIn } from '../../src/ui/SignIn.tsx';
 import { confirm, notify } from '../../src/ui/confirm.ts';
 import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
+import { Slider } from '../../src/ui/Slider.tsx';
+import { BODY_LIMITS, DEFAULT_BODY_STATS, bmi, clampStats, ffmi, suggestBody, type BodyStats } from '../../src/game/body.ts';
 import { C, F, PRIVACY_URL, fmt } from '../../src/ui/theme.ts';
 
 const SOURCE: Record<string, string> = { healthkit: 'Apple Health', whoop: 'WHOOP', cloud: 'Dein Konto (vom iPhone)', demo: 'Beispieldaten' };
@@ -22,6 +24,13 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState(app.name);
   useEffect(() => setName(app.name), [app.name]);
+
+  const [stats, setStats] = useState<BodyStats>(app.bodyStats ?? DEFAULT_BODY_STATS);
+  useEffect(() => { if (app.bodyStats) setStats(app.bodyStats); }, [app.bodyStats]);
+  const upd = (k: keyof BodyStats) => (v: number) => setStats(o => ({ ...o, [k]: v }));
+  const save = (k: keyof BodyStats) => (v: number) => { app.setBodyStats(clampStats({ ...stats, [k]: v })); };
+  const sugg = suggestBody(stats);
+  const suggName = BODIES.find(b => b.id === sugg.id)?.name ?? '';
 
   const s = app.progress.stats;
   const max = Math.max(100, s.str, s.end, s.rec, s.dis);
@@ -126,6 +135,22 @@ export default function Profile() {
           </View>
         ))}
         <P style={{ fontSize: 12 }}>Körpertyp und Outfit schließen sich vorerst aus: Outfits gibt es nur mit athletischem Körper. Freunde sehen deine Frisur und deinen Körper, sobald du angemeldet bist.</P>
+      </Card>
+
+      <Card>
+        <H>Körperwerte</H>
+        <Slider label="Größe" unit="cm" value={stats.heightCm} min={BODY_LIMITS.heightCm.min} max={BODY_LIMITS.heightCm.max} onChange={upd('heightCm')} onDone={save('heightCm')} />
+        <Slider label="Gewicht" unit="kg" value={stats.weightKg} min={BODY_LIMITS.weightKg.min} max={BODY_LIMITS.weightKg.max} onChange={upd('weightKg')} onDone={save('weightKg')} />
+        <Slider label="Körperfettanteil (KFA)" unit="%" value={stats.bodyFatPct} min={BODY_LIMITS.bodyFatPct.min} max={BODY_LIMITS.bodyFatPct.max} onChange={upd('bodyFatPct')} onDone={save('bodyFatPct')} />
+        <View style={st.row}>
+          <Text style={st.meta}>BMI <Text style={[{ color: C.ink }, F.num]}>{bmi(stats).toFixed(1)}</Text></Text>
+          <Text style={st.meta}>FFMI <Text style={[{ color: C.ink }, F.num]}>{ffmi(stats).toFixed(1)}</Text></Text>
+        </View>
+        {app.body <= 4 && app.body !== sugg.id && (
+          <Button title={`Körpertyp „${suggName}“ übernehmen`} kind="ghost" onPress={() => { app.setBody(sugg.id); }}
+            accessibilityHint={`Passt zu deinen Werten: ${sugg.why}`} />
+        )}
+        <P style={{ fontSize: 12 }}>Größe, Gewicht und KFA bleiben auf diesem Gerät. Sie werden weder mit Freunden geteilt noch synchronisiert und ändern weder XP noch Level. Freunde sehen nur den Körpertyp, den du oben wählst. Die Werte sind nur ein Vorschlag für die Figur.</P>
       </Card>
 
       <Card>
