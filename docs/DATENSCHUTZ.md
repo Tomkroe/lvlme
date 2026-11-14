@@ -14,7 +14,7 @@ E-Mail: [Kontakt-E-Mail]
 ## 2. Kurz gesagt
 
 - Deine Gesundheitsdaten aus Apple Health werden auf deinem iPhone ausgewertet. Sie verlassen dein iPhone nur, wenn du „Mit dem PC synchronisieren“ einschaltest – dann werden deine Tageswerte und dein Fortschritt in deinem Konto gespeichert, damit die PC-Version dasselbe zeigt. Nur du siehst sie, Freunde nie.
-- Wenn du ein Konto anlegst, um mit Freunden zu spielen, speichern wir auf einem Server in der EU (Frankfurt) nur deinen Kämpfernamen und deinen öffentlichen Avatar (Level, Stufe, Kampfkraft, Serie, Frisur und Körper deines Avatars und – nur wenn du es erlaubst – deine Tagesform).
+- Wenn du ein Konto anlegst, speichern wir auf einem Server in der EU (Frankfurt) deine Anmeldedaten (Apple-Kennung bzw. E-Mail), deinen Kämpfernamen und deinen öffentlichen Avatar (Level, Stufe, Kampfkraft, Serie, Frisur und Körper deines Avatars und – nur wenn du es erlaubst – deine Tagesform).
 - Ohne Konto bleibt alles auf deinem iPhone.
 
 ## 3. Welche Daten LvlMe verarbeitet
@@ -47,14 +47,21 @@ Auftragsverarbeiter: Supabase Inc. [AV-Vertrag, Unterauftragsverarbeiter und ggf
 
 ### 3.3a Sync mit der PC-Version (optional, Server in Frankfurt)
 
-Nur wenn du in der iPhone-App unter Profil „Mit dem PC synchronisieren“ einschaltest und angemeldet bist, speichern wir in deinem Konto:
+Nur wenn du in der iPhone-App mit E-Mail angemeldet bist, unter Profil „Mit dem PC synchronisieren“ einschaltest und der Rückfrage zustimmst, speichern wir in deinem Konto:
 
-- **Tageswerte:** Datum, Schritte, aktive Kalorien, Trainingsminuten, Schlafdauer, HRV und Ruhepuls (höchstens die letzten 60 Tage werden angenommen).
+- **Tageswerte:** Datum, Schritte, aktive Kalorien, Trainingsminuten, Schlafdauer, HRV und Ruhepuls (angenommen werden nur Tage der letzten 60 Tage; gespeichert bleiben sie, bis du den Sync ausschaltest oder dein Konto löschst). [automatisches Löschen älterer Tage prüfen]
 - **Fortschritt:** Level, XP, Stats, Serie und die bereits verbuchten Tage.
 
-Diese Daten kann nur dein eigenes Konto lesen (Row Level Security), Freunde sehen sie nie. Ausschalten stoppt das Hochladen; „Konto löschen“ entfernt alles endgültig.
+Diese Daten kann nur dein eigenes Konto lesen (Row Level Security), Freunde sehen sie nie. **Ausschalten löscht** die hochgeladenen Tageswerte und den Fortschritt aus deinem Konto; „Konto löschen“ entfernt alles endgültig.
+
+In der PC-Version wird dein Fortschritt (Level, XP, Stats, Serie, verbuchte Tage) in deinem Konto gespeichert, sobald du dort angemeldet bist, damit iPhone und PC denselben Stand zeigen. Das sind Spieldaten, keine Messwerte.
 
 Rechtsgrundlage: ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a DSGVO) durch Einschalten des Schalters, jederzeit widerrufbar. [prüfen, ob ein eigener Einwilligungstext vor dem ersten Einschalten nötig ist]
+
+### 3.3b PC-Version und E-Mail-Konto
+
+- **E-Mail-Konto:** Wenn du dich mit E-Mail und Passwort anmeldest, speichert Supabase deine E-Mail-Adresse und einen Hash deines Passworts (nicht das Passwort selbst).
+- **Hosting der PC-Version:** Die PC-Version wird über GitHub Pages (GitHub Inc., USA) ausgeliefert. Dabei verarbeitet GitHub technisch notwendige Zugriffsdaten (z. B. IP-Adresse). [Drittlandübermittlung, Impressum für die Web-Version rechtlich prüfen]
 
 ### 3.4 Teilen
 
@@ -66,7 +73,7 @@ LvlMe verwendet keine Werbe- oder Analyse-Dienste und gibt keine Daten zu Werbez
 
 ## 4. Speicherdauer
 
-- Gesundheitsdaten: ohne Sync nicht gespeichert, nur bei Bedarf aus Apple Health gelesen. Mit Sync bis zum Ausschalten bzw. Löschen des Kontos. [Löschen beim Ausschalten des Syncs ergänzen]
+- Gesundheitsdaten: ohne Sync nicht gespeichert, nur bei Bedarf aus Apple Health gelesen. Mit Sync bis zum Ausschalten (dann gelöscht) bzw. bis zum Löschen des Kontos.
 - Lokale Spieldaten: bis du sie zurücksetzt oder die App löschst.
 - Konto, Name, öffentlicher Avatar, Freundschaften: bis du dein Konto in der App unter Profil › Konto › „Konto löschen“ löschst. Danach werden sie endgültig entfernt. [Fristen für Backups beim Dienstleister ergänzen]
 

@@ -35,9 +35,29 @@ export default function Profile() {
     router.replace('/onboarding');
   };
 
+  const [syncBusy, setSyncBusy] = useState(false);
+  const toggleSync = async (on: boolean) => {
+    if (on) {
+      const ok = await confirm(
+        'Mit dem PC synchronisieren?',
+        'LvlMe speichert dann in deinem Konto: Schritte, aktive Kalorien, Trainingsminuten, Schlafdauer, HRV und Ruhepuls der letzten Tage sowie Level, XP, Stats und Serie. '
+        + 'Zweck: dieselbe Anzeige in der PC-Version. Gespeichert wird bei unserem Dienstleister Supabase in Frankfurt (EU). Nur du kannst die Daten sehen, Freunde nie. '
+        + 'Du kannst das jederzeit ausschalten; dann werden die Daten aus deinem Konto gelöscht. Details in der Datenschutzerklärung (Profil › Daten).',
+        'Einverstanden', false);
+      if (!ok) return;
+    } else {
+      const ok = await confirm('Sync ausschalten?', 'Deine Tageswerte und dein Fortschritt werden aus deinem Konto gelöscht. Auf diesem iPhone bleibt alles.', 'Ausschalten und löschen');
+      if (!ok) return;
+    }
+    setSyncBusy(true);
+    try { await app.setCloudSync(on); }
+    catch (e) { notify('Das hat nicht geklappt', (e as Error).message); }
+    finally { setSyncBusy(false); }
+  };
+
   const [deleting, setDeleting] = useState(false);
   const deleteAccount = async () => {
-    const ok = await confirm('Konto löschen?', 'Dein Konto, dein Profil, deine Einladungen, alle Freundschaften und die im Konto gespeicherten Tageswerte werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.', 'Konto löschen');
+    const ok = await confirm('Konto löschen?', 'Dein Konto, dein Profil, deine Einladungen, alle Freundschaften sowie die im Konto gespeicherten Tageswerte und dein Fortschritt werden endgültig gelöscht. Das lässt sich nicht rückgängig machen.', 'Konto löschen');
     if (!ok) return;
     setDeleting(true);
     try {
@@ -145,18 +165,23 @@ export default function Profile() {
         ) : (
           <P>Am PC kann LvlMe nicht auf Apple Health zugreifen. Deine Werte kommen von deinem iPhone, wenn du dort „Mit dem PC synchronisieren“ einschaltest und auf beiden Geräten mit demselben Konto angemeldet bist. Ohne Anmeldung siehst du Beispieldaten.</P>
         )}
-        {isIos && social.isConfigured() && (
+        {isIos && social.isConfigured() && app.me && app.signInMethod === 'email' && (
           <>
             <View style={st.switchRow}>
               <Text style={[st.label, { flex: 1 }]}>Mit dem PC synchronisieren</Text>
-              <Switch value={app.cloudSync} onValueChange={v => { app.setCloudSync(v); }}
+              <Switch value={app.cloudSync} onValueChange={toggleSync} disabled={syncBusy}
                 trackColor={{ true: C.ki, false: C.line }} ios_backgroundColor={C.line}
                 accessibilityLabel="Mit dem PC synchronisieren"
                 accessibilityHint="Speichert deine Tageswerte und deinen Fortschritt in deinem Konto, damit die PC-Version dasselbe zeigt" />
             </View>
-            <P>Dann speichert LvlMe deine Tageswerte (Schritte, aktive Kalorien, Training, Schlaf, HRV, Ruhepuls) und deinen Fortschritt in deinem Konto. Nur du kannst sie sehen, Freunde nie. Ausschalten stoppt das Hochladen; „Konto löschen“ entfernt alles.</P>
-            {app.cloudSync && !app.me && <P style={{ color: C.ki }}>Melde dich unten an, damit der Sync startet.</P>}
+            <P>Speichert deine Tageswerte und deinen Fortschritt in deinem Konto, damit die PC-Version dasselbe zeigt. Nur du kannst sie sehen, Freunde nie. Ausschalten löscht sie wieder aus deinem Konto.</P>
           </>
+        )}
+        {isIos && social.isConfigured() && app.me && app.signInMethod === 'apple' && (
+          <P>PC-Sync: Am PC gibt es keine Apple-Anmeldung. Wenn du LvlMe auch am PC nutzen willst, melde dich ab und hier und am PC mit derselben E-Mail an.</P>
+        )}
+        {isIos && social.isConfigured() && !app.me && (
+          <P>PC-Sync: Melde dich unten mit E-Mail an, wenn du LvlMe auch am PC nutzen willst.</P>
         )}
         <View style={st.switchRow}>
           <Text style={[st.label, { flex: 1 }]}>Tagesform mit Freunden teilen</Text>

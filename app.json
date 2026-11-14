@@ -24,7 +24,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "LvlMe liest Schritte, Training, Schlaf, HRV und Ruhepuls, damit dein Avatar deine Tagesform zeigt. Die Messwerte bleiben auf deinem iPhone.",
+          "NSHealthShareUsageDescription": "LvlMe liest Schritte, Training, Schlaf, HRV und Ruhepuls, damit dein Avatar deine Tagesform zeigt. Die Messwerte bleiben auf deinem iPhone, außer du schaltest „Mit dem PC synchronisieren“ ein – dann werden sie nur in deinem eigenen Konto gespeichert.",
           "NSHealthUpdateUsageDescription": "LvlMe schreibt keine Daten in Apple Health.",
           "background": false
         }

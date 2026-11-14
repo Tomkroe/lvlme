@@ -9,7 +9,7 @@ Du prüfst die Fitness-Avatar-App auf Datenschutz. Du änderst nichts, du liefer
 ## Prüfliste
 - HealthKit: nur Lesezugriff, nur die nötigen Typen, verständliche Nutzungsbeschreibung.
 - Guideline 5.1.3: Gesundheitsdaten nicht für Werbung, Marketing oder Datenauswertung, nicht an Dritte, keine persönlichen Gesundheitsdaten in iCloud.
-- Rohdaten bleiben auf dem Gerät; ein Backend bekommt höchstens den Avatarzustand. Prüfe jede Netzwerkanfrage im Code darauf.
+- Rohdaten bleiben auf dem Gerät; ein Backend bekommt höchstens den Avatarzustand. Einzige Ausnahme (Entscheidung Tom, 14.11.2026): der PC-Sync mit ausdrücklicher Einwilligung (Rückfrage), nur ins eigene Konto, nur für den Nutzer lesbar, Ausschalten löscht (`clear_synced_data`, Migration 0012). Prüfe jede Netzwerkanfrage im Code darauf.
 - Keine Gesundheitsdaten in Logs, Analytics, Absturzberichten oder Push-Inhalten.
 - DSGVO: Gesundheitsdaten sind besonders geschützt; ausdrückliche Einwilligung, Datenschutzerklärung verlinkt, Löschung in der App, Datensparsamkeit.
 - Freunde-Funktion: Tageszustand nur sichtbar, wenn der Nutzer es erlaubt.

@@ -79,7 +79,7 @@ create table if not exists public.user_progress (
 );
 
 alter table public.user_progress enable row level security;
-revoke all on public.user_progress from anon;
+revoke all on public.user_progress from anon, authenticated;
 grant select, insert, update on public.user_progress to authenticated;
 
 drop policy if exists "own progress: read"   on public.user_progress;
@@ -88,6 +88,30 @@ drop policy if exists "own progress: update" on public.user_progress;
 create policy "own progress: read"   on public.user_progress for select to authenticated using (user_id = auth.uid());
 create policy "own progress: insert" on public.user_progress for insert to authenticated with check (user_id = auth.uid());
 create policy "own progress: update" on public.user_progress for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ---------------------------------------------------------------------------
+-- 3b) Sync ausschalten = Einwilligung widerrufen: hochgeladene Daten löschen
+--     (vom iPhone hochgeladene Tageswerte und den Fortschritt; Kurzbefehl-/Handeinträge bleiben)
+-- ---------------------------------------------------------------------------
+create or replace function public.clear_synced_data()
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := auth.uid();
+begin
+  if v_uid is null then
+    raise exception 'Bitte melde dich zuerst an.' using errcode = '28000';
+  end if;
+  delete from public.health_metrics h where h.user_id = v_uid and h.source = 'healthkit';
+  delete from public.user_progress up where up.user_id = v_uid;
+end;
+$$;
+revoke execute on function public.clear_synced_data() from public, anon;
+grant  execute on function public.clear_synced_data() to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 4) Konto löschen: Fortschritt ausdrücklich mitlöschen (wie 0005 für die Health-Tabellen)

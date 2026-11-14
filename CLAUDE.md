@@ -10,7 +10,7 @@ Konzept: siehe Konzeptdokument „LvlMe – Konzept“ (claude.ai). Klickbare De
 - Avatar als SVG über `react-native-svg`, später ggf. Rive
 - **Ein Code für iPhone und PC:** Expo Web baut dieselbe App für den Browser. CI veröffentlicht sie unter https://tomkroe.github.io/lvlme/app/ (Ordner `docs/app/`, nie von Hand ändern). Am PC über Edge/Chrome „Als App installieren“.
 - Plattform-Weichen über Dateiendungen: `*.web.ts(x)` ersetzt im Web die native Datei (z. B. `healthkit.web.ts`, `AppleButton.web.tsx`); solche Dateien **ohne** Endung importieren. Bildschirmgröße über `useScreenSize()` (`src/ui/layout.ts`), Rückfragen über `confirm()` (`src/ui/confirm.ts`), nicht `Alert.alert`.
-- Rohdaten bleiben auf dem iPhone. Nur mit Einwilligung („Mit dem PC synchronisieren“) gehen Tageswerte und Fortschritt ins **eigene** Konto (Migration 0012); die PC-Version liest sie von dort. Freunde sehen nur den Avatarzustand.
+- Rohdaten bleiben auf dem iPhone. Nur mit Einwilligung (Schalter „Mit dem PC synchronisieren“ mit Rückfrage, nur bei E-Mail-Konto; Ausschalten löscht die Daten im Konto über `clear_synced_data`) gehen Tageswerte und Fortschritt ins **eigene** Konto (Migration 0012); die PC-Version liest sie von dort. Freunde sehen nur den Avatarzustand.
 - Anmeldung: auf allen Geräten E-Mail und Passwort (gleiches Konto auf iPhone und PC), auf dem iPhone zusätzlich Apple
 - Backend: Supabase (Auth mit Apple, Postgres mit RLS), Teilen über iOS-Teilen-Menü
 

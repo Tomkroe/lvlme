@@ -72,7 +72,7 @@ export default function Onboarding() {
         {step === 1 && Platform.OS === 'ios' && (
           <>
             <Text style={[st.h1, F.display]}>Apple Health verbinden</Text>
-            <P>LvlMe liest Schlaf, Schritte, Workouts, aktive Kalorien, Ruhepuls und Herzfrequenzvariabilität, um deine Tagesform zu berechnen. Die Daten bleiben auf deinem iPhone, LvlMe schreibt nichts in Health.</P>
+            <P>LvlMe liest Schlaf, Schritte, Workouts, aktive Kalorien, Ruhepuls und Herzfrequenzvariabilität, um deine Tagesform zu berechnen. Die Daten bleiben auf deinem iPhone, solange du den PC-Sync nicht einschaltest. LvlMe schreibt nichts in Health.</P>
             <P>
               Mit „Apple Health verbinden“ willigst du ein, dass LvlMe diese Daten auf deinem iPhone auswertet. Details in der{' '}
               <Text style={st.link} accessibilityRole="link" accessibilityHint="Öffnet die Datenschutzerklärung im Browser"

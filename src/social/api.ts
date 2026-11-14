@@ -278,6 +278,14 @@ export async function fetchHealthDays(days: number): Promise<DailyMetrics[]> {
   }));
 }
 
+/** Sync ausgeschaltet (Einwilligung widerrufen): hochgeladene Tageswerte und Fortschritt im Konto löschen. */
+export async function clearSyncedData(): Promise<void> {
+  if (!supabase) return;
+  if (!(await currentUserId())) throw new Error(NOT_SIGNED_IN);
+  const { error } = await supabase.rpc('clear_synced_data');
+  if (error) throw new Error(message(error));
+}
+
 /** Gespeicherten Fortschritt aus dem Konto lesen (null = noch keiner). */
 export async function loadProgress(): Promise<Progress | null> {
   if (!supabase) return null;

@@ -299,7 +299,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try { await publish(); } catch { /* offline: beim nächsten Aktualisieren */ }
   }, [publish]);
 
+  /**
+   * Einwilligung für den Sync setzen. Die Rückfrage mit allen Infos zeigt der Profil-Screen vorher.
+   * Ausschalten = Widerruf: Die hochgeladenen Daten werden im Konto gelöscht (wirft bei Fehler,
+   * dann bleibt der Schalter an, damit nichts liegen bleibt, ohne dass der Nutzer es merkt).
+   */
   const setCloudSync = useCallback(async (on: boolean) => {
+    if (!on && profileRef.current.cloudSync && meRef.current) await social.clearSyncedData();
     const next = { ...profileRef.current, cloudSync: on };
     setProfile(next); profileRef.current = next;
     await writeJson(K_PROFILE, next);
@@ -317,6 +323,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     try { await social.signOut(); } catch { /* egal */ }
     setMeState(null); meRef.current = null; setSignInMethod(null);
+    // Die Einwilligung gilt für dieses Konto: nach dem Abmelden aus, damit ein anderes Konto nicht automatisch synchronisiert
+    if (profileRef.current.cloudSync) {
+      const next = { ...profileRef.current, cloudSync: false };
+      setProfile(next); profileRef.current = next;
+      await writeJson(K_PROFILE, next);
+    }
   }, []);
 
   const resetLocal = useCallback(async () => {
