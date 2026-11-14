@@ -6,7 +6,8 @@ import React, { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useApp } from '../state/AppState.tsx';
 import { AGE_LIMITS, BASE_ACTIVITY, CALORIE_NOTICE, CUSTOM_LIMITS, GOAL_LABEL, LOSE_FACTOR, GAIN_FACTOR, MIN_LOSE_AGE, MIN_LOSE_BMI, SEX_LABEL } from '../game/calories.ts';
-import type { BodyStats } from '../game/body.ts';
+import { calorieTarget } from '../game/calories.ts';
+import { clampStats, type BodyStats } from '../game/body.ts';
 import type { CalorieGoal, Sex } from '../types.ts';
 import { Button, P, Section } from './components.tsx';
 import { Slider } from './Slider.tsx';
@@ -30,11 +31,12 @@ export function CalorieNotice() {
 export function CalorieCard({ draftStats }: { draftStats: BodyStats }) {
   const app = useApp();
   const s = app.calorieSettings;
-  const t = app.calorie;
+  // Live: rechnet sofort mit den Reglern (Körperwerte, Alter), auch während sie gezogen werden
   const [custom, setCustom] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [age, setAge] = useState(s.age);
   useEffect(() => setAge(s.age), [s.age]);
+  const t = app.calorie ? calorieTarget({ stats: clampStats(draftStats), ageYears: age, ageKnown: s.ageSet, sex: s.sex, useBodyFat: s.useBodyFat, activeKcalAvg: app.activeKcalAvg, goal: s.goal, custom: s.custom }) : null;
 
   // Hinweis einmal beim ersten Öffnen
   useEffect(() => {
