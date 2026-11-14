@@ -24,10 +24,14 @@ export default function Home() {
   // Szene: viewBox 390×452, „slice“ unten ausgerichtet → gleiche Rechnung für die Avatar-Position
   const k = Math.max(W / 390, sceneH / 452);
   const offX = (W - 390 * k) / 2;
-  const avSize = Math.min(236 * k, W * 0.66);
+  // Der Kopf (Haarspitzen bei ca. 4 % der Bildhöhe) darf nie über den Szenenrand oder unter die HUD-Leiste ragen
+  const grassTop = sceneH - (452 - 398) * k;
+  const headTopFrac = 0.045;
+  const minHeadTop = insets.top + 64;
+  const maxAvH = (grassTop - minHeadTop) / (AVATAR_FEET - headTopFrac);
+  const avSize = Math.max(120, Math.min(236 * k, W * 0.66, maxAvH / AVATAR_RATIO));
   const avH = avSize * AVATAR_RATIO;
   const avLeft = offX + 222 * k - avSize / 2;
-  const grassTop = sceneH - (452 - 398) * k;
   const avTop = grassTop - avH * AVATAR_FEET;
 
   const need = xpNeeded(app.progress.level);
