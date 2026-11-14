@@ -52,6 +52,21 @@ export function Card({ children, style }: { children: React.ReactNode; style?: S
   return <View style={[s.card, style]}>{children}</View>;
 }
 
+/** Aufklappbarer Abschnitt (Akkordeon): zu Beginn zu, damit lange Seiten kurz bleiben */
+export function Section({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <View style={[s.card, { gap: open ? 10 : 0, paddingVertical: open ? 16 : 6 }]}>
+      <Pressable onPress={() => setOpen(o => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={title}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 }}>
+        <Text style={s.h}>{title}</Text>
+        <Text style={{ color: C.mute, fontSize: 16, fontWeight: '800' }}>{open ? '▲' : '▼'}</Text>
+      </Pressable>
+      {open && children}
+    </View>
+  );
+}
+
 export function H({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
   return <Text style={[s.h, style]}>{children}</Text>;
 }

@@ -12,7 +12,7 @@ import { BODIES, HAIRSTYLES, type BodyOption } from '../../src/avatar/assets.ts'
 import * as social from '../../src/social/api.ts';
 import { SignIn } from '../../src/ui/SignIn.tsx';
 import { confirm, notify } from '../../src/ui/confirm.ts';
-import { Bar, Button, Card, H, P } from '../../src/ui/components.tsx';
+import { Bar, Button, Card, H, P, Section } from '../../src/ui/components.tsx';
 import { Slider } from '../../src/ui/Slider.tsx';
 import { CalorieCard } from '../../src/ui/CalorieCard.tsx';
 import { ALL_GOALS_BONUS, GOAL_DEFS, goalDef, type GoalId } from '../../src/game/goals.ts';
@@ -161,8 +161,7 @@ export default function Profile() {
         </View>
       </Card>
 
-      <Card>
-        <H>Frisur</H>
+      <Section title="Frisur">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 2 }}>
           {HAIRSTYLES.map(h => {
             const on = h.id === app.hair;
@@ -175,10 +174,9 @@ export default function Profile() {
             );
           })}
         </ScrollView>
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Körper & Outfit</H>
+      <Section title="Körper & Outfit">
         {([['type', 'Körpertyp'], ['outfit', 'Outfit']] as [BodyOption['kind'], string][]).map(([kind, label]) => (
           <View key={kind} style={{ gap: 6 }}>
             <Text style={st.meta}>{label}</Text>
@@ -197,10 +195,9 @@ export default function Profile() {
           </View>
         ))}
         <P style={{ fontSize: 12 }}>Körpertyp und Outfit schließen sich vorerst aus: Outfits gibt es nur mit athletischem Körper. Freunde sehen deine Frisur und deinen Körper, sobald du angemeldet bist.</P>
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Körperwerte</H>
+      <Section title="Körperwerte">
         <Slider label="Größe" unit="cm" value={stats.heightCm} min={BODY_LIMITS.heightCm.min} max={BODY_LIMITS.heightCm.max} onChange={upd('heightCm')} onDone={save('heightCm')} />
         <Slider label="Gewicht" unit="kg" value={stats.weightKg} min={BODY_LIMITS.weightKg.min} max={BODY_LIMITS.weightKg.max} onChange={upd('weightKg')} onDone={save('weightKg')} />
         <Slider label="Körperfettanteil (KFA)" unit="%" value={stats.bodyFatPct} min={BODY_LIMITS.bodyFatPct.min} max={BODY_LIMITS.bodyFatPct.max} onChange={upd('bodyFatPct')} onDone={save('bodyFatPct')} />
@@ -216,12 +213,11 @@ export default function Profile() {
         </View>
         <P style={{ fontSize: 12 }}>Automatisch: Ab {STOCKY_FROM_BODY_FAT} % Körperfett wird der Körper stämmiger, bis {DEFINED_UP_TO_BODY_FAT} % definierter; dazwischen entscheidet die Muskelmasse (Athletisch, Kraftsport, Schlank). Ohne „automatisch“ wählst du den Körpertyp selbst. Outfits haben Vorrang.</P>
         <P style={{ fontSize: 12 }}>Größe, Gewicht und KFA bleiben auf diesem Gerät, werden nicht synchronisiert und ändern weder XP noch Level. Freunde sehen nur den Körpertyp – den du wählst oder, wenn „automatisch“ an ist, den abgeleiteten.</P>
-      </Card>
+      </Section>
 
       <CalorieCard draftStats={stats} />
 
-      <Card>
-        <H>Tagesziele</H>
+      <Section title="Tagesziele">
         <P>Wähle, was du jeden Tag schaffen willst. Wer ein Ziel erreicht, bekommt Bonus-XP, wenn der Tag verbucht wird. Verfehlte Ziele kosten nichts. Alle gesetzten Ziele an einem Tag: +{ALL_GOALS_BONUS} XP extra.</P>
         {GOAL_DEFS.map(d => {
           const on = app.goals[d.id] !== undefined;
@@ -243,10 +239,9 @@ export default function Profile() {
           );
         })}
         <P style={{ fontSize: 12 }}>Es gibt kein Tagesziel für Gewicht oder Körperfett, und das Schlafziel beginnt bei 6 Stunden: LvlMe belohnt weder Hungern noch Schlafentzug. Gewichtsverlust findest du unter Langzeitziele, ohne Frist.</P>
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Langzeitziele</H>
+      <Section title="Langzeitziele">
         <P>Größere Ziele mit einmaliger XP-Belohnung. Schritte, Trainingstage (ab {20} Min.) und Serie zählt LvlMe ab dem Anlegen automatisch, Gewichtsverlust aus deinen Körperwerten. Eigene Ziele, zum Beispiel Bankdrücken oder ein Lauf, trägst du selbst nach. Nichts wird bestraft, wenn es länger dauert.</P>
         {app.longGoals.map(g => {
           const done = !!g.doneAt;
@@ -304,10 +299,9 @@ export default function Profile() {
             format={v => v.toLocaleString('de-DE')} onChange={setLgTarget} />
         )}
         <Button title="Ziel hinzufügen" onPress={addLong} />
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Stats</H>
+      <Section title="Stats">
         {bars.map(([n, v, c]) => (
           <View key={n} style={{ gap: 4 }}>
             <View style={st.row}><Text style={st.label}>{n}</Text><Text style={[st.val, F.num]}>{v}</Text></View>
@@ -318,10 +312,9 @@ export default function Profile() {
           <Text style={st.label}>Tage in Folge aktiv</Text>
           <Text style={[st.streak, F.display]}>{app.progress.streak}</Text>
         </View>
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Verwandlungen</H>
+      <Section title="Verwandlungen">
         {STAGES.map((stg, i) => {
           const done = i < app.stage, now = i === app.stage;
           const col = STAGE_COLORS[i].aura ?? C.ki;
@@ -333,10 +326,9 @@ export default function Profile() {
             </View>
           );
         })}
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Daten</H>
+      <Section title="Daten">
         <P>Quelle: <Text style={{ color: C.ink, fontWeight: '700' }}>{app.source ? SOURCE[app.source] ?? app.source : 'noch keine'}</Text></P>
         {isIos ? (
           <P>LvlMe liest deine Gesundheitsdaten aus Apple Health, um deinen Avatar zu berechnen. Ohne Sync bleiben sie auf deinem iPhone. Freunde sehen Level, Stufe, das Aussehen deines Avatars und – wenn du es erlaubst – deine Tagesform. Deine Messwerte nie.</P>
@@ -372,10 +364,9 @@ export default function Profile() {
         {isIos && <P>Welche Daten LvlMe lesen darf, änderst du in der Health-App unter Profil › Apps › LvlMe.</P>}
         <Text style={st.link} accessibilityRole="link" accessibilityHint="Öffnet die Datenschutzerklärung im Browser"
           onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}>Datenschutzerklärung</Text>
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Konto</H>
+      <Section title="Konto">
         {!social.isConfigured() && <P>Konto und Freunde sind in dieser Version noch nicht eingerichtet.</P>}
         {social.isConfigured() && app.me && (
           <>
@@ -387,7 +378,7 @@ export default function Profile() {
         )}
         {social.isConfigured() && !app.me && <SignIn />}
         <Button title="Fortschritt zurücksetzen" kind="danger" onPress={reset} />
-      </Card>
+      </Section>
     </ScrollView>
     {preview && (
       <View pointerEvents="none" style={[st.preview, { top: insets.top + 8 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

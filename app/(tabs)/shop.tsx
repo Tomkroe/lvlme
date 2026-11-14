@@ -7,7 +7,7 @@ import { Avatar } from '../../src/avatar/Avatar.tsx';
 import { COINS, COIN_NAME, isOwned, itemsOf, type ShopItem } from '../../src/game/shop.ts';
 import { Scene } from '../../src/ui/Scene.tsx';
 import { confirm, notify } from '../../src/ui/confirm.ts';
-import { Button, Card, H, P } from '../../src/ui/components.tsx';
+import { Button, P, Section } from '../../src/ui/components.tsx';
 import { C, F } from '../../src/ui/theme.ts';
 import type { BodyId } from '../../src/types.ts';
 
@@ -63,32 +63,28 @@ export default function Shop() {
         </View>
       </View>
 
-      <Card>
-        <H>{COIN_NAME} verdienen</H>
+      <Section title={`${COIN_NAME} verdienen`}>
         <P>• Jeder abgeschlossene Tag: +{COINS.restDay} {COIN_NAME}, an aktiven Tagen +{COINS.activeDay}. Ruhetage zählen auch.</P>
         <P>• Level-up: +{COINS.level} je Level, bei einer neuen Verwandlung zusätzlich +{COINS.stage}.</P>
         <P>• Tagesziele: +{COINS.goal} je erreichtem Ziel, +{COINS.allGoals} extra, wenn du alle schaffst.</P>
         <P>• Langzeitziele: einmalig {COINS.longGoalPerXp * 100} % ihrer XP als {COIN_NAME}.</P>
         <P style={{ fontSize: 12 }}>Du kannst {COIN_NAME} nicht verlieren. Gutgeschrieben werden sie, wenn der Tag abgeschlossen ist.</P>
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Outfits</H>
+      <Section title="Outfits" defaultOpen>
         {itemsOf('outfit').map(row)}
         <P style={{ fontSize: 12 }}>Ein Outfit ersetzt den Körpertyp, solange du es trägst. Neue Kleidung kommt nach und nach dazu.</P>
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Aura-Farben</H>
+      <Section title="Aura-Farben">
         <P>Die Aura leuchtet in deiner Farbe, auf jeder Stufe. Nur du siehst sie, Freunde sehen weiter die Stufenfarbe.</P>
         {itemsOf('aura').map(row)}
-      </Card>
+      </Section>
 
-      <Card>
-        <H>Szenen</H>
+      <Section title="Szenen">
         <P>Ein anderer Hintergrund für deine Startseite. Nur du siehst ihn.</P>
         {itemsOf('scene').map(row)}
-      </Card>
+      </Section>
     </ScrollView>
   );
 }

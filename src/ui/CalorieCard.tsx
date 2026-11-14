@@ -8,7 +8,7 @@ import { useApp } from '../state/AppState.tsx';
 import { AGE_LIMITS, BASE_ACTIVITY, CALORIE_NOTICE, CUSTOM_LIMITS, GOAL_LABEL, LOSE_FACTOR, GAIN_FACTOR, MIN_LOSE_AGE, MIN_LOSE_BMI, SEX_LABEL } from '../game/calories.ts';
 import type { BodyStats } from '../game/body.ts';
 import type { CalorieGoal, Sex } from '../types.ts';
-import { Button, Card, H, P } from './components.tsx';
+import { Button, P, Section } from './components.tsx';
 import { Slider } from './Slider.tsx';
 import { confirm, notify } from './confirm.ts';
 import { C, F } from './theme.ts';
@@ -62,8 +62,7 @@ export function CalorieCard({ draftStats }: { draftStats: BodyStats }) {
   const activeToday = app.todayMetrics ? Math.round(app.todayMetrics.activeEnergyKcal) : null;
 
   return (
-    <Card>
-      <H>Kalorienhaushalt</H>
+    <Section title="Kalorienhaushalt">
       <P>Eine grobe Schätzung, wie viel du am Tag brauchst. Nur zur Information: Sie ändert weder Energie noch XP oder Stimmung deines Avatars.</P>
 
       {!t && (
@@ -136,7 +135,7 @@ export function CalorieCard({ draftStats }: { draftStats: BodyStats }) {
 
       <CalorieNotice />
       <P style={{ fontSize: 12 }}>Alter, Geschlecht, Körperwerte und dein eigener Wert bleiben auf diesem Gerät. Es gibt dafür keine XP und keine Belohnung, weder für ein Defizit noch fürs Treffen der Zahl.</P>
-    </Card>
+    </Section>
   );
 }
 
