@@ -401,7 +401,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setProfile(next); profileRef.current = next;
     progressRef.current = nextP; setProgress(nextP);
     await writeJson(K_PROFILE, next); await writeJson(K_PROGRESS, nextP);
-  }, []);
+    publish().catch(() => { /* offline: beim nächsten Aktualisieren */ });
+  }, [publish]);
 
   const setName = useCallback(async (name: string) => {
     const next = { ...profileRef.current, name: name.trim().slice(0, 24) };

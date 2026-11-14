@@ -8,6 +8,7 @@ import { Avatar, AVATAR_FEET, AVATAR_RATIO } from '../../src/avatar/Avatar.tsx';
 import { Scene } from '../../src/ui/Scene.tsx';
 import { shopItem } from '../../src/game/shop.ts';
 import { Chip, LevelRing } from '../../src/ui/components.tsx';
+import { AvatarEditor } from '../../src/ui/AvatarEditor.tsx';
 import { Tile, TILE_H, WidgetPicker, widgetView } from '../../src/ui/HomeWidgets.tsx';
 import { SLOTS, type SlotId } from '../../src/game/widgets.ts';
 import { C, F } from '../../src/ui/theme.ts';
@@ -18,6 +19,7 @@ export default function Home() {
   const { width: W, height: Hs } = useScreenSize();
   const insets = useSafeAreaInsets();
   const [editing, setEditing] = useState(false);
+  const [charOpen, setCharOpen] = useState(false);
   const [pickSlot, setPickSlot] = useState<SlotId | null>(null);
   const [areaH, setAreaH] = useState(0);
 
@@ -73,9 +75,10 @@ export default function Home() {
           {/* Szene, Avatar und HUD */}
           <View style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: C.bg }]}>
             <Scene mood={mood} id="home" theme={sceneTheme} />
-            <View style={{ position: 'absolute', left: avLeft, top: avTop }}>
+            <Pressable onPress={() => setCharOpen(true)} accessibilityRole="button" accessibilityLabel="Charakter anpassen"
+              style={{ position: 'absolute', left: avLeft, top: avTop }}>
               <Avatar stage={app.stage} mood={mood} hair={app.hair} body={app.body} auraColor={auraColor} size={avSize} id="me" />
-            </View>
+            </Pressable>
             <View style={[st.hud, { top: insets.top + 8 }]}>
               <View style={[st.glass, st.who]}>
                 <LevelRing frac={app.progress.xp / need} level={app.progress.level} />
@@ -120,7 +123,7 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  <Pressable onPress={() => setEditing(true)} accessibilityRole="button" accessibilityHint="Widgets rund um den Avatar hinzufügen, ändern oder entfernen" style={[st.glass, st.pill]}><Text style={st.pillText}>Anpassen</Text></Pressable>
+                  <Pressable onPress={() => setEditing(true)} accessibilityRole="button" accessibilityHint="Widgets rund um den Avatar hinzufügen, ändern oder entfernen" style={[st.glass, st.pill]}><Text style={st.pillText}>Widgets</Text></Pressable>
                 </>
               )}
             </View>
@@ -128,6 +131,7 @@ export default function Home() {
         </View>
       </ScrollView>
 
+      <AvatarEditor visible={charOpen} onClose={() => setCharOpen(false)} onWidgets={() => setEditing(true)} />
       <WidgetPicker slot={pickSlot} layout={app.widgetLayout} onClose={() => setPickSlot(null)}
         onPick={id => { if (pickSlot) app.setWidget(pickSlot, id); setPickSlot(null); }} />
     </View>
