@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { COINS, SHOP_ITEMS, awardCoins, buyItem, coinsOf, dayCoins, goalCoins, isOwned, levelCoins, longGoalCoins } from './shop.ts';
+import { COINS, SHOP_ITEMS, awardCoins, buyItem, coinsOf, dayCoins, goalCoins, isOwned, itemsOf, levelCoins, longGoalCoins } from './shop.ts';
 import { NEW_PROGRESS, awardXp, bookDay, scoreDay } from './rules.ts';
 import { goalXp } from './goals.ts';
 import type { DailyMetrics, Progress } from '../types.ts';
@@ -49,6 +49,20 @@ test('Kaufen: zu wenig Münzen, gekauft, schon besessen', () => {
     assert.deepEqual(buyItem(bought.progress, item.id), { ok: false, reason: 'owned' });
   }
   assert.deepEqual(buyItem(rich, 999), { ok: false, reason: 'unknown' });
+});
+
+test('Auren und Szenen: kaufen, besitzen, richtige Art', () => {
+  const rich = awardCoins(NEW_PROGRESS, 1000);
+  for (const id of ['aura-ice', 'scene-night']) {
+    assert.ok(!isOwned(rich, id));
+    const b = buyItem(rich, id);
+    assert.ok(b.ok);
+    if (b.ok) assert.ok(isOwned(b.progress, id));
+  }
+  assert.equal(itemsOf('aura').length, 5);
+  assert.equal(itemsOf('scene').length, 5);
+  assert.ok(itemsOf('aura').every(i => /^#[0-9a-f]{6}$/i.test(i.color ?? '')));
+  assert.equal(new Set(SHOP_ITEMS.map(i => i.id)).size, SHOP_ITEMS.length); // keine doppelten IDs
 });
 
 test('Kostenlose Outfits und Körpertypen sind immer verfügbar; Gekauftes geht beim Verbuchen nicht verloren', () => {

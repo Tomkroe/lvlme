@@ -6,6 +6,7 @@ import { useApp } from '../../src/state/AppState.tsx';
 import { STAGES, xpNeeded } from '../../src/game/rules.ts';
 import { Avatar, AVATAR_FEET, AVATAR_RATIO } from '../../src/avatar/Avatar.tsx';
 import { Scene } from '../../src/ui/Scene.tsx';
+import { shopItem } from '../../src/game/shop.ts';
 import { Bar, Button, Card, Chip, LevelRing, P, Ring } from '../../src/ui/components.tsx';
 import { C, F, energyColor } from '../../src/ui/theme.ts';
 import { shareCard } from '../../src/share/index.ts';
@@ -21,6 +22,8 @@ export default function Home() {
   const [shareErr, setShareErr] = useState<string | null>(null);
 
   const mood = app.today?.mood ?? 'awake';
+  const auraColor = app.cosmetics.aura ? shopItem(app.cosmetics.aura)?.color : undefined;
+  const sceneTheme = app.cosmetics.scene?.replace('scene-', '');
   const sceneH = Math.round(Math.min(Math.max(Hs * 0.56, 380), 520));
   // Szene: viewBox 390×452, „slice“ unten ausgerichtet → gleiche Rechnung für die Avatar-Position
   const k = Math.max(W / 390, sceneH / 452);
@@ -64,9 +67,9 @@ export default function Home() {
       <View style={{ height: sceneH }}>
         {/* Teilbare Karte: Szene mit Avatar und HUD – ohne Sprechblase, die verrät die Tagesform */}
         <View ref={cardRef} collapsable={false} style={[StyleSheet.absoluteFill, { overflow: 'hidden', backgroundColor: C.bg }]}>
-          <Scene mood={mood} id="home" />
+          <Scene mood={mood} id="home" theme={sceneTheme} />
           <View style={{ position: 'absolute', left: avLeft, top: avTop }}>
-            <Avatar stage={app.stage} mood={mood} hair={app.hair} body={app.body} size={avSize} id="me" />
+            <Avatar stage={app.stage} mood={mood} hair={app.hair} body={app.body} auraColor={auraColor} size={avSize} id="me" />
           </View>
 
           <View style={[st.hud, { top: insets.top + 8 }]}>

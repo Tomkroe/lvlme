@@ -4,7 +4,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '../../src/state/AppState.tsx';
 import { Avatar } from '../../src/avatar/Avatar.tsx';
-import { COINS, COIN_NAME, SHOP_ITEMS, isOwned } from '../../src/game/shop.ts';
+import { COINS, COIN_NAME, isOwned, itemsOf, type ShopItem } from '../../src/game/shop.ts';
+import { Scene } from '../../src/ui/Scene.tsx';
 import { confirm, notify } from '../../src/ui/confirm.ts';
 import { Button, Card, H, P } from '../../src/ui/components.tsx';
 import { C, F } from '../../src/ui/theme.ts';
@@ -15,12 +16,41 @@ export default function Shop() {
   const insets = useSafeAreaInsets();
   const mood = app.today?.mood ?? 'awake';
 
-  const buy = async (id: number, name: string, price: number) => {
+  const buy = async (item: ShopItem) => {
+    const { price, name } = item;
     if (app.coins < price) { notify('Zu wenig ' + COIN_NAME, `Dir fehlen noch ${price - app.coins} ${COIN_NAME}. Du bekommst welche für aktive Tage, Level-ups und erreichte Ziele.`); return; }
     if (!(await confirm(`${name} kaufen?`, `Das kostet ${price} ${COIN_NAME}. Du hast danach ${app.coins - price}.`, 'Kaufen', false))) return;
-    const r = await app.buyOutfit(id);
-    if (r === 'ok') { await app.setBody(id as BodyId); }
-    else notify('Kauf nicht möglich', r === 'poor' ? 'Zu wenig ' + COIN_NAME + '.' : 'Das hast du schon.');
+    const r = await app.buyOutfit(item.id);
+    if (r !== 'ok') { notify('Kauf nicht möglich', r === 'poor' ? 'Zu wenig ' + COIN_NAME + '.' : 'Das hast du schon.'); return; }
+    if (item.kind === 'outfit') await app.setBody(item.id as BodyId);
+    else await app.equipCosmetic(item.kind, item.id as string);
+  };
+
+  const row = (item: ShopItem) => {
+    const owned = isOwned(app.progress, item.id);
+    const worn = item.kind === 'outfit' ? app.body === item.id : app.cosmetics[item.kind] === item.id;
+    const wear = () => (item.kind === 'outfit' ? app.setBody(item.id as BodyId) : app.equipCosmetic(item.kind, item.id as string));
+    return (
+      <View key={String(item.id)} style={st.item}>
+        {item.kind === 'outfit' && <Avatar stage={app.stage} mood={mood} hair={app.hair} body={item.id as BodyId} size={78} still id={`shop${item.id}`} />}
+        {item.kind === 'aura' && <Avatar stage={Math.max(1, app.stage)} mood="charged" hair={app.hair} body={app.body} auraColor={item.color} size={78} still id={`shop${item.id}`} />}
+        {item.kind === 'scene' && (
+          <View style={st.sceneThumb}><Scene mood="awake" id={`shop${item.id}`} theme={String(item.id).replace('scene-', '')} /></View>
+        )}
+        <View style={{ flex: 1, gap: 6 }}>
+          <Text style={st.itemName}>{item.name}</Text>
+          <Text style={st.meta}>{item.price === 0 ? 'Gratis' : owned ? 'Gekauft' : `${item.price} ${COIN_NAME}`}</Text>
+          {owned ? (
+            worn && item.kind !== 'outfit'
+              ? <Button title="Ablegen" kind="ghost" onPress={() => { app.equipCosmetic(item.kind as 'aura' | 'scene', null); }} style={{ minHeight: 40 }} />
+              : <Button title={worn ? 'Angezogen' : item.kind === 'outfit' ? 'Anziehen' : 'Anlegen'} kind="ghost" disabled={worn} onPress={() => { wear(); }} style={{ minHeight: 40 }} />
+          ) : (
+            <Button title={`Kaufen · ${item.price}`} onPress={() => buy(item)} style={{ minHeight: 40, opacity: app.coins < item.price ? 0.55 : 1 }}
+              accessibilityHint={app.coins < item.price ? `Dir fehlen ${item.price - app.coins} ${COIN_NAME}` : undefined} />
+          )}
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -44,26 +74,20 @@ export default function Shop() {
 
       <Card>
         <H>Outfits</H>
-        {SHOP_ITEMS.map(item => {
-          const owned = isOwned(app.progress, item.id);
-          const worn = app.body === item.id;
-          return (
-            <View key={item.id} style={st.item}>
-              <Avatar stage={app.stage} mood={mood} hair={app.hair} body={item.id} size={78} still id={`shop${item.id}`} />
-              <View style={{ flex: 1, gap: 6 }}>
-                <Text style={st.itemName}>{item.name}</Text>
-                <Text style={st.meta}>{item.price === 0 ? 'Gratis' : owned ? 'Gekauft' : `${item.price} ${COIN_NAME}`}</Text>
-                {owned ? (
-                  <Button title={worn ? 'Angezogen' : 'Anziehen'} kind="ghost" disabled={worn} onPress={() => { app.setBody(item.id as BodyId); }} style={{ minHeight: 40 }} />
-                ) : (
-                  <Button title={`Kaufen · ${item.price}`} onPress={() => buy(item.id, item.name, item.price)} style={{ minHeight: 40, opacity: app.coins < item.price ? 0.55 : 1 }}
-                    accessibilityHint={app.coins < item.price ? `Dir fehlen ${item.price - app.coins} ${COIN_NAME}` : undefined} />
-                )}
-              </View>
-            </View>
-          );
-        })}
+        {itemsOf('outfit').map(row)}
         <P style={{ fontSize: 12 }}>Ein Outfit ersetzt den Körpertyp, solange du es trägst. Neue Kleidung kommt nach und nach dazu.</P>
+      </Card>
+
+      <Card>
+        <H>Aura-Farben</H>
+        <P>Die Aura leuchtet in deiner Farbe, auf jeder Stufe. Nur du siehst sie, Freunde sehen weiter die Stufenfarbe.</P>
+        {itemsOf('aura').map(row)}
+      </Card>
+
+      <Card>
+        <H>Szenen</H>
+        <P>Ein anderer Hintergrund für deine Startseite. Nur du siehst ihn.</P>
+        {itemsOf('scene').map(row)}
       </Card>
     </ScrollView>
   );
@@ -78,4 +102,5 @@ const st = StyleSheet.create({
   item: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6, borderTopWidth: 1, borderTopColor: C.line },
   itemName: { color: C.ink, fontWeight: '800', fontSize: 16 },
   meta: { color: C.mute, fontSize: 13 },
+  sceneThumb: { width: 78, height: 78, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: C.line },
 });

@@ -26,6 +26,8 @@ export interface AvatarProps {
   hair?: HairId;
   /** Körpertyp oder Outfit (Körper-Ebene); fehlt er, der Originalkörper */
   body?: BodyId;
+  /** Aura-Farbe aus dem Shop (ersetzt die Stufenfarbe) */
+  auraColor?: string;
   flip?: boolean;
   /** eindeutige Kennung, wenn mehrere Avatare gleichzeitig sichtbar sind */
   id?: string;
@@ -47,7 +49,7 @@ function useReduceMotion(): boolean {
   return reduce;
 }
 
-export function Avatar({ stage, mood, size, hair = DEFAULT_HAIR, body = DEFAULT_BODY, flip = false, id = 'av', still = false, style }: AvatarProps) {
+export function Avatar({ stage, mood, size, hair = DEFAULT_HAIR, body = DEFAULT_BODY, auraColor, flip = false, id = 'av', still = false, style }: AvatarProps) {
   const reduce = useReduceMotion();
   const animate = !still && !reduce;
   const h = size * AVATAR_RATIO;
@@ -55,7 +57,7 @@ export function Avatar({ stage, mood, size, hair = DEFAULT_HAIR, body = DEFAULT_
   const torso = bodyOption(body);
 
   // Aura aus der SVG-Zeichnung; sie ist für ein 240×280-Feld entworfen und wird auf das Bildfeld gestreckt
-  const auraXml = useMemo(() => avatarSvg(stage, mood, `${id}a`, { flip, layer: 'aura' }), [stage, mood, id, flip]);
+  const auraXml = useMemo(() => avatarSvg(stage, mood, `${id}a`, { flip, layer: 'aura', auraColor }), [stage, mood, id, flip, auraColor]);
 
   const bob = useRef(new Animated.Value(0)).current;
   const flick = useRef(new Animated.Value(0)).current;

@@ -6,7 +6,8 @@ import type { Mood } from '../types.ts';
 import { STAGE_COLORS, type StageColors } from './palette.ts';
 
 export type AvatarLayer = 'all' | 'ground' | 'aura' | 'body';
-export interface AvatarOptions { flip?: boolean; layer?: AvatarLayer }
+/** auraColor: Aura-Farbe aus dem Shop; ersetzt die Farbe der Verwandlungsstufe und erscheint auf jeder Stufe */
+export interface AvatarOptions { flip?: boolean; layer?: AvatarLayer; auraColor?: string }
 type Pt = [number, number];
 type EyeKind = 'open' | 'fierce' | 'half' | 'side' | 'happy';
 const MOODS: Mood[] = ['charged', 'awake', 'tired', 'proud', 'lazy'];
@@ -79,13 +80,14 @@ export function avatarSvg(stageIndex: number, moodKey: Mood, uniqueId: string, o
   const st=STAGE_COLORS[Math.max(0,Math.min(STAGE_COLORS.length-1,stageIndex|0))];
   const m: Mood=MOODS.includes(moodKey)?moodKey:'awake';
   const id=String(uniqueId==null?'a':uniqueId).replace(/[^A-Za-z0-9_-]/g,'_');
+  const auraCol=opts.auraColor??st.aura;
   const layer: AvatarLayer=opts.layer??'all';
   const want=(l: AvatarLayer)=>layer==='all'||layer===l;
   let s=`<svg viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg">`;
   s+=`<defs>
     <radialGradient id="ir${id}" cx="50%" cy="78%" r="75%"><stop offset="0" stop-color="${st.eyes[1]}"/><stop offset=".55" stop-color="${st.eyes[0]}"/><stop offset="1" stop-color="${OL}"/></radialGradient>
     <linearGradient id="hg${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${st.hair[1]}"/><stop offset=".45" stop-color="${st.hair[0]}"/><stop offset="1" stop-color="${st.hair[0]}"/></linearGradient>
-    <radialGradient id="ag${id}" cx="50%" cy="68%" r="62%"><stop offset="0" stop-color="#ffffff" stop-opacity=".9"/><stop offset=".35" stop-color="${st.aura||'#000'}" stop-opacity=".8"/><stop offset="1" stop-color="${st.aura||'#000'}" stop-opacity=".05"/></radialGradient>
+    <radialGradient id="ag${id}" cx="50%" cy="68%" r="62%"><stop offset="0" stop-color="#ffffff" stop-opacity=".9"/><stop offset=".35" stop-color="${auraCol||'#000'}" stop-opacity=".8"/><stop offset="1" stop-color="${auraCol||'#000'}" stop-opacity=".05"/></radialGradient>
     <linearGradient id="gg${id}" x1="0" y1="0" x2="1" y2="0"><stop offset=".55" stop-color="${st.gi}"/><stop offset=".56" stop-color="${st.giShade}"/></linearGradient>
   </defs>`;
   if(opts.flip) s+=`<g transform="translate(240 0) scale(-1 1)">`;
@@ -93,19 +95,19 @@ export function avatarSvg(stageIndex: number, moodKey: Mood, uniqueId: string, o
   if(want('ground')) s+=`<ellipse cx="120" cy="270" rx="58" ry="8" fill="#000" opacity=".32"/>`;
 
   // ---------- Aura ----------
-  if(want('aura') && st.aura && m!=='lazy'){
+  if(want('aura') && auraCol && m!=='lazy'){
     const dim=m==='tired'?.4:1;
     const flame='M120 2 C108 28 96 40 92 68 C84 54 70 62 68 90 C56 82 46 102 52 126 C40 138 36 168 44 196 C50 228 74 264 120 268 C166 264 190 228 196 196 C204 168 200 138 188 126 C194 102 184 82 172 90 C170 62 156 54 148 68 C144 40 132 28 120 2Z';
     s+=`<g opacity="${dim}">`;
-    s+=`<path d="${flame}" fill="url(#ag${id})" stroke="${st.aura}" stroke-width="2.4" stroke-opacity=".9"/>`;
-    s+=`<path d="${flame}" fill="${st.aura}" opacity=".35" transform="translate(120 210) scale(.8 .82) translate(-120 -210)"/>`;
+    s+=`<path d="${flame}" fill="url(#ag${id})" stroke="${auraCol}" stroke-width="2.4" stroke-opacity=".9"/>`;
+    s+=`<path d="${flame}" fill="${auraCol}" opacity=".35" transform="translate(120 210) scale(.8 .82) translate(-120 -210)"/>`;
     s+=`<path d="${flame}" fill="#ffffff" opacity=".28" transform="translate(120 220) scale(.6 .62) translate(-120 -220)"/>`;
     // Flammenzungen
-    s+=`<path d="M60 150 Q50 120 62 96 Q62 124 74 140Z M180 150 Q190 120 178 96 Q178 124 166 140Z M96 60 Q98 36 112 22 Q104 44 108 62Z M144 60 Q142 36 128 22 Q136 44 132 62Z" fill="${st.aura}" opacity=".55"/>`;
+    s+=`<path d="M60 150 Q50 120 62 96 Q62 124 74 140Z M180 150 Q190 120 178 96 Q178 124 166 140Z M96 60 Q98 36 112 22 Q104 44 108 62Z M144 60 Q142 36 128 22 Q136 44 132 62Z" fill="${auraCol}" opacity=".55"/>`;
     s+=`</g>`;
     if(st.bolts && m!=='tired'){
       const b='M34 104 l14 16 -10 5 16 22 M206 120 l-14 13 10 7 -16 20 M58 212 l10 -10 4 9 12 -12';
-      s+=`<path d="${b}" fill="none" stroke="${st.aura}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>`;
+      s+=`<path d="${b}" fill="none" stroke="${auraCol}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>`;
       s+=`<path d="${b}" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
     }
     if(st.sparks){

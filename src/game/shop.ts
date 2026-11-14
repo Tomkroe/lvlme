@@ -5,7 +5,7 @@
  * aktive etwas mehr); Münzen lassen sich nicht verlieren und nicht für Gesundheitsdaten „kaufen“.
  * Die Gegenstände sind Körper-Ebenen aus assets/avatar (BodyId ≥ 5). Neue Kleidung kommt hier als weiterer Eintrag dazu.
  */
-import type { BodyId, Progress } from '../types.ts';
+import type { Progress } from '../types.ts';
 
 export const COIN_NAME = 'Münzen';
 
@@ -26,33 +26,53 @@ export const COINS = {
   longGoalPerXp: 0.5,
 } as const;
 
+export type ItemKind = 'outfit' | 'aura' | 'scene';
+
 export interface ShopItem {
-  /** gleichzeitig die BodyId des Outfits */
-  id: BodyId;
+  /** Outfits: gleichzeitig die BodyId (Zahl). Auren und Szenen: Text wie „aura-fire“. */
+  id: number | string;
+  kind: ItemKind;
   name: string;
   /** 0 = von Anfang an freigeschaltet */
   price: number;
+  /** Auren: Farbe */
+  color?: string;
 }
 
 export const SHOP_ITEMS: readonly ShopItem[] = [
-  { id: 5, name: 'T-Shirt', price: 0 },
-  { id: 9, name: 'Oberkörperfrei', price: 80 },
-  { id: 6, name: 'Hoodie', price: 150 },
-  { id: 8, name: 'Trikot', price: 200 },
-  { id: 7, name: 'Trainingsanzug', price: 250 },
+  // Outfits
+  { id: 5, kind: 'outfit', name: 'T-Shirt', price: 0 },
+  { id: 9, kind: 'outfit', name: 'Oberkörperfrei', price: 80 },
+  { id: 6, kind: 'outfit', name: 'Hoodie', price: 150 },
+  { id: 8, kind: 'outfit', name: 'Trikot', price: 200 },
+  { id: 7, kind: 'outfit', name: 'Trainingsanzug', price: 250 },
+  // Aura-Farben: ersetzen die Stufenfarbe und leuchten auf jeder Stufe
+  { id: 'aura-ice', kind: 'aura', name: 'Eisaura', price: 120, color: '#8fe3ff' },
+  { id: 'aura-fire', kind: 'aura', name: 'Feueraura', price: 120, color: '#ff7a1a' },
+  { id: 'aura-toxic', kind: 'aura', name: 'Giftgrün', price: 150, color: '#7dff4a' },
+  { id: 'aura-shadow', kind: 'aura', name: 'Schattenaura', price: 150, color: '#7a5cff' },
+  { id: 'aura-gold', kind: 'aura', name: 'Goldaura', price: 220, color: '#ffd24a' },
+  // Szenen: Hintergrund der Startseite
+  { id: 'scene-spring', kind: 'scene', name: 'Frühling', price: 100 },
+  { id: 'scene-sunset', kind: 'scene', name: 'Sonnenuntergang', price: 100 },
+  { id: 'scene-night', kind: 'scene', name: 'Sternennacht', price: 130 },
+  { id: 'scene-ember', kind: 'scene', name: 'Glutberge', price: 150 },
+  { id: 'scene-neon', kind: 'scene', name: 'Neon-Nacht', price: 180 },
 ];
 
-export function shopItem(id: number): ShopItem | undefined {
+export const itemsOf = (kind: ItemKind): ShopItem[] => SHOP_ITEMS.filter(i => i.kind === kind);
+
+export function shopItem(id: number | string): ShopItem | undefined {
   return SHOP_ITEMS.find(i => i.id === id);
 }
 
 export const coinsOf = (p: Progress): number => Math.max(0, Math.floor(p.coins ?? 0));
 
 /** Gehört dem Spieler (Körpertypen 0–4 sind frei, Outfits ab Preis 0 oder gekauft) */
-export function isOwned(p: Progress, id: number): boolean {
+export function isOwned(p: Progress, id: number | string): boolean {
   const item = shopItem(id);
   if (!item) return true;
-  return item.price === 0 || (p.owned ?? []).includes(id as BodyId);
+  return item.price === 0 || (p.owned ?? []).includes(id);
 }
 
 export const dayCoins = (active: boolean): number => (active ? COINS.activeDay : COINS.restDay);
@@ -75,7 +95,7 @@ export function awardCoins(p: Progress, n: number): Progress {
 
 export type BuyResult = { ok: true; progress: Progress } | { ok: false; reason: 'unknown' | 'owned' | 'poor' };
 
-export function buyItem(p: Progress, id: number): BuyResult {
+export function buyItem(p: Progress, id: number | string): BuyResult {
   const item = shopItem(id);
   if (!item) return { ok: false, reason: 'unknown' };
   if (isOwned(p, id)) return { ok: false, reason: 'owned' };

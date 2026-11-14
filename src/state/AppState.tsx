@@ -18,6 +18,9 @@ import { NEW_PROGRESS, awardXp, baselineFrom, bookDay, scoreDay, stageFor, toPub
 import { clampStats, maxWeightLossKg, suggestBody, type BodyStats } from '../game/body.ts';
 import { DEFAULT_GOALS, goalXp, sanitizeGoals, type Goals } from '../game/goals.ts';
 import { buyItem as buyShopItem, coinsOf, isOwned, longGoalCoins, shopItem } from '../game/shop.ts';
+
+/** Angelegte Shop-Kosmetik (nur lokal): Aura-Farbe und Szene der Startseite, jeweils eine Shop-ID */
+export interface Cosmetics { aura?: string; scene?: string }
 import { MAX_LONG_GOALS, checkLongGoals, newLongGoal, sanitizeLongGoals, type LongGoal, type LongGoalKind } from '../game/longgoals.ts';
 import { getHealthProvider } from '../health/index.ts';
 import * as social from '../social/api.ts';
@@ -43,6 +46,8 @@ interface Profile {
   bodyStats?: BodyStats;
   /** Körpertyp automatisch aus den Körperwerten (nur mit Einwilligung; Freunde sehen dann die abgeleitete Figur) */
   autoBody?: boolean;
+  /** Angelegte Aura-Farbe und Szene (lokal, nicht veröffentlicht) */
+  cosmetics?: Cosmetics;
   /** Selbst gewählte Tagesziele (lokal); fehlt das Feld, gelten die Standardziele */
   goals?: Goals;
   /** Langzeitziele (lokal); die XP daraus stecken im Fortschritt */
@@ -93,7 +98,9 @@ export interface AppState {
   setBodyStats: (stats: BodyStats) => Promise<void>;
   /** Münzen und Shop */
   coins: number;
-  buyOutfit: (id: number) => Promise<'ok' | 'owned' | 'poor' | 'unknown'>;
+  cosmetics: Cosmetics;
+  buyOutfit: (id: number | string) => Promise<'ok' | 'owned' | 'poor' | 'unknown'>;
+  equipCosmetic: (kind: 'aura' | 'scene', id: string | null) => Promise<void>;
   setGoals: (goals: Goals) => Promise<void>;
   setCloudSync: (on: boolean) => Promise<void>;
   setMe: (me: Me | null) => void;
@@ -437,8 +444,17 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     await commitProgress(r.progress, r.events);
   }, [applyLongGoals, commitProgress]);
 
-  /** Outfit kaufen. Liefert 'ok' oder den Grund, warum es nicht ging. */
-  const buyOutfit = useCallback(async (id: number): Promise<'ok' | 'owned' | 'poor' | 'unknown'> => {
+  const equipCosmetic = useCallback(async (kind: 'aura' | 'scene', id: string | null) => {
+    if (id !== null && (shopItem(id)?.kind !== kind || !isOwned(progressRef.current, id))) return;
+    const cos = { ...(profileRef.current.cosmetics ?? {}) };
+    if (id === null) delete cos[kind]; else cos[kind] = id;
+    const next = { ...profileRef.current, cosmetics: cos };
+    setProfile(next); profileRef.current = next;
+    await writeJson(K_PROFILE, next);
+  }, []);
+
+  /** Gegenstand kaufen (Outfit, Aura, Szene). Liefert 'ok' oder den Grund, warum es nicht ging. */
+  const buyOutfit = useCallback(async (id: number | string): Promise<'ok' | 'owned' | 'poor' | 'unknown'> => {
     const r = buyShopItem(progressRef.current, id);
     if (!r.ok) return r.reason;
     await commitProgress(r.progress, []);
@@ -508,7 +524,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     cloudSync: profile.cloudSync === true,
     bodyStats: profile.bodyStats ? clampStats(profile.bodyStats) : null,
     autoBody: profile.autoBody === true && !!profile.bodyStats,
-    coins: coinsOf(progress), buyOutfit,
+    coins: coinsOf(progress), buyOutfit, equipCosmetic,
+    cosmetics: profile.cosmetics ?? {},
     setAutoBody,
     goals: profile.goals !== undefined ? sanitizeGoals(profile.goals) : DEFAULT_GOALS,
     longGoals: sanitizeLongGoals(profile.longGoals),
@@ -518,7 +535,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     source, progress, today, stepsToday,
     stage: stageFor(progress.level),
     me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal,
-  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, buyOutfit, addLongGoal, removeLongGoal, setLongGoalValue, setAutoBody, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
+  }), [ready, loading, error, profile, signInMethod, source, progress, today, stepsToday, todayMetrics, goalEvents, dismissGoalEvent, buyOutfit, equipCosmetic, addLongGoal, removeLongGoal, setLongGoalValue, setAutoBody, me, events, dismissEvent, refresh, setName, finishOnboarding, setShareMood, setHair, setBody, setBodyStats, setGoals, setCloudSync, setMe, signOut, resetLocal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

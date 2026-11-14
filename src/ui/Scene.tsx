@@ -26,12 +26,21 @@ const P: Record<Mood, Palette> = {
   lazy: { sky: ['#59617a', '#8890a4', '#c4c8d2'], glow: '#ffffff', mtn: ['#7c8497', '#646c80'], grass: ['#6f9068', '#4f6c4b'], rock: ['#5f5a6c', '#3e3a49'], cloud: ['#e6e9f0', 0.85], many: true },
 };
 
+/** Szenen-Themen aus dem Shop (überschreiben die Stimmungs-Szene). Schlüssel = Teil der Shop-ID nach „scene-“. */
+export const SCENE_THEMES: Record<string, Palette> = {
+  sunset: { sky: ['#3b2a6e', '#e8647a', '#ffc27a'], sun: [210, 330, 56, '#ffe0a0'], glow: '#ff9a5a', mtn: ['#9a4f78', '#6a2f5a'], grass: ['#6aa856', '#437a39'], rock: ['#5d3f62', '#33213f'], cloud: ['#ffd9c4', 0.7] },
+  night: { sky: ['#050818', '#101a4a', '#2b3a7a'], moon: [300, 100, 24], glow: '#bcd0ff', mtn: ['#1e2a5a', '#141c40'], grass: ['#2f5a55', '#1f3d3a'], rock: ['#2a2a48', '#171730'], cloud: ['#8a9ad0', 0.25], stars: true },
+  neon: { sky: ['#12002b', '#5a0a7a', '#ff3d9a'], sun: [300, 160, 26, '#ffe4f4'], glow: '#ff5cc0', mtn: ['#3a1a66', '#240f48'], grass: ['#2fd0a8', '#1a8a74'], rock: ['#2b1a52', '#150c33'], cloud: ['#ff9ad6', 0.35], stars: true },
+  spring: { sky: ['#6ec6ff', '#b8e8ff', '#fdf3ff'], sun: [60, 90, 22, '#fffbe0'], glow: '#fff0b0', mtn: ['#a8d8b8', '#80c298'], grass: ['#8ae07a', '#52b04e'], rock: ['#8a7a6a', '#5a4c40'], cloud: ['#ffffff', 0.95] },
+  ember: { sky: ['#1a0808', '#7a1a10', '#ff7a2a'], sun: [300, 140, 24, '#ffd08a'], glow: '#ff8a3a', mtn: ['#5a2018', '#3a120e'], grass: ['#6a4a2a', '#43301c'], rock: ['#4a2a22', '#2a1512'], cloud: ['#ff9a6a', 0.3] },
+};
+
 function cloud(x: number, y: number, s: number, col: string, op: number) {
   return `<g opacity="${op}"><g transform="translate(${x} ${y}) scale(${s})" fill="${col}"><ellipse cx="0" cy="0" rx="34" ry="13"/><ellipse cx="-16" cy="-6" rx="16" ry="12"/><ellipse cx="9" cy="-12" rx="20" ry="16"/><ellipse cx="28" cy="-3" rx="13" ry="9"/></g></g>`;
 }
 
-export function sceneSvg(m: Mood, id = 'sc'): string {
-  const p = P[m];
+export function sceneSvg(m: Mood, id = 'sc', theme?: string): string {
+  const p = (theme && SCENE_THEMES[theme]) || P[m];
   let s = `<svg viewBox="0 0 390 452" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg"><defs>
   <linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sky[0]}"/><stop offset=".58" stop-color="${p.sky[1]}"/><stop offset="1" stop-color="${p.sky[2]}"/></linearGradient>
   <radialGradient id="${id}g"><stop offset="0" stop-color="${p.glow}" stop-opacity=".95"/><stop offset="1" stop-color="${p.glow}" stop-opacity="0"/></radialGradient>
@@ -68,8 +77,8 @@ export function sceneSvg(m: Mood, id = 'sc'): string {
 }
 
 /** Füllt den Elternbereich; Plattformmitte liegt bei x≈57 %, Oberkante Gras bei ≈88 % der Höhe. */
-export function Scene({ mood, id = 'sc' }: { mood: Mood; id?: string }) {
-  const xml = useMemo(() => sceneSvg(mood, id), [mood, id]);
+export function Scene({ mood, id = 'sc', theme }: { mood: Mood; id?: string; theme?: string }) {
+  const xml = useMemo(() => sceneSvg(mood, id, theme), [mood, id, theme]);
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <SvgXml xml={xml} width="100%" height="100%" />

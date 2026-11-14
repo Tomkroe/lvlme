@@ -80,7 +80,7 @@ export interface Progress {
   /** Münzen (Shop-Währung); fehlt bei altem Fortschritt = 0 */
   coins?: number;
   /** Gekaufte Outfits (BodyId); fehlt = nur die kostenlosen */
-  owned?: BodyId[];
+  owned?: Array<number | string>;
 }
 
 /** Frisur: Index in HAIRSTYLES (src/avatar/assets.ts); 0 = Originalkopf */
