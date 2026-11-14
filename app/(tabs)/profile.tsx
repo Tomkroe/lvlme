@@ -1,9 +1,10 @@
 /** Profil: Stats, Serie, Verwandlungen, Datenquelle, Konto, Datenschutz. Zuständig: app-ui. */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useApp } from '../../src/state/AppState.tsx';
+import type { BodyId } from '../../src/types.ts';
 import { MOOD_TEXT, STAGES } from '../../src/game/rules.ts';
 import { STAGE_COLORS } from '../../src/avatar/palette.ts';
 import { Avatar } from '../../src/avatar/Avatar.tsx';
@@ -29,8 +30,20 @@ export default function Profile() {
 
   const [stats, setStats] = useState<BodyStats>(app.bodyStats ?? DEFAULT_BODY_STATS);
   useEffect(() => { if (app.bodyStats) setStats(app.bodyStats); }, [app.bodyStats]);
-  const upd = (k: keyof BodyStats) => (v: number) => setStats(o => ({ ...o, [k]: v }));
-  const save = (k: keyof BodyStats) => (v: number) => { app.setBodyStats(clampStats({ ...stats, [k]: v })); };
+  // Live-Vorschau oberkörperfrei, solange ein Körperwert verschoben wird (und kurz danach)
+  const [preview, setPreview] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (hideTimer.current) clearTimeout(hideTimer.current); }, []);
+  const upd = (k: keyof BodyStats) => (v: number) => {
+    if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; }
+    setPreview(true);
+    setStats(o => ({ ...o, [k]: v }));
+  };
+  const save = (k: keyof BodyStats) => (v: number) => {
+    app.setBodyStats(clampStats({ ...stats, [k]: v }));
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setPreview(false), 1200);
+  };
   const sugg = suggestBody(stats);
   const suggName = BODIES.find(b => b.id === sugg.id)?.name ?? '';
   const toggleAuto = async (on: boolean) => {
@@ -128,7 +141,11 @@ export default function Profile() {
     }
   };
 
+  // Typ 0 („Athletisch“) trägt ein Top; oberkörperfrei zeigt dafür Outfit 9
+  const previewBody = (sugg.id === 0 ? 9 : sugg.id) as BodyId;
+
   return (
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: 16, paddingBottom: 32, gap: 14 }}>
       <Text style={[st.title, F.display]}>Profil</Text>
 
@@ -368,6 +385,14 @@ export default function Profile() {
         <Button title="Fortschritt zurücksetzen" kind="danger" onPress={reset} />
       </Card>
     </ScrollView>
+    {preview && (
+      <View pointerEvents="none" style={[st.preview, { top: insets.top + 8 }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <Avatar stage={app.stage} mood="awake" hair={app.hair} body={previewBody} size={118} still id="bodyprev" />
+        <Text style={st.previewText}>{suggName}</Text>
+        <Text style={st.previewSub}>{stats.heightCm} cm · {stats.weightKg} kg · {stats.bodyFatPct} %</Text>
+      </View>
+    )}
+    </View>
   );
 }
 
@@ -385,6 +410,9 @@ const st = StyleSheet.create({
   dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
   ladderName: { flex: 1, fontSize: 15 },
   hairOpt: { alignItems: 'center', gap: 4, padding: 6, borderRadius: 14, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card2, width: 78 },
+  preview: { position: 'absolute', right: 10, alignItems: 'center', paddingHorizontal: 8, paddingTop: 6, paddingBottom: 8, borderRadius: 18, backgroundColor: 'rgba(9,13,30,0.88)', borderColor: C.line, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
+  previewText: { color: C.ink, fontWeight: '800', fontSize: 13 },
+  previewSub: { color: C.mute, fontSize: 10.5, fontWeight: '700' },
   numInput: { flex: 1, color: C.ink, backgroundColor: C.card2, borderColor: C.line, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15 },
   textInput: { color: C.ink, backgroundColor: C.card2, borderColor: C.line, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 15 },
   kindChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card2 },
