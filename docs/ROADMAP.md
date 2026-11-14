@@ -4,7 +4,7 @@ Dieser Plan ist die gemeinsame Absprache zwischen zwei Claude-Sitzungen, die gle
 **Jede Sitzung liest diese Datei vor dem Start und hakt erledigte Schritte hier ab.**
 
 ## Gemeinsame To-do-Liste
-Tom pflegt die aktuellen Aufgaben auf https://claude.ai/artifact/Ai4DZTqzBZtXFAwUcW3UkS (Artifact-Slug `4e9db98a-ff58-4c16-aa50-8e49ce825563`, Sammlung `todos`, Felder `text`, `who` = A/B/T, `status` = open/doing/done). Jede Sitzung liest dort zu Beginn ihre Aufgaben (Artifact-Datenbank-Tools `db_list`) und setzt erledigte auf `done`.
+Tom pflegt die aktuellen Aufgaben auf https://claude.ai/artifact/Ai4DZTqzBZtXFAwUcW3UkS (Artifact-Slug `4e9db98a-ff58-4c16-aa50-8e49ce825563`, Sammlung `todos`, Felder `text`, `who` = A/B/T/L (T = Tom, Technik; L = Luca, Ideen & Design), `status` = open/doing/done). Jede Sitzung liest dort zu Beginn ihre Aufgaben (Artifact-Datenbank-Tools `db_list`) und setzt erledigte auf `done`.
 
 ## Wer macht was
 
