@@ -28,7 +28,7 @@ Dauer: etwa 15 Minuten. Kosten: im kostenlosen Tarif von Supabase ist das enthal
    - Einladungscodes gelten nur noch **einmal**: Beim Annehmen wird der Code gelöscht.
    - Neue Profile heißen immer „Kämpfer“. Der echte Name von Apple wird nicht mehr übernommen; die App setzt den selbst gewählten Kämpfernamen.
 8. Kontrolle: Unter **Authentication → Policies** steht bei `profiles` weiterhin „profiles: eigenes oder Freunde lesen“.
-9. Danach `supabase/migrations/0004_appearance.sql` ausführen: Der Avatar darf jetzt auch Frisur (`hair`, 0–6) und Körper bzw. Outfit (`body`, 0–9) enthalten, damit Freunde dein gewähltes Aussehen sehen. **Wichtig:** Ohne diese Migration lehnt der Server das Speichern des Avatars von App-Versionen mit Frisur/Körper-Auswahl ab.
+9. Danach `supabase/migrations/0011_appearance_hair_body.sql` ausführen (setzt 0008–0010 vom Branch `main` voraus, weil es deren Prüfung für `look` übernimmt): Der Avatar darf jetzt auch Frisur (`hair`, 0–6) und Körper bzw. Outfit (`body`, 0–9) enthalten, damit Freunde dein gewähltes Aussehen sehen. **Wichtig:** Ohne diese Migration lehnt der Server das Speichern des Avatars von App-Versionen mit Frisur/Körper-Auswahl ab.
 10. Kontrolle: Neue Query mit `select public.is_public_avatar('{"hair": 3, "body": 9}'::jsonb);` ausführen. Das Ergebnis muss `true` sein (mit `"hair": 7` dagegen `false`).
 
 Die Skripte dürfen auch mehrfach laufen, sie machen dabei nichts kaputt. Neue Dateien in `supabase/migrations/` immer in der Reihenfolge ihrer Nummer ausführen.
@@ -71,6 +71,6 @@ Auf der Apple-Seite musst du nichts von Hand einstellen. Wenn EAS die App zum er
 
 ## Gut zu wissen
 - Einladungscodes haben 6 Zeichen, gelten 7 Tage und nur für eine Person (ab Migration 0003). Für mehrere Freunde einfach mehrere Codes erzeugen (bis zu 20 offene gleichzeitig).
-- Freunde sehen nur deinen Avatar (inklusive Frisur und Körper, ab Migration 0004), nie deine Schritte, deinen Schlaf oder deinen Puls.
+- Freunde sehen nur deinen Avatar (inklusive Frisur und Körper, ab Migration 0011), nie deine Schritte, deinen Schlaf oder deinen Puls.
 - Nutzer können ihr Konto in der App selbst löschen (Migration 0002). Profil, Einladungen, Freundschaften und die Anmeldung verschwinden dabei sofort.
 - Löschst du ein Konto unter **Authentication → Users**, verschwinden Profil, Einladungen und Freundschaften automatisch mit.

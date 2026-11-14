@@ -81,7 +81,7 @@ export type BodyId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 /**
  * Aussehen des Avatars. Wird lokal im Profil gespeichert und als hair/body in PublicAvatar
  * veröffentlicht, damit Freunde Frisur und Körper sehen (reine Aussehensdaten, keine Gesundheitsdaten;
- * serverseitig von is_public_avatar geprüft, Migration 0004).
+ * serverseitig von is_public_avatar geprüft, Migration 0011).
  */
 export interface Appearance {
   hair: HairId;

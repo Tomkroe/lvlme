@@ -16,7 +16,7 @@ const NOT_CONFIGURED = 'Freunde sind in dieser Version noch nicht eingerichtet.'
 const NOT_SIGNED_IN = 'Bitte melde dich zuerst mit Apple an.';
 const OFFLINE = 'Keine Verbindung. Bitte prüfe dein Internet und versuch es noch einmal.';
 const MOODS: Mood[] = ['charged', 'awake', 'tired', 'proud', 'lazy'];
-/** Höchste erlaubte Frisur-/Körper-ID, wie in is_public_avatar (Migration 0004) */
+/** Höchste erlaubte Frisur-/Körper-ID, wie in is_public_avatar (Migration 0011) */
 const MAX_HAIR = 6;
 const MAX_BODY = 9;
 
