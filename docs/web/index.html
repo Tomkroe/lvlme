@@ -1056,18 +1056,12 @@ function realFace(m,L,st,id,F){
    Aus den Editor-Einstellungen wird ein Text-Prompt gebaut – es wird nie ein Foto
    und keine Gesundheitsdaten übertragen. Gleicher Look + gleicher Seed = gleiches Bild,
    deshalb sehen Freunde dasselbe Bild, ohne dass wir es speichern müssen. */
-const AI_POSE={
-  charged:'full of energy, fists clenched, confident ready-to-train stance, determined grin',
-  awake:'relaxed standing pose, arms loosely at the sides, friendly smile',
-  proud:'proud victory pose flexing both biceps, slightly sweaty, big happy smile',
-  tired:'tired and sleepy, droopy half-closed eyes, slouching shoulders, yawning',
-  lazy:'bored and lazy, slumped posture, looking down at a smartphone in one hand'};
 function aiPrompt(L,m){
   const woman=L.sex==='woman';
   const MU=ch2sl(L.muscle)??5, FA=ch2sl(L.fat)??3;
   const build = FA>=8?'heavy-set chubby build' : FA>=6?'slightly chubby build' :
-    MU>=9?'very muscular bodybuilder physique, big arms, broad chest, visible six-pack abs' :
-    MU>=7?'muscular athletic physique, defined arms and shoulders' : MU>=5?'athletic toned build' : MU<=2?'slim skinny build':'average fit build';
+    MU>=9?'very muscular heroic cartoon physique with big arms and a broad chest' :
+    MU>=7?'muscular athletic cartoon physique' : MU>=5?'athletic toned build' : MU<=2?'slim skinny build':'average fit build';
   const skin={light:'very fair skin',fair:'fair skin',medium:'light olive skin',tan:'tanned skin',brown:'brown skin',dark:'dark brown skin'}[L.skin];
   const hc={black:'black',darkbrown:'dark brown',brown:'brown',blonde:'blonde',red:'red',grey:'grey'}[L.hair];
   const hs={sidepart:'short side-parted hair',undercut:'undercut hairstyle',quiff:'quiff hairstyle',crew:'short crew cut',buzz:'buzz cut',
@@ -1083,12 +1077,13 @@ function aiPrompt(L,m){
   const band=L.band!=='none'?`a ${{red:'red',blue:'blue',black:'black',white:'white'}[L.band]} sports headband`:'';
   const bits=[skin,face,hair,`${L.eyes==='dark'?'dark brown':L.eyes} eyes`,beard,L.glasses==='yes'?'wearing glasses':'',L.freckles==='yes'?'freckles':'',build,
     `wearing ${outfit}, ${bot} training pants and sneakers`,band].filter(Boolean).join(', ');
-  return `Stylized 3D cartoon avatar of a ${woman?'woman':'man'}, ${bits}. ${AI_POSE[m]||AI_POSE.awake}. `+
-    `Full body from head to feet, centered, facing the viewer. Friendly cartoon style with soft shading, smooth skin, slightly oversized head, `+
-    `clean bright colors, high quality digital illustration. Isolated on a plain pure white background, no floor, no shadow, no text, no logo, no watermark.`;
+  return `3D animated cartoon character, cute stylized proportions with a slightly big head, big expressive friendly eyes, `+
+    `smooth rounded shapes, soft studio lighting, vibrant colors, clean toy-like render. A ${woman?'woman':'man'} with ${bits}. `+
+    `Standing upright facing the camera, relaxed confident pose, arms at the sides, friendly smile. Full body visible from head to shoes, `+
+    `centered with empty space around. Solid plain white background, isolated character, no scenery, no floor, no shadow, no text.`;
 }
 function aiSeedNum(sd){ let n=7; for(const c of (sd||'lvlme')) n=(n*31+c.charCodeAt(0))%2147483647; return n; }
-function aiUrl(L,m){ return 'https://image.pollinations.ai/prompt/'+encodeURIComponent(aiPrompt(L,m))+
+function aiUrl(L,m){ return 'https://image.pollinations.ai/prompt/'+encodeURIComponent(aiPrompt(L))+
   '?width=512&height=672&model=flux&nologo=true&private=true&seed='+aiSeedNum(L.aiSeed); }
 function aiHash(t){ let h=5381; for(let i=0;i<t.length;i++) h=((h*33)^t.charCodeAt(i))>>>0; return 'k'+h.toString(36); }
 const AI_DONE=new Map(), AI_FAIL=new Set(), AI_URL=new Map(), AI_WAIT=new Map(); let AI_Q=[], aiBusy=false, aiTok=0;
@@ -1118,17 +1113,25 @@ function aiImg(url,cors){ return new Promise((ok,bad)=>{ const im=new Image(); i
   const to=setTimeout(()=>{ im.src=''; bad(new Error('timeout')); },90000);
   im.onload=()=>{ clearTimeout(to); ok(im); }; im.onerror=()=>{ clearTimeout(to); bad(new Error('load')); }; im.src=url; }); }
 async function aiLoad(url){
-  let im;
-  try{ im=await aiImg(url,true); }catch(e){
-    im=await aiImg(url,false);                  // ohne CORS: Bild zeigen, weißen Hintergrund per Mischmodus ausblenden
-    return {src:url, w:im.naturalWidth, h:im.naturalHeight, blend:true};
+  let lastIm=null, lastUrl=url;
+  for(let k=0;k<3;k++){
+    const u=k? url.replace(/seed=(\d+)/,(_,n)=>'seed='+(+n+k*101)) : url;
+    let im;
+    try{ im=await aiImg(u,true); }catch(e){
+      if(k) break;                               // Bild ohne Freigabe für Canvas: als gerahmte Karte zeigen
+      im=await aiImg(u,false); return {src:u, w:im.naturalWidth, h:im.naturalHeight, frame:true};
+    }
+    lastIm=im; lastUrl=u;
+    try{ return aiCutout(im); }catch(e){ /* kein heller Hintergrund → anderen Seed probieren */ }
   }
-  try{ return aiCutout(im); }catch(e){ return {src:url, w:im.naturalWidth, h:im.naturalHeight, blend:true}; }
+  if(!lastIm) throw new Error('load');
+  return {src:lastUrl, w:lastIm.naturalWidth, h:lastIm.naturalHeight, frame:true};
 }
 /* Weißen Hintergrund vom Rand her entfernen (Flutfüllung) und auf die Figur zuschneiden */
 function aiCutout(im){
   const W=im.naturalWidth, H=im.naturalHeight, c=document.createElement('canvas'); c.width=W; c.height=H;
   const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0);
+  g.fillStyle='#fff'; g.fillRect(Math.round(W*.6),Math.round(H*.935),W,H);   // Pollinations-Logo
   const d=g.getImageData(0,0,W,H), px=d.data, seen=new Uint8Array(W*H), st=[];
   const bgLike=i=>{ const r=px[i*4],gg=px[i*4+1],b=px[i*4+2], mn=Math.min(r,gg,b), mx=Math.max(r,gg,b); return mn>214 && mx-mn<30; };
   for(let x=0;x<W;x++){ st.push(x, (H-1)*W+x); } for(let y=0;y<H;y++){ st.push(y*W, y*W+W-1); }
@@ -1144,7 +1147,7 @@ function aiCutout(im){
   const cw=x1-x0+1, ch=y1-y0+1, k=Math.min(1,420/ch), o=document.createElement('canvas');
   o.width=Math.round(cw*k); o.height=Math.round(ch*k);
   o.getContext('2d').drawImage(c,x0,y0,cw,ch,0,0,o.width,o.height);
-  return {src:o.toDataURL('image/png'), w:o.width, h:o.height, blend:false};
+  return {src:o.toDataURL('image/png'), w:o.width, h:o.height};
 }
 function aiHydrate(key){
   document.querySelectorAll(`svg[data-aikey="${key}"]`).forEach(el=>{
@@ -1155,7 +1158,7 @@ function aiHydrate(key){
   if(window.aiStatusRefresh) window.aiStatusRefresh();
 }
 function aiState(look,mood){ const L=normLook(look); if(L.style!=='ai') return 'off'; const k=aiHash(aiUrl(L,MOODS[mood]?mood:'awake'));
-  return AI_DONE.has(k)?(AI_DONE.get(k).blend?'blend':'done'):AI_FAIL.has(k)?'fail':'wait'; }
+  return AI_DONE.has(k)?(AI_DONE.get(k).frame?'frame':'done'):AI_FAIL.has(k)?'fail':'wait'; }
 function aiRetry(){ AI_FAIL.clear(); }
 function aiSvg(r,stageIndex,m,opts){
   const st=STAGES[Math.max(0,Math.min(STAGES.length-1,stageIndex|0))];
@@ -1166,7 +1169,14 @@ function aiSvg(r,stageIndex,m,opts){
   if(opts.flip) s+=`<g transform="translate(240 0) scale(-1 1)">`;
   if(st.aura && m!=='lazy') s+=`<defs><radialGradient id="${gid}" cx="50%" cy="60%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".45" stop-color="${st.aura}" stop-opacity=".55"/><stop offset="1" stop-color="${st.aura}" stop-opacity="0"/></radialGradient></defs><ellipse class="aura" cx="120" cy="150" rx="${m==='tired'?80:108}" ry="${m==='tired'?110:142}" fill="url(#${gid})" opacity="${m==='tired'?.45:1}"/>`;
   s+=`<ellipse cx="120" cy="270" rx="58" ry="8" fill="#000" opacity=".32"/>`;
-  s+=`<g class="${bob}"><image href="${r.src}" x="${(120-w/2).toFixed(1)}" y="${(273-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"${r.blend?' style="mix-blend-mode:multiply"':''}/></g>`;
+  const sat = m==='lazy'?.35 : m==='tired'?.6 : m==='charged'?1.15 : 1;
+  const bri = m==='lazy'||m==='tired' ? .85 : 1;
+  s+=`<defs><filter id="${gid}f"><feColorMatrix type="saturate" values="${sat}"/><feComponentTransfer><feFuncR type="linear" slope="${bri}"/><feFuncG type="linear" slope="${bri}"/><feFuncB type="linear" slope="${bri*1.05}"/></feComponentTransfer></filter>`+
+     (r.frame?`<clipPath id="${gid}c"><rect x="${(120-w/2).toFixed(1)}" y="${(273-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="18"/></clipPath>`:'')+`</defs>`;
+  const tilt = m==='tired'?'rotate(3 120 270)': m==='lazy'?'rotate(-4 120 270)':'';
+  s+=`<g class="${bob}"><g transform="${tilt}"><image href="${r.src}" x="${(120-w/2).toFixed(1)}" y="${(273-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" filter="url(#${gid}f)"${r.frame?` clip-path="url(#${gid}c)"`:''}/>`+
+     (r.frame?`<rect x="${(120-w/2).toFixed(1)}" y="${(273-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="18" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="3"/>`:'')+`</g></g>`;
+  if(m==='proud') s+=`<path d="M186 70 q7 10 0 15 q-7 -5 0 -15Z M50 100 q6 9 0 13 q-6 -4 0 -13Z" fill="#a8e4ff" stroke="${OL}" stroke-width="1.6"/>`;
   if(m==='tired') s+=`<g class="zzz" font-family="Baloo 2, Impact, sans-serif" fill="#e6ebff" stroke="${OL}" stroke-width="1.2" paint-order="stroke"><text x="172" y="40" font-size="24">Z</text><text x="192" y="22" font-size="16">z</text></g>`;
   if(opts.flip) s+=`</g>`;
   return s+`</svg>`;
@@ -2234,7 +2244,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const el=$('ai-status'); if(!el || !draftLook) return;
     const s=aiState(draftLook, previewMood);
     el.innerHTML = s==='wait' ? '⏳ KI malt dein Bild…' : s==='fail' ? '⚠️ Gerade nicht erreichbar. <a href="#" data-airetry>Nochmal</a>' :
-      s==='blend' ? '✓ Fertig (einfache Darstellung)' : s==='done' ? '✓ Fertig' : '';
+      s==='frame' ? '✓ Fertig – Hintergrund ließ sich nicht entfernen, probier „Neu würfeln“' : s==='done' ? '✓ Fertig' : '';
     const a=el.querySelector('[data-airetry]'); if(a) a.onclick=e=>{ e.preventDefault(); aiRetry(); drawPreview(); };
   }
   window.aiStatusRefresh=aiStatus;
@@ -2248,7 +2258,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         <button data-k="style" data-v="real" aria-pressed="${!on}">✏️ Gezeichnet</button>
         <button data-aion aria-pressed="${on}">✨ KI-Bild</button></div>
         ${on?`<div class="airow"><button class="btn ghost" data-aiseed>🎲 Neu würfeln</button><span class="small" id="ai-status"></span></div>`:''}
-        <p class="small muted">Die KI malt deinen Kämpfer aus deinen Einstellungen (Typ, Haut, Haare, Gesicht, Statur, Outfit) – kostenlos über Pollinations.ai. Es wird kein Foto und keine Gesundheitsdaten übertragen. Für jede Stimmung entsteht eine eigene Pose; das erste Bild dauert 10–40 Sekunden.</p></div>`;
+        <p class="small muted">Die KI malt deinen Kämpfer aus deinen Einstellungen (Typ, Haut, Haare, Gesicht, Statur, Outfit) – kostenlos über Pollinations.ai. Es wird kein Foto und keine Gesundheitsdaten übertragen. Deine Stimmung zeigt die App mit Aura und Farben. Das Bild dauert 10–40 Sekunden.</p></div>`;
     }
     if(key==='#muscle') return `<div class="optgrp"><b>Muskeln</b><div class="musclebox" id="look-muscle">${muscleHtml()}</div></div>`;
     const grp=LOOK_OPTIONS[key];
@@ -2311,6 +2321,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     bindNum('[data-hcm]','[data-hnum]',140,210,178,v=>{ draftLook.heightCm=v; });
     bindNum('[data-wkg]','[data-wnum]',35,200,78,v=>{ draftLook.weightKg=v; });
     bindNum('[data-kfa]','[data-kfanum]',4,45,20,v=>{ draftLook.bodyFatPct=v; });
+    aiStatus();
   }
   function openLook(){ wizStep=null; draftLook=normLook(myLook); renderLookEditor(); show($('modal-look')); }
   function openWizard(){ wizStep=0; draftLook=normLook(myLook); if(!draftLook.weightKg) draftLook.weightKg=78; draftLook=normLook(draftLook); renderLookEditor(); show($('modal-look')); }
